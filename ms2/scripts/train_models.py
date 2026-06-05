@@ -35,6 +35,12 @@ import os
 import shutil
 import tempfile
 
+# Rutas base del proyecto (disponibles globalmente antes de cualquier uso)
+_SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_DIR = os.path.dirname(_SCRIPT_DIR)   # ms2/
+_MODELS_DIR  = os.path.join(_PROJECT_DIR, "models")
+os.makedirs(_MODELS_DIR, exist_ok=True)
+
 import boto3
 import joblib
 import numpy as np
@@ -124,7 +130,7 @@ rf_clf.fit(X, y_fallo)
 # Guardamos ambos modelos juntos en un dict para que MLService los use
 rf_bundle = {"regressor": rf_reg, "classifier": rf_clf}
 
-rf_path = "/tmp/rf_vida_util.joblib"
+rf_path = os.path.join(_MODELS_DIR, "rf_vida_util.joblib")
 joblib.dump(rf_bundle, rf_path)
 print(f"  Random Forest guardado → {rf_path}")
 
@@ -147,7 +153,7 @@ km = Pipeline([
 ])
 km.fit(X)
 
-km_path = "/tmp/kmeans_clustering.joblib"
+km_path = os.path.join(_MODELS_DIR, "kmeans_clustering.joblib")
 joblib.dump(km, km_path)
 print(f"  K-Means guardado → {km_path}")
 print(f"  Tamaños de clusters: {np.bincount(km.predict(X))}")
@@ -286,8 +292,7 @@ def load_rustguard_dataset(base_dir: str):
 # ── Rutas de los datasets ─────────────────────────────────────────────────────
 # Por defecto apuntan a ms2/datasets/ (dentro del proyecto).
 # Se pueden sobreescribir con variables de entorno.
-_SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
-_PROJECT_DIR  = os.path.dirname(_SCRIPT_DIR)   # ms2/
+# _SCRIPT_DIR, _PROJECT_DIR y _MODELS_DIR ya están definidos al inicio del script.
 _DATASETS_DIR = os.path.join(_PROJECT_DIR, "datasets")
 
 SYNTHETIC_DIR = os.getenv(
@@ -387,20 +392,22 @@ else:
     print("  Para mejores resultados, descarga el dataset con kaggle CLI:")
     print("    kaggle datasets download benpepperpots/rust-iron-dataset -p /tmp/datasets --unzip")
 
-cnn_path = "/tmp/cnn_estado_activo.keras"
+cnn_path = os.path.join(_MODELS_DIR, "cnn_estado_activo.keras")
 model.save(cnn_path)  # formato nativo Keras 3 (.keras)
 print(f"  CNN guardada → {cnn_path}")
 
 
-# ── Subir todo a S3 ───────────────────────────────────────────────────────────
+# ── Subir todo a S3 (opcional — solo si LocalStack o AWS están disponibles) ──────
 
-print("\n[Subiendo modelos a S3...]")
-ensure_bucket()
-
-upload_file(rf_path,   "models/rf_vida_util.joblib")
-upload_file(km_path,   "models/kmeans_clustering.joblib")
-upload_file(cnn_path,  "models/cnn_estado_activo.keras")
-
-print("\n✓ Todos los modelos subidos correctamente.")
+try:
+    print("\n[Subiendo modelos a S3...]")
+    ensure_bucket()
+    upload_file(rf_path,   "models/rf_vida_util.joblib")
+    upload_file(km_path,   "models/kmeans_clustering.joblib")
+    upload_file(cnn_path,  "models/cnn_estado_activo.keras")
+    print("\n✓ Todos los modelos subidos a S3 correctamente.")
+except Exception as _s3_err:
+    print(f"\n⚠️  Subida a S3 omitida ({_s3_err.__class__.__name__}: {_s3_err})")
+    print("  Los modelos se guardaron localmente en ms2/models/ y están listos para usar.")
 print("  Reinicia el contenedor ms2-documentos para que los cargue:")
 print("  docker compose restart ms2-documentos")
