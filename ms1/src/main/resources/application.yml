@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: ms1-activos
+
+  # ── Base de Datos ──────────────────────────────────────────────────
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  # ── JPA / Hibernate ───────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+
+  # ── Flyway ────────────────────────────────────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # ── GraphQL ───────────────────────────────────────────────────────
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    path: /graphql
+    schema:
+      locations: classpath:graphql/
+      file-extensions: .graphqls
+
+  # ── Seguridad ─────────────────────────────────────────────────────
+  security:
+    user:
+      name: ${ADMIN_USER:admin}
+      password: ${ADMIN_PASSWORD}
+
+# ── JWT ─────────────────────────────────────────────────────────────
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000 # 24 horas en ms
+
+# ── Servidor ────────────────────────────────────────────────────────
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+# ── Actuator ────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# ── Blockchain ──────────────────────────────────────────────────────
+blockchain:
+  rpc-url: ${BLOCKCHAIN_RPC_URL}
+  wallet:
+    private-key: ${BLOCKCHAIN_PRIVATE_KEY}
+
+# ── MS3 Webhook ─────────────────────────────────────────────────────
+ms3:
+  webhook:
+    url: ${MS3_WEBHOOK_URL:http://localhost:3000/webhook/activos}
+
+# ── Logging ─────────────────────────────────────────────────────────
+logging:
+  level:
+    com.activos.ms1: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.graphql: INFO

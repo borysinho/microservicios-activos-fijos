@@ -1,0 +1,149 @@
+<div class="page-header">
+  <div>
+    <h1>Áreas y Responsables</h1>
+    <p>Estructura organizacional — gestión de áreas y responsables de activos</p>
+  </div>
+  <div class="page-actions">
+    <button class="btn btn--secondary" (click)="openNewResp()">+ Responsable</button>
+    <button class="btn btn--primary" (click)="openNewArea()">+ Área</button>
+  </div>
+</div>
+
+@if (success()) { <div class="alert alert--success">{{ success() }}</div> }
+@if (error()) { <div class="alert alert--error">{{ error() }}</div> }
+
+<div class="filter-bar card">
+  <input class="form-control" type="text" [(ngModel)]="searchTerm" placeholder="Buscar área...">
+  <button class="btn btn--secondary" (click)="cargar()">Actualizar</button>
+</div>
+
+<div class="two-col">
+  <!-- Áreas -->
+  <div>
+    <h2 class="section-title">Áreas ({{ areas().length }})</h2>
+    @if (loading()) { <div class="loading">Cargando...</div> }
+    @else if (areasFiltradas.length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">🏢</div>
+      <p>No hay áreas.</p>
+    </div>
+    } @else {
+    @for (area of areasFiltradas; track area.id) {
+    <div class="item-card card">
+      <div class="item-card__header">
+        <div>
+          <span class="item-card__code">{{ area.codigo }}</span>
+          <strong class="item-card__name">{{ area.nombre }}</strong>
+        </div>
+        <div class="action-btns">
+          <button class="btn btn--sm btn--secondary" (click)="openEditArea(area)">Editar</button>
+          <button class="btn btn--sm btn--danger-ghost" (click)="eliminarArea(area)">Eliminar</button>
+        </div>
+      </div>
+      @if (area.descripcion) { <p class="item-card__desc">{{ area.descripcion }}</p> }
+      @if (area.responsable) {
+      <p class="item-card__resp">👤 {{ area.responsable.nombre }} — {{ area.responsable.cargo }}</p>
+      }
+    </div>
+    }
+    }
+  </div>
+
+  <!-- Responsables -->
+  <div>
+    <h2 class="section-title">Responsables ({{ responsables().length }})</h2>
+    @for (resp of responsables(); track resp.id) {
+    <div class="item-card card">
+      <div class="item-card__header">
+        <div>
+          <strong class="item-card__name">{{ resp.nombre }}</strong>
+          <span class="item-card__code">{{ resp.cargo }}</span>
+        </div>
+        <div class="action-btns">
+          <button class="btn btn--sm btn--secondary" (click)="openEditResp(resp)">Editar</button>
+        </div>
+      </div>
+      <p class="item-card__desc">{{ resp.email }}@if (resp.telefono) { · {{ resp.telefono }} }</p>
+    </div>
+    }
+  </div>
+</div>
+
+<!-- Modal Área -->
+@if (showAreaModal()) {
+<div class="modal-overlay" (click)="showAreaModal.set(false)"></div>
+<div class="modal">
+  <div class="modal__header">
+    <h3>{{ editandoArea() ? 'Editar' : 'Nueva' }} Área</h3>
+    <button class="modal__close" (click)="showAreaModal.set(false)">✕</button>
+  </div>
+  <div class="modal__body">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Código *</label>
+        <input class="form-control" type="text" [(ngModel)]="formArea.codigo" required>
+      </div>
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input class="form-control" type="text" [(ngModel)]="formArea.nombre" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <input class="form-control" type="text" [(ngModel)]="formArea.descripcion">
+    </div>
+    <div class="form-group">
+      <label>Responsable</label>
+      <select class="form-control" [(ngModel)]="formArea.responsableId">
+        <option value="">Sin responsable</option>
+        @for (r of responsables(); track r.id) { <option [value]="r.id">{{ r.nombre }}</option> }
+      </select>
+    </div>
+  </div>
+  <div class="modal__footer">
+    <button class="btn btn--secondary" (click)="showAreaModal.set(false)">Cancelar</button>
+    <button class="btn btn--primary" (click)="guardarArea()" [disabled]="saving()">
+      {{ saving() ? 'Guardando...' : (editandoArea() ? 'Actualizar' : 'Crear') }}
+    </button>
+  </div>
+</div>
+}
+
+<!-- Modal Responsable -->
+@if (showRespModal()) {
+<div class="modal-overlay" (click)="showRespModal.set(false)"></div>
+<div class="modal">
+  <div class="modal__header">
+    <h3>{{ editandoResp() ? 'Editar' : 'Nuevo' }} Responsable</h3>
+    <button class="modal__close" (click)="showRespModal.set(false)">✕</button>
+  </div>
+  <div class="modal__body">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input class="form-control" type="text" [(ngModel)]="formResp.nombre" required>
+      </div>
+      <div class="form-group">
+        <label>Cargo *</label>
+        <input class="form-control" type="text" [(ngModel)]="formResp.cargo" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Email *</label>
+        <input class="form-control" type="email" [(ngModel)]="formResp.email" required>
+      </div>
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input class="form-control" type="text" [(ngModel)]="formResp.telefono">
+      </div>
+    </div>
+  </div>
+  <div class="modal__footer">
+    <button class="btn btn--secondary" (click)="showRespModal.set(false)">Cancelar</button>
+    <button class="btn btn--primary" (click)="guardarResp()" [disabled]="saving()">
+      {{ saving() ? 'Guardando...' : (editandoResp() ? 'Actualizar' : 'Crear') }}
+    </button>
+  </div>
+</div>
+}

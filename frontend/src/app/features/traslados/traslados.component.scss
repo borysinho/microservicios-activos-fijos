@@ -1,0 +1,29 @@
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  &__search {
+    flex: 1;
+    min-width: 220px;
+  }
+}
+.action-btns {
+  display: flex;
+  gap: 0.35rem;
+}
+.btn--primary-ghost {
+  color: var(--primary, #4f6ef7);
+  border: 1px solid var(--primary, #4f6ef7);
+  background: transparent;
+  &:hover {
+    background: rgba(79, 110, 247, 0.08);
+  }
+}
+.table-footer {
+  padding: 0.65rem 1rem;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}

@@ -1,0 +1,48 @@
+.filter-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.categorias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.cat-card {
+  padding: 1.25rem;
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  &__nombre {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  &__desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0.35rem 0;
+  }
+  &__tasa {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+  }
+  &__actions {
+    margin-top: 1rem;
+  }
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.badge--info {
+  background: rgba(79, 110, 247, 0.12);
+  color: var(--primary, #4f6ef7);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+}

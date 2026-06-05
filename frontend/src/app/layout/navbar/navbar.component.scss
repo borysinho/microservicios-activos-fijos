@@ -1,0 +1,99 @@
+.navbar {
+  height: var(--navbar-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2rem;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+
+  &__left { display: flex; flex-direction: column; gap: 1px; }
+
+  &__title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+
+  &__date { font-size: 11px; color: var(--text-muted); text-transform: capitalize; }
+
+  &__right {
+    display: flex; align-items: center; gap: .85rem;
+  }
+
+  // ── Role badge ─────────────────────────────────────────────────────────
+  &__role-badge {
+    display: flex; align-items: center; gap: .35rem;
+    padding: .3rem .75rem; border-radius: 20px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px;
+    // default (fallback)
+    background: var(--accent-glow); border: 1px solid rgba(240,165,0,.2); color: var(--accent);
+
+    &--admin {
+      background: var(--accent-glow); border-color: rgba(240,165,0,.25); color: var(--accent);
+    }
+    &--auditor {
+      background: var(--info-dim); border-color: rgba(59,130,246,.25); color: var(--info);
+    }
+    &--responsable {
+      background: var(--success-dim); border-color: rgba(34,197,94,.25); color: var(--success);
+    }
+    &--lector {
+      background: var(--bg-raised); border-color: var(--border); color: var(--text-secondary);
+    }
+  }
+
+  // ── Icon button (notifications) ─────────────────────────────────────────
+  &__icon-btn {
+    width: 32px; height: 32px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); cursor: pointer; transition: all .15s;
+    &:hover { background: var(--bg-raised); color: var(--text-primary); border-color: var(--border-light); }
+  }
+
+  &__divider { width: 1px; height: 24px; background: var(--border); }
+
+  &__user { display: flex; align-items: center; gap: .6rem; }
+
+  &__avatar {
+    width: 32px; height: 32px;
+    background: var(--bg-raised); border: 1px solid var(--border);
+    border-radius: 50%; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; color: var(--text-secondary);
+
+    &--admin {
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      border-color: var(--accent); color: #000;
+    }
+    &--auditor {
+      background: linear-gradient(135deg, var(--info), #2563eb);
+      border-color: var(--info); color: #fff;
+    }
+    &--responsable {
+      background: linear-gradient(135deg, var(--success), #16a34a);
+      border-color: var(--success); color: #fff;
+    }
+  }
+
+  &__user-info {
+    display: flex; flex-direction: column; gap: 1px;
+  }
+
+  &__username { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+
+  &__user-status {
+    display: flex; align-items: center; gap: .3rem;
+    font-size: 10px; color: var(--text-muted);
+  }
+
+  &__status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 4px var(--success);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .5; }
+}

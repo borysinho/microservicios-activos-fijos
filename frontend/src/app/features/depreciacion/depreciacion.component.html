@@ -1,0 +1,104 @@
+<div class="page-header">
+  <div>
+    <h1>Reporte de Depreciación</h1>
+    <p>Cálculo anual de depreciación por activo fijo</p>
+  </div>
+  <div class="header-controls">
+    <select class="form-control" style="width:140px" [ngModel]="anio()" (ngModelChange)="anio.set($event)">
+      @for (a of anios; track a) {
+      <option [value]="a">{{ a }}</option>
+      }
+    </select>
+    <button class="btn btn--primary" (click)="cargar()" [disabled]="loading()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+        <polyline points="1 4 1 10 7 10" />
+        <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
+      </svg>
+      Generar
+    </button>
+  </div>
+</div>
+
+@if (loading()) {
+<div class="loading">Generando reporte...</div>
+} @else if (error()) {
+<div class="empty-state">
+  <div class="empty-icon">⚠</div>
+  <p>{{ error() }}</p>
+</div>
+} @else if (reporte(); as r) {
+
+<!-- Resumen KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-card__label">Total activos</div>
+    <div class="kpi-card__value">{{ r.detalles.length }}</div>
+  </div>
+  <div class="kpi-card kpi-card--accent">
+    <div class="kpi-card__label">Depreciación {{ r.anio }}</div>
+    <div class="kpi-card__value">{{ r.totalDepreciacionAnio | currency:'BOB':'symbol':'1.2-2' }}</div>
+  </div>
+  <div class="kpi-card kpi-card--muted">
+    <div class="kpi-card__label">Valor en libros total</div>
+    <div class="kpi-card__value">{{ r.totalValorLibros | currency:'BOB':'symbol':'1.2-2' }}</div>
+  </div>
+</div>
+
+<!-- Buscador -->
+<div class="card" style="margin-bottom:1.25rem">
+  <input class="form-control" [(ngModel)]="search" placeholder="Buscar por código o nombre..." style="max-width:360px">
+</div>
+
+<!-- Tabla detalle -->
+@if (detallesFiltrados.length === 0) {
+<div class="empty-state">
+  <div class="empty-icon">📊</div>
+  <p>No hay datos para el período seleccionado.</p>
+</div>
+} @else {
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Activo</th>
+        <th>Método</th>
+        <th class="text-right">Valor Adquisición</th>
+        <th class="text-right">Dep. Acumulada</th>
+        <th class="text-right">Dep. Año {{ r.anio }}</th>
+        <th class="text-right">Valor Libros</th>
+        <th>% Depreciado</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (d of detallesFiltrados; track d.activoCodigo) {
+      <tr>
+        <td><span class="mono">{{ d.activoCodigo }}</span></td>
+        <td>{{ d.activoNombre }}</td>
+        <td><span class="badge">{{ metodoLabel(d.metodoDepreciacion) }}</span></td>
+        <td class="mono text-right">{{ d.valorAdquisicion | currency:'BOB':'symbol':'1.2-2' }}</td>
+        <td class="mono text-right text-warning">{{ d.depreciacionAcumulada | currency:'BOB':'symbol':'1.2-2' }}</td>
+        <td class="mono text-right text-accent">{{ d.depreciacionAnio | currency:'BOB':'symbol':'1.2-2' }}</td>
+        <td class="mono text-right text-success">{{ d.valorLibros | currency:'BOB':'symbol':'1.2-2' }}</td>
+        <td>
+          <div class="progress-wrap">
+            <div class="progress-bar">
+              <div class="progress-bar__fill" [style.width.%]="porcentajeDepreciado(d)"
+                [class.progress-bar__fill--danger]="porcentajeDepreciado(d) >= 80"
+                [class.progress-bar__fill--warning]="porcentajeDepreciado(d) >= 50 && porcentajeDepreciado(d) < 80">
+              </div>
+            </div>
+            <span class="progress-pct">{{ porcentajeDepreciado(d) }}%</span>
+          </div>
+        </td>
+      </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<div class="table-footer">
+  {{ detallesFiltrados.length }} activo{{ detallesFiltrados.length !== 1 ? 's' : '' }} ·
+  Año {{ r.anio }}
+</div>
+}
+}

@@ -1,0 +1,142 @@
+.filter-bar {
+  margin-bottom: 1.5rem;
+  &__select {
+    max-width: 420px;
+  }
+}
+
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0.6rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1rem;
+  &--last {
+    margin-bottom: 0;
+  }
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -1.6rem;
+  top: 0.85rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-surface);
+  background: var(--text-muted);
+  &--registro {
+    background: var(--primary, #4f6ef7);
+  }
+  &--asignacion {
+    background: #22c55e;
+  }
+  &--traslado {
+    background: #f59e0b;
+  }
+  &--mantenimiento {
+    background: #a78bfa;
+  }
+  &--baja {
+    background: #ef4444;
+  }
+}
+
+.timeline-content {
+  padding: 0.875rem 1rem;
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  &__time {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+  &__hash {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  &__bloque {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+  }
+}
+
+.hash-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.hash-value {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text);
+  word-break: break-all;
+  flex: 1;
+}
+
+.etherscan-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--primary, #4f6ef7);
+  text-decoration: none;
+  border: 1px solid var(--primary, #4f6ef7);
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  &:hover {
+    background: rgba(79, 110, 247, 0.08);
+  }
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
+.total-badge {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.badge--danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.badge--secondary {
+  background: var(--border);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.badge--info {
+  background: rgba(79, 110, 247, 0.12);
+  color: var(--primary, #4f6ef7);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+}

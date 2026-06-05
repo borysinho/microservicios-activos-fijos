@@ -1,0 +1,35 @@
+services:
+  localstack:
+    image: localstack/localstack:3
+    container_name: ms2-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,dynamodb
+      - DEFAULT_REGION=us-east-1
+      - EAGER_SERVICE_LOADING=1
+    volumes:
+      - localstack_data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      retries: 10
+
+  ms2-documentos:
+    build: .
+    container_name: ms2-documentos
+    env_file:
+      - .env
+    ports:
+      - "8002:8002"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+    volumes:
+      - ./models:/code/models:ro
+    depends_on:
+      localstack:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  localstack_data:

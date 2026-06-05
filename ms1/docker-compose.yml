@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: activos-postgres
+    environment:
+      POSTGRES_DB: activos_db
+      POSTGRES_USER: activos_user
+      POSTGRES_PASSWORD: activos_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - activos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U activos_user -d activos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ms1:
+    build: .
+    container_name: ms1-activos
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/activos_db
+    ports:
+      - "${PORT:-8081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  activos_pgdata:

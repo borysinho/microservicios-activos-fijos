@@ -1,0 +1,67 @@
+<div class="page-header">
+  <div>
+    <h1>Registro Blockchain</h1>
+    <p>Historial inmutable de transacciones de activos en Ethereum Sepolia</p>
+  </div>
+</div>
+
+@if (error()) { <div class="alert alert--error">{{ error() }}</div> }
+
+<div class="filter-bar card">
+  <select class="form-control filter-bar__select" [(ngModel)]="selectedActivoId" (ngModelChange)="cargar()">
+    <option value="">— Seleccionar activo —</option>
+    @for (a of activos(); track a.id) {
+    <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+    }
+  </select>
+</div>
+
+@if (loading()) {
+<div class="loading">Consultando blockchain...</div>
+} @else if (!selectedActivoId()) {
+<div class="empty-state">
+  <div class="empty-icon">🔗</div>
+  <p>Selecciona un activo para ver su historial en la blockchain.</p>
+</div>
+} @else if (registros().length === 0) {
+<div class="empty-state">
+  <div class="empty-icon">🔗</div>
+  <p>No hay registros blockchain para este activo.</p>
+</div>
+} @else {
+<div class="timeline">
+  @for (r of registros(); track r.id; let last = $last) {
+  <div class="timeline-item" [class.timeline-item--last]="last">
+    <div class="timeline-dot" [class]="'timeline-dot--' + r.tipoTransaccion.toLowerCase()"></div>
+    <div class="timeline-content card">
+      <div class="timeline-content__header">
+        <span [class]="badgeClass(r.tipoTransaccion)">{{ r.tipoTransaccion }}</span>
+        <span class="timeline-content__time">{{ r.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+      </div>
+      <div class="timeline-content__hash">
+        <span class="hash-label">Hash:</span>
+        <code class="hash-value">{{ r.hash }}</code>
+        <a [href]="etherscanUrl(r.hash)" target="_blank" rel="noopener" class="btn btn--sm btn--ghost etherscan-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+          </svg>
+          Etherscan
+        </a>
+        <button class="btn btn--sm btn--outline" (click)="verificarIntegridad(r.id)" title="Verificar integridad">
+          Verificar
+        </button>
+        @if (integridadBadge(r.id)) {
+        <span class="integridad-badge">{{ integridadBadge(r.id) }}</span>
+        }
+      </div>
+      @if (r.bloqueId) {
+      <p class="timeline-content__bloque">Bloque: <strong>{{ r.bloqueId }}</strong></p>
+      }
+    </div>
+  </div>
+  }
+</div>
+<div class="total-badge">{{ registros().length }} transacción(es) registrada(s) en la blockchain</div>
+}

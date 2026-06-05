@@ -21,6 +21,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
   @ViewChild('donutCanvas') donutRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('barCanvas') barRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('areaCanvas') areaRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('lineCanvas') lineRef?: ElementRef<HTMLCanvasElement>;
 
   private gql = inject(ActivosGqlService);
   private auth = inject(AuthService);
@@ -68,6 +69,13 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
   }
 
   private handleError(err: any): void {
+    // Cobertura amplia: HttpErrorResponse (.status), ServerError/ServerParseError
+    // (.statusCode, .response.status) y CORS-blocked 401 que llega como status 0
+    const httpStatus =
+      err?.networkError?.status ??
+      err?.networkError?.statusCode ??
+      err?.networkError?.response?.status;
+
     const isUnauthorized =
       err?.graphQLErrors?.some(
         (e: any) =>
@@ -75,8 +83,11 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
           e?.message?.toLowerCase().includes('unauthorized') ||
           e?.message?.toLowerCase().includes('access denied'),
       ) ||
-      err?.networkError?.status === 401 ||
-      err?.networkError?.status === 403;
+      httpStatus === 401 ||
+      httpStatus === 403 ||
+      // status 0 = CORS bloqueado, típicamente por 401/403 de Spring Security
+      // antes de que se añadan los headers CORS → tratar como sesión expirada
+      (err?.networkError != null && httpStatus === 0);
 
     if (isUnauthorized) {
       this.auth.logout();
@@ -212,5 +223,51 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
         },
       }),
     );
+
+    // CU-58: Línea — tendencia de adquisiciones por año
+    if (this.lineRef && d.adquisicionesPorAnio?.length) {
+      this.charts.push(
+        new Chart(this.lineRef.nativeElement, {
+          type: 'line',
+          data: {
+            labels: d.adquisicionesPorAnio.map((p) => String(p.anio)),
+            datasets: [
+              {
+                label: 'Adquisiciones',
+                data: d.adquisicionesPorAnio.map((p) => p.cantidad),
+                borderColor: '#f0a500',
+                backgroundColor: '#f0a50022',
+                borderWidth: 2,
+                pointBackgroundColor: '#f0a500',
+                pointRadius: 4,
+                fill: true,
+                tension: 0.4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                grid: { color: gridColor },
+                ticks: { color: textColor, font: { family: 'Space Grotesk' } },
+              },
+              y: {
+                grid: { color: gridColor },
+                ticks: { color: textColor, font: { family: 'Space Grotesk' }, stepSize: 1 },
+                beginAtZero: true,
+              },
+            },
+          },
+        }),
+      );
+    }
+  }
+
+  // CU-60: Exportar reporte BI en PDF usando window.print()
+  exportarPDF(): void {
+    window.print();
   }
 }

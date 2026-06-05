@@ -1,0 +1,67 @@
+.page-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.filter-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+}
+.item-card {
+  padding: 0.875rem 1rem;
+  margin-bottom: 0.65rem;
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  &__code {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    display: block;
+  }
+  &__name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  &__desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+  }
+  &__resp {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+  }
+}
+.action-btns {
+  display: flex;
+  gap: 0.35rem;
+}
+.btn--danger-ghost {
+  color: var(--danger, #e53935);
+  &:hover {
+    background: rgba(229, 57, 53, 0.08);
+  }
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}

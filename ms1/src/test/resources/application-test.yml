@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  flyway:
+    enabled: false
+
+blockchain:
+  rpc-url: http://localhost:18545
+  wallet:
+    private-key: "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b2d"
+
+ms3:
+  webhook:
+    url: http://localhost:3001/webhook/activos
+
+logging:
+  level:
+    com.activos.ms1: DEBUG

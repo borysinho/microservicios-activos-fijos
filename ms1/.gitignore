@@ -1,0 +1,31 @@
+# ── Build ─────────────────────────────────────────────────────────────
+build/
+.gradle/
+out/
+*.jar
+*.war
+*.class
+
+# ── IDE ───────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.ipr
+*.iws
+.eclipse/
+.settings/
+.classpath
+.project
+
+# ── Logs ──────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Secrets / Config local ────────────────────────────────────────────
+.env
+.env.local
+application-local.yml
+application-dev.yml
+
+# ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Modelos IA entrenados (binarios pesados — regenerar con scripts/train_models.py)
+models/
+
+# Datasets de entrenamiento (descargar con kaggle API — ver scripts/train_models.py)
+datasets/
