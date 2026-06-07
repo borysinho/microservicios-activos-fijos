@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- CU-34: Cámara (fotografiar activos para diagnóstico IA) -->
+    <key>NSCameraUsageDescription</key>
+    <string>La app necesita acceso a la cámara para fotografiar activos y realizar diagnóstico de estado con inteligencia artificial.</string>
+
+    <!-- CU-42: GPS (geolocalizar activos) -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>La app necesita tu ubicación para registrar la posición GPS de los activos durante las inspecciones de campo.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>La app usa tu ubicación para geolocalizar activos fijos durante el trabajo de campo.</string>
+
+    <!-- CU-40: Galería / Almacenamiento (guardar imágenes de diagnóstico) -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>La app accede a la galería para adjuntar fotos existentes de activos al diagnóstico IA.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>La app guarda imágenes de diagnóstico en tu galería para referencia futura.</string>
+
+    <!-- CU-44: Notificaciones push -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>remote-notification</string>
+        <string>fetch</string>
+    </array>
+
+    <!-- Configuración general -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>es</string>
+    <key>CFBundleDisplayName</key>
+    <string>Activos Fijos</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.uagrm.activosfijos</string>
+    <key>CFBundleName</key>
+    <string>MovilActivosFijos</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+</dict>
+</plist>

@@ -1,0 +1,51 @@
+import axios from "axios";
+import Config from "react-native-config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const BASE_URL = Config.MS3_BASE_URL ?? "http://10.0.2.2:3000/api";
+
+const http = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+  headers: { "Content-Type": "application/json" },
+});
+
+http.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+/** CU-43: Enviar reporte de problema a MS3 (dispara flujo N8N → WhatsApp/email) */
+async function reportarProblema(params: {
+  activoId: string;
+  activoCodigo: string;
+  descripcion: string;
+  latitud?: number;
+  longitud?: number;
+}): Promise<{ ticketId: string; mensaje: string }> {
+  const { data } = await http.post("/webhook/reportar-problema", params);
+  return data;
+}
+
+/** CU-44: Registrar token FCM para notificaciones push */
+async function registrarTokenPush(
+  usuarioId: string,
+  token: string,
+): Promise<void> {
+  await http.post("/notificaciones/registrar-token", { usuarioId, token });
+}
+
+/** CU-44: Consultar notificaciones del usuario desde MS3 */
+async function getNotificaciones(usuarioId: string): Promise<any[]> {
+  const { data } = await http.get(`/notificaciones?usuarioId=${usuarioId}`);
+  return data;
+}
+
+export const ms3Service = {
+  reportarProblema,
+  registrarTokenPush,
+  getNotificaciones,
+};

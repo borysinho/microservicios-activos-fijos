@@ -22,8 +22,8 @@
 | --------- | ------------------------------------------ | ------------------------------------------- | -------------- |
 | **IT-C1** | MS1 completo + Frontend Módulos 1-3        | CU-01 a CU-25, CU-46 a CU-53, CU-75 a CU-81 | 🔄 En progreso |
 | **IT-C2** | MS2 Gestión Documental + Frontend Módulo 4 | CU-26 a CU-33                               | ✅ Completada  |
-| **IT-C3** | MS2 IA/ML + Frontend Módulos 8-9           | CU-35, CU-36, CU-54 a CU-66                 | ⏳ Pendiente   |
-| **IT-C4** | App Móvil completa                         | CU-34, CU-37 a CU-45                        | ⏳ Pendiente   |
+| **IT-C3** | MS2 IA/ML + Frontend Módulos 8-9           | CU-35, CU-36, CU-54 a CU-66                 | ✅ Completada  |
+| **IT-C4** | App Móvil completa                         | CU-34, CU-37 a CU-45                        | ✅ Completada  |
 | **IT-C5** | MS3 Automatización + Integración total     | CU-67 a CU-74                               | ⏳ Pendiente   |
 
 ---
@@ -216,63 +216,63 @@ Implementar los modelos de Deep Learning (CNN) y Machine Learning (Random Forest
 
 **MS2 — Módulo IA**
 
-- [ ] `IAController` — endpoint `POST /diagnostico/imagen`
-- [ ] `DiagnosticoIAService` — orquesta el proceso CNN
-- [ ] `ModelLoader` — carga y gestiona los modelos entrenados
-- [ ] `CNN_EstadoActivo` — modelo TensorFlow/Keras para clasificar estado
+- [x] `IAController` — endpoint `POST /diagnostico/imagen`
+- [x] `DiagnosticoIAService` — orquesta el proceso CNN
+- [x] `ModelLoader` — carga y gestiona los modelos entrenados
+- [x] `CNN_EstadoActivo` — modelo TensorFlow/Keras para clasificar estado
   - Clases: `BUENO`, `DETERIORADO`, `REQUIERE_MANTENIMIENTO`
   - Input: imagen 224×224 RGB
   - Output: `{ estado, confianza, detalle }`
-- [ ] Persistencia del diagnóstico en DynamoDB + imagen en S3
+- [x] Persistencia del diagnóstico en DynamoDB + imagen en S3
 
 **MS2 — Módulo ML**
 
-- [ ] `MLController` — endpoints `GET /ml/prediccion-vida-util` y `GET /ml/clustering`
-- [ ] `MLService` — orquesta los modelos
-- [ ] `RandomForest_VidaUtil` — modelo scikit-learn
+- [x] `MLController` — endpoints `GET /ml/prediccion-vida-util` y `GET /ml/clustering`
+- [x] `MLService` — orquesta los modelos
+- [x] `RandomForest_VidaUtil` — modelo scikit-learn
   - Features: edad, n_mantenimientos, categoria_encoded, diagnosticos_historicos
   - Target: meses_restantes (regresión) + riesgo_fallo (clasificación)
-- [ ] `KMeans_Clustering` — modelo scikit-learn
+- [x] `KMeans_Clustering` — modelo scikit-learn
   - Features: frecuencia_mantenimiento, vida_util_pct, n_fallas, categoria
   - Output: grupo (Alto riesgo / Normal / Eficiente) + centroide
 
 **CUs a implementar en IT-C3**
 
-- [ ] CU-35: Enviar imagen al MS2 para diagnóstico CNN (endpoint)
-- [ ] CU-36: Procesar imagen con CNN y retornar diagnóstico
-- [ ] CU-54: Dashboard BI con KPIs completo (ya parcialmente en MS1)
-- [ ] CU-55: Total de activos y valor total en libros (MS1 GraphQL)
-- [ ] CU-56: Depreciación acumulada por categoría y área
-- [ ] CU-57: Distribución de activos por estado
-- [ ] CU-58: Tendencia de adquisiciones por año
-- [ ] CU-59: Proyección de vida útil de activos críticos
-- [ ] CU-60: Exportar reporte BI en PDF
-- [ ] CU-61: Predicción de vida útil restante (Random Forest regresión)
-- [ ] CU-62: Probabilidad de fallo próximo (Random Forest clasificación)
-- [ ] CU-63: Clustering de activos por patrones (K-Means)
-- [ ] CU-64: Consultar resultado de predicción en ficha del activo
-- [ ] CU-65: Recomendación de mantenimiento preventivo
-- [ ] CU-66: Visualizar grupos de clustering con etiquetas
+- [x] CU-35: Enviar imagen al MS2 para diagnóstico CNN (endpoint)
+- [x] CU-36: Procesar imagen con CNN y retornar diagnóstico
+- [x] CU-54: Dashboard BI con KPIs completo (ya parcialmente en MS1)
+- [x] CU-55: Total de activos y valor total en libros (MS1 GraphQL)
+- [x] CU-56: Depreciación acumulada por categoría y área
+- [x] CU-57: Distribución de activos por estado
+- [x] CU-58: Tendencia de adquisiciones por año
+- [x] CU-59: Proyección de vida útil de activos críticos
+- [x] CU-60: Exportar reporte BI en PDF
+- [x] CU-61: Predicción de vida útil restante (Random Forest regresión)
+- [x] CU-62: Probabilidad de fallo próximo (Random Forest clasificación)
+- [x] CU-63: Clustering de activos por patrones (K-Means)
+- [x] CU-64: Consultar resultado de predicción en ficha del activo
+- [x] CU-65: Recomendación de mantenimiento preventivo
+- [x] CU-66: Visualizar grupos de clustering con etiquetas
 
 **Frontend — Módulos 8 y 9**
 
-- [ ] Página: Dashboard BI completo con gráficas Chart.js
+- [x] Página: Dashboard BI completo con gráficas Chart.js
   - Donut: distribución por estado
   - Barras: activos por categoría y por área
   - Línea: tendencia de adquisiciones
   - KPI cards: total activos, valor libros, depreciación, alertas
-- [ ] Página: Análisis predictivo ML
+- [x] Página: Análisis predictivo ML
   - Predicción individual por activo
   - Visualización de clustering (scatter plot o tabla de grupos)
   - Recomendaciones automáticas
 
 ### Criterios de éxito IT-C3
 
-- [ ] El endpoint `/diagnostico/imagen` recibe una imagen y retorna estado + confianza
-- [ ] El endpoint `/ml/prediccion-vida-util` retorna meses restantes y riesgo
-- [ ] El endpoint `/ml/clustering` retorna activos agrupados con etiquetas
-- [ ] El dashboard BI muestra gráficas con datos reales del sistema
-- [ ] La exportación a PDF genera un reporte descargable
+- [x] El endpoint `/diagnostico/imagen` recibe una imagen y retorna estado + confianza
+- [x] El endpoint `/ml/prediccion-vida-util` retorna meses restantes y riesgo
+- [x] El endpoint `/ml/clustering` retorna activos agrupados con etiquetas
+- [x] El dashboard BI muestra gráficas con datos reales del sistema
+- [x] La exportación a PDF genera un reporte descargable
 
 ---
 
@@ -286,50 +286,49 @@ Implementar la aplicación móvil completa para el Responsable de Área, con cá
 
 **React Native (Expo o CLI)**
 
-- [ ] Proyecto en `/mobile/`
-- [ ] Navegación con React Navigation (Stack + Bottom Tabs)
-- [ ] Autenticación JWT con AsyncStorage
-- [ ] HTTP client configurado (Axios)
+- [x] Proyecto en `/mobile/` (React Native 0.75.4 CLI)
+- [x] Navegación con React Navigation (Stack + Bottom Tabs)
+- [x] Autenticación JWT con AsyncStorage
+- [x] HTTP client configurado (Axios)
 
 **Pantallas**
 
-- [ ] `LoginScreen` — autenticación contra MS1
-- [ ] `HomeScreen` — resumen de activos del área
-- [ ] `ActivosScreen` — lista de activos asignados (offline-first)
-- [ ] `ActivoDetailScreen` — detalle de activo con historial
-- [ ] `CameraScreen` — cámara para capturar foto del activo
-- [ ] `DiagnosticoScreen` — resultado del diagnóstico CNN
-- [ ] `MapScreen` — geolocalización del activo con GPS
-- [ ] `ReportarScreen` — reportar problema (integra WhatsApp)
-- [ ] `NotificacionesScreen` — alertas y notificaciones push
+- [x] `LoginScreen` — autenticación contra MS1
+- [x] `ActivosScreen` — lista de activos asignados (offline-first, integra HomeScreen)
+- [x] `ActivoDetalleScreen` — detalle de activo con historial y acciones
+- [x] `DiagnosticoIAScreen` — cámara para capturar foto + envío a MS2
+- [x] `ResultadoDiagnosticoScreen` — resultado del diagnóstico CNN
+- [x] `MapaScreen` — geolocalización del activo con GPS
+- [x] `NotificacionesScreen` — alertas y notificaciones push
+- [x] Reporte WhatsApp integrado en `ActivoDetalleScreen` (CU-43)
 
 **Servicios nativos**
 
-- [ ] Cámara: `react-native-camera` o `expo-camera`
-- [ ] GPS: `expo-location` o `react-native-geolocation-service`
-- [ ] Almacenamiento offline: `AsyncStorage` + sincronización
-- [ ] Notificaciones push: Firebase Cloud Messaging (FCM)
+- [x] Cámara: `react-native-vision-camera`
+- [x] GPS: `react-native-geolocation-service`
+- [x] Almacenamiento offline: `AsyncStorage` + sincronización automática
+- [x] Notificaciones push: Firebase Cloud Messaging (FCM) — `@react-native-firebase/messaging`
 
 **CUs a implementar en IT-C4**
 
-- [ ] CU-34: Fotografiar activo con cámara del dispositivo
-- [ ] CU-37: Guardar imagen y diagnóstico en historial del activo
-- [ ] CU-38: Consultar historial de diagnósticos anteriores
-- [ ] CU-39: Solicitar orden de mantenimiento desde el diagnóstico
-- [ ] CU-40: Consultar activos asignados al área (modo offline)
-- [ ] CU-41: Ver detalle de activo en campo
-- [ ] CU-42: Geolocalizar activo y registrar coordenadas GPS
-- [ ] CU-43: Reportar problema o solicitar revisión (WhatsApp)
-- [ ] CU-44: Recibir notificación push de alerta de mantenimiento
-- [ ] CU-45: Sincronizar datos offline al recuperar conexión
+- [x] CU-34: Fotografiar activo con cámara del dispositivo
+- [x] CU-37: Guardar imagen y diagnóstico en historial del activo
+- [x] CU-38: Consultar historial de diagnósticos anteriores
+- [x] CU-39: Solicitar orden de mantenimiento desde el diagnóstico
+- [x] CU-40: Consultar activos asignados al área (modo offline)
+- [x] CU-41: Ver detalle de activo en campo
+- [x] CU-42: Geolocalizar activo y registrar coordenadas GPS
+- [x] CU-43: Reportar problema o solicitar revisión (WhatsApp)
+- [x] CU-44: Recibir notificación push de alerta de mantenimiento
+- [x] CU-45: Sincronizar datos offline al recuperar conexión
 
 ### Criterios de éxito IT-C4
 
-- [ ] El responsable puede ver sus activos asignados sin conexión
-- [ ] La cámara captura una foto y la envía a MS2, mostrando el diagnóstico
-- [ ] El GPS registra la ubicación del activo en la ficha
-- [ ] El botón de reporte abre WhatsApp con mensaje preformateado
-- [ ] Al recuperar conexión, los datos locales se sincronizan con MS1
+- [x] El responsable puede ver sus activos asignados sin conexión
+- [x] La cámara captura una foto y la envía a MS2, mostrando el diagnóstico
+- [x] El GPS registra la ubicación del activo en la ficha
+- [x] El botón de reporte abre WhatsApp con mensaje preformateado
+- [x] Al recuperar conexión, los datos locales se sincronizan con MS1
 
 ---
 
