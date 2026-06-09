@@ -14,7 +14,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -97,7 +99,12 @@ public class BlockchainService {
     }
 
     private String generarHashLocal(String payload) {
-        return "0x" + Integer.toHexString(payload.hashCode()).toUpperCase()
-                .repeat(4).substring(0, 64);
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return "0x" + HexFormat.of().formatHex(digest.digest(payload.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            return "0x" + UUID.nameUUIDFromBytes(payload.getBytes(StandardCharsets.UTF_8)).toString().replace("-", "")
+                    + UUID.nameUUIDFromBytes(("fallback:" + payload).getBytes(StandardCharsets.UTF_8)).toString().replace("-", "");
+        }
     }
 }

@@ -13,7 +13,8 @@ export interface PendingOperation {
   tipo:
     | "actualizar_ubicacion"
     | "registrar_diagnostico"
-    | "solicitar_mantenimiento";
+    | "solicitar_mantenimiento"
+    | "reportar_problema";
   payload: Record<string, unknown>;
   timestamp: string;
 }

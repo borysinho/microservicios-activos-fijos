@@ -114,6 +114,7 @@ a { color: var(--accent); text-decoration: none; }
   &:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
   &::placeholder { color: var(--text-muted); }
   option { background: var(--bg-raised); }
+  &--xs { min-width: 140px; padding: .3rem .5rem; font-size: 12px; }
 }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 

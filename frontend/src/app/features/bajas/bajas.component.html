@@ -39,6 +39,7 @@
         <th>Valor Residual</th>
         <th>N° Resolución</th>
         <th>Autorizado Por</th>
+        <th>Estado</th>
         <th>Acción</th>
       </tr>
     </thead>
@@ -52,7 +53,18 @@
         <td>{{ b.numeroResolucion || '—' }}</td>
         <td>{{ b.autorizadoPor.username }}</td>
         <td>
-          <button class="btn btn--sm btn--outline" (click)="generarActaPDF(b)" title="Generar Acta PDF">
+          <span [class]="b.autorizada ? 'badge badge--success' : 'badge badge--warning'">
+            {{ b.autorizada ? 'Autorizada' : 'Pendiente' }}
+          </span>
+        </td>
+        <td>
+          @if (!b.autorizada) {
+          <button class="btn btn--sm btn--primary" (click)="autorizar(b)" [disabled]="saving()">
+            Autorizar
+          </button>
+          }
+          <button class="btn btn--sm btn--outline" (click)="generarActaPDF(b)" [disabled]="!b.autorizada"
+            title="Generar Acta PDF">
             🖨 Acta PDF
           </button>
         </td>

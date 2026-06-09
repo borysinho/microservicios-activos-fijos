@@ -40,4 +40,8 @@ public class Baja {
 
     @Column(name = "numero_resolucion", length = 100)
     private String numeroResolucion;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean autorizada = false;
 }

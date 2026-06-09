@@ -14,6 +14,7 @@ import LoginScreen from "../screens/LoginScreen";
 import ActivosScreen from "../screens/ActivosScreen";
 import ActivoDetalleScreen from "../screens/ActivoDetalleScreen";
 import DiagnosticoIAScreen from "../screens/DiagnosticoIAScreen";
+import HerramientasScreen from "../screens/HerramientasScreen";
 import MapaScreen from "../screens/MapaScreen";
 import NotificacionesScreen from "../screens/NotificacionesScreen";
 import ResultadoDiagnosticoScreen from "../screens/ResultadoDiagnosticoScreen";
@@ -45,6 +46,17 @@ function MainTabs() {
           tabBarLabel: "Activos",
           tabBarIcon: ({ color }) => (
             <Text style={{ color, fontSize: 20 }}>📋</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Herramientas"
+        component={HerramientasScreen}
+        options={{
+          title: "Herramientas de Campo",
+          tabBarLabel: "Campo",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>🧰</Text>
           ),
         }}
       />

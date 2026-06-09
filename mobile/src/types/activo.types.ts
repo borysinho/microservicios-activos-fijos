@@ -136,5 +136,6 @@ export type RootStackParamList = {
 
 export type BottomTabParamList = {
   Activos: undefined;
+  Herramientas: undefined;
   Notificaciones: undefined;
 };

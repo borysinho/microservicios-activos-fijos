@@ -1,10 +1,20 @@
 import { Alert, PermissionsAndroid, Platform } from "react-native";
-import messaging, {
+import { getApp } from "@react-native-firebase/app";
+import {
+  AuthorizationStatus,
   FirebaseMessagingTypes,
+  getMessaging,
+  getToken,
+  onMessage,
+  onTokenRefresh,
+  registerDeviceForRemoteMessages,
+  requestPermission as requestMessagingPermission,
 } from "@react-native-firebase/messaging";
 import { offlineCache } from "./offlineCache";
 import { ms3Service } from "./ms3Service";
 import type { Notificacion } from "../types/activo.types";
+
+const firebaseMessaging = getMessaging(getApp());
 
 function mapRemoteMessage(
   message: FirebaseMessagingTypes.RemoteMessage,
@@ -54,10 +64,11 @@ async function requestPermission(): Promise<boolean> {
     return false;
   }
 
-  const authorizationStatus = await messaging().requestPermission();
+  const authorizationStatus =
+    await requestMessagingPermission(firebaseMessaging);
   return (
-    authorizationStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-    authorizationStatus === messaging.AuthorizationStatus.PROVISIONAL
+    authorizationStatus === AuthorizationStatus.AUTHORIZED ||
+    authorizationStatus === AuthorizationStatus.PROVISIONAL
   );
 }
 
@@ -72,14 +83,14 @@ async function registerDeviceToken(): Promise<string | null> {
     return null;
   }
 
-  await messaging().registerDeviceForRemoteMessages();
-  const token = await messaging().getToken();
+  await registerDeviceForRemoteMessages(firebaseMessaging);
+  const token = await getToken(firebaseMessaging);
   await ms3Service.registrarTokenPush(session.usuario.id, token);
   return token;
 }
 
 function listenTokenRefresh(): () => void {
-  return messaging().onTokenRefresh(async (token) => {
+  return onTokenRefresh(firebaseMessaging, async (token) => {
     const session = await offlineCache.loadSession();
     if (session) {
       await ms3Service.registrarTokenPush(session.usuario.id, token);
@@ -91,7 +102,7 @@ function listenForegroundMessages(
   onNotification?: (notification: Notificacion) => void,
   options: { showAlert?: boolean } = {},
 ): () => void {
-  return messaging().onMessage(async (message) => {
+  return onMessage(firebaseMessaging, async (message) => {
     const showAlert = options.showAlert ?? true;
     const notification = mapRemoteMessage(message);
     onNotification?.(notification);

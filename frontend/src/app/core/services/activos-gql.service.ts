@@ -269,6 +269,32 @@ export class ActivosGqlService {
       .pipe(map((r) => r.data!.darDeBajaActivo));
   }
 
+  registrarBaja(input: {
+    activoId: string;
+    autorizadoPorId: string;
+    motivo: string;
+    valorResidual?: number;
+    numeroResolucion?: string;
+  }): Observable<Baja> {
+    return this.apollo
+      .mutate<{ registrarBajaActivo: Baja }>({
+        mutation: Q.REGISTRAR_BAJA,
+        variables: { input },
+        refetchQueries: [{ query: Q.GET_BAJAS }, { query: Q.GET_ACTIVOS }],
+      })
+      .pipe(map((r) => r.data!.registrarBajaActivo));
+  }
+
+  autorizarBaja(bajaId: string, autorizadoPorId: string): Observable<Baja> {
+    return this.apollo
+      .mutate<{ autorizarBajaActivo: Baja }>({
+        mutation: Q.AUTORIZAR_BAJA,
+        variables: { bajaId, autorizadoPorId },
+        refetchQueries: [{ query: Q.GET_BAJAS }, { query: Q.GET_ACTIVOS }],
+      })
+      .pipe(map((r) => r.data!.autorizarBajaActivo));
+  }
+
   // ── Usuarios ─────────────────────────────────────────────────────────────
 
   getUsuarios(): Observable<Usuario[]> {
@@ -297,7 +323,7 @@ export class ActivosGqlService {
 
   actualizarUsuario(
     id: string,
-    input: { username: string; email: string; password: string; rol: string },
+    input: { username: string; email: string; password?: string; rol: string },
   ): Observable<Usuario> {
     return this.apollo
       .mutate<{ actualizarUsuario: Usuario }>({

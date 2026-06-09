@@ -9,7 +9,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  Linking,
   Platform,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -17,9 +16,11 @@ import type {
   RootStackParamList,
   Activo,
   DiagnosticoIA,
+  PrediccionVidaUtil,
 } from "../types/activo.types";
 import { ms1Service } from "../services/ms1Service";
 import { ms2Service } from "../services/ms2Service";
+import { ms3Service } from "../services/ms3Service";
 import { offlineCache } from "../services/offlineCache";
 import { useGPS } from "../hooks/useGPS";
 
@@ -48,6 +49,19 @@ async function guardarUbicacionPendiente(
   });
 }
 
+async function guardarReportePendiente(params: {
+  activoId: string;
+  activoCodigo: string;
+  descripcion: string;
+  latitud?: number;
+  longitud?: number;
+}): Promise<void> {
+  await offlineCache.enqueuePendingOp({
+    tipo: "reportar_problema",
+    payload: params,
+  });
+}
+
 export default function ActivoDetalleScreen({ route, navigation }: Props) {
   const { activoId } = route.params;
   const { obtenerUbicacion, cargando: gpsLoading } = useGPS();
@@ -55,10 +69,15 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
   const [historialDiagnosticos, setHistorialDiagnosticos] = useState<
     DiagnosticoIA[]
   >([]);
+  const [prediccionVidaUtil, setPrediccionVidaUtil] =
+    useState<PrediccionVidaUtil | null>(null);
   const [cargando, setCargando] = useState(true);
   const [guardandoUbicacion, setGuardandoUbicacion] = useState(false);
   const [modalMantenimiento, setModalMantenimiento] = useState(false);
   const [descripcionMantenimiento, setDescripcionMantenimiento] = useState("");
+  const [modalProblema, setModalProblema] = useState(false);
+  const [descripcionProblema, setDescripcionProblema] = useState("");
+  const [enviandoReporte, setEnviandoReporte] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
@@ -67,8 +86,12 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
         const historial = await ms2Service
           .getHistorialDiagnosticos(activoId)
           .catch(() => []);
+        const prediccion = await ms1Service
+          .getPrediccionVidaUtil(activoId)
+          .catch(() => null);
         setActivo(data);
         setHistorialDiagnosticos(historial);
+        setPrediccionVidaUtil(prediccion);
       } catch {
         const cached = await cargarActivoDesdeCache(activoId);
         if (cached) {
@@ -144,25 +167,42 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
     }
   };
 
-  /** CU-43: Reportar problema vía WhatsApp */
+  /** CU-43: Reportar problema vía MS3 para disparar el flujo N8N */
   const handleReportarProblema = () => {
+    setDescripcionProblema("");
+    setModalProblema(true);
+  };
+
+  const enviarReporteProblema = async (descripcion: string) => {
     if (!activo) {
       return;
     }
-    const mensaje = encodeURIComponent(
-      `🔧 Reporte de problema\nActivo: ${activo.nombre}\nCódigo: ${activo.codigo}\nDescripción: `,
-    );
-    const url = `whatsapp://send?text=${mensaje}`;
-    Linking.canOpenURL(url).then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        Alert.alert(
-          "WhatsApp no disponible",
-          "Instala WhatsApp para reportar problemas.",
-        );
-      }
-    });
+
+    setEnviandoReporte(true);
+    const payload = {
+      activoId,
+      activoCodigo: activo.codigo,
+      descripcion,
+      latitud: activo.latitud,
+      longitud: activo.longitud,
+    };
+
+    try {
+      const respuesta = await ms3Service.reportarProblema(payload);
+      Alert.alert(
+        "Reporte enviado",
+        respuesta.mensaje ??
+          "MS3 recibio el reporte y activara el flujo WhatsApp/N8N/email.",
+      );
+    } catch {
+      await guardarReportePendiente(payload);
+      Alert.alert(
+        "Sin conexión",
+        "El reporte se sincronizara con MS3 al recuperar la conexion.",
+      );
+    } finally {
+      setEnviandoReporte(false);
+    }
   };
 
   /** CU-39: Solicitar orden de mantenimiento */
@@ -270,6 +310,56 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
         </View>
       </Modal>
 
+      <Modal
+        visible={modalProblema}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalProblema(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitulo}>Reportar problema</Text>
+            <Text style={styles.modalSubtitulo}>
+              Describe lo observado en campo:
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              value={descripcionProblema}
+              onChangeText={setDescripcionProblema}
+              placeholder="Ej: Ruido anormal, golpe visible, pieza suelta..."
+              placeholderTextColor="#90A4AE"
+              multiline
+              numberOfLines={3}
+            />
+            <View style={styles.modalBotones}>
+              <TouchableOpacity
+                style={styles.modalBtnCancelar}
+                onPress={() => setModalProblema(false)}
+                disabled={enviandoReporte}
+              >
+                <Text style={styles.modalBtnCancelarTexto}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalBtnEnviar,
+                  enviandoReporte && styles.btnDeshabilitado,
+                ]}
+                onPress={async () => {
+                  if (!descripcionProblema.trim()) {
+                    return;
+                  }
+                  setModalProblema(false);
+                  await enviarReporteProblema(descripcionProblema);
+                }}
+                disabled={enviandoReporte}
+              >
+                <Text style={styles.modalBtnEnviarTexto}>Enviar a MS3</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={styles.encabezado}>
         <Text style={styles.codigo}>{activo.codigo}</Text>
         <Text style={styles.nombre}>{activo.nombre}</Text>
@@ -324,6 +414,41 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
           <Text style={styles.diagFecha}>
             {new Date(ultimoDiag.fechaDiagnostico).toLocaleString("es-BO")}
           </Text>
+        </View>
+      )}
+
+      {prediccionVidaUtil && (
+        <View style={styles.seccion}>
+          <Text style={styles.tituloSeccion}>Predicción de Vida Útil</Text>
+          <View style={styles.prediccionBar}>
+            <View
+              style={[
+                styles.prediccionRelleno,
+                {
+                  width: `${Math.min(
+                    prediccionVidaUtil.porcentajeDepreciado,
+                    100,
+                  ).toFixed(0)}%` as any,
+                },
+              ]}
+            />
+          </View>
+          <InfoFila
+            label="Depreciación"
+            valor={`${prediccionVidaUtil.porcentajeDepreciado.toFixed(1)}%`}
+          />
+          <InfoFila
+            label="Vida restante"
+            valor={`${prediccionVidaUtil.aniosRestantes} años / ${prediccionVidaUtil.mesesRestantes} meses`}
+          />
+          <InfoFila
+            label="Estado ML"
+            valor={
+              prediccionVidaUtil.estaDepreciadoCompletamente
+                ? "Depreciado completamente"
+                : "Con vida útil disponible"
+            }
+          />
         </View>
       )}
 
@@ -384,7 +509,7 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
           style={[styles.btnAccion, styles.btnAccionVerde]}
           onPress={handleReportarProblema}
         >
-          <Text style={styles.btnAccionTexto}>📲 Reportar por WhatsApp</Text>
+          <Text style={styles.btnAccionTexto}>📲 Reportar problema MS3</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -482,6 +607,19 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   diagFecha: { fontSize: 12, color: "#90A4AE" },
+  prediccionBar: {
+    width: "100%",
+    height: 10,
+    backgroundColor: "#ECEFF1",
+    borderRadius: 5,
+    marginBottom: 10,
+    overflow: "hidden",
+  },
+  prediccionRelleno: {
+    height: 10,
+    backgroundColor: "#1565C0",
+    borderRadius: 5,
+  },
   sinDatos: { fontSize: 14, color: "#90A4AE", fontStyle: "italic" },
   btnPrimario: {
     backgroundColor: "#1565C0",

@@ -76,6 +76,18 @@
         </td>
         @if (isAdmin) {
         <td>
+          <button class="btn btn--ghost btn--sm" (click)="openEditarUsuario(u)" title="Editar usuario">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button class="btn btn--ghost btn--sm" (click)="restablecerPassword(u)" title="Restablecer contraseña">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78z" />
+              <path d="M15.5 7.5L19 4" />
+            </svg>
+          </button>
           <button class="btn btn--ghost btn--sm" (click)="toggleUsuario(u)"
             [title]="u.activo ? 'Desactivar usuario' : 'Activar usuario'">
             @if (u.activo) {
@@ -218,12 +230,12 @@
 }
 }
 
-<!-- ======== MODAL: Nuevo Usuario ======== -->
+<!-- ======== MODAL: Usuario ======== -->
 @if (showUsuarioModal()) {
 <div class="overlay" (click)="showUsuarioModal.set(false)">
   <div class="modal modal--sm" (click)="$event.stopPropagation()">
     <div class="modal__header">
-      <h3>Nuevo usuario</h3>
+      <h3>{{ editingUsuarioId() ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
       <button class="btn btn--ghost btn--icon" (click)="showUsuarioModal.set(false)">✕</button>
     </div>
     <div class="modal__body">
@@ -237,9 +249,9 @@
           <input class="form-control" type="email" [(ngModel)]="formUsuario.email" placeholder="j@empresa.bo">
         </div>
         <div class="form-group form-group--full">
-          <label>Contraseña *</label>
+          <label>{{ editingUsuarioId() ? 'Nueva contraseña' : 'Contraseña *' }}</label>
           <input class="form-control" type="password" [(ngModel)]="formUsuario.password"
-            placeholder="Mínimo 6 caracteres">
+            [placeholder]="editingUsuarioId() ? 'Dejar vacío para conservar' : 'Mínimo 6 caracteres'">
         </div>
         <div class="form-group form-group--full">
           <label>Rol *</label>
@@ -254,8 +266,8 @@
     <div class="modal__footer">
       <button class="btn btn--secondary" (click)="showUsuarioModal.set(false)">Cancelar</button>
       <button class="btn btn--primary" (click)="guardarUsuario()"
-        [disabled]="saving() || !formUsuario.username || !formUsuario.email || !formUsuario.password">
-        {{ saving() ? 'Guardando...' : 'Crear usuario' }}
+        [disabled]="saving() || !formUsuario.username || !formUsuario.email || (!editingUsuarioId() && !formUsuario.password)">
+        {{ saving() ? 'Guardando...' : (editingUsuarioId() ? 'Actualizar usuario' : 'Crear usuario') }}
       </button>
     </div>
   </div>

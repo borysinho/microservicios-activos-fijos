@@ -10,5 +10,6 @@ import { WebhooksService } from './webhooks.service';
   imports: [FlujosModule, Ms1ClientModule, Ms2ClientModule, NotificacionesModule],
   controllers: [WebhooksController, WebhookCompatController],
   providers: [WebhooksService],
+  exports: [WebhooksService],
 })
 export class WebhooksModule {}

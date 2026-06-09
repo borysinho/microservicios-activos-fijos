@@ -634,6 +634,7 @@ public class DataInitializer implements CommandLineRunner {
                                 + "Equipo sin posibilidad de actualización ni valor de reventa.")
                         .valorResidual(BigDecimal.ZERO)
                         .numeroResolucion("RES-TI-2023-001")
+                        .autorizada(true)
                         .build());
                 log.info("DataInitializer: baja registrada para EQ-2018-004 (Switch Cisco 2960-X)");
             }

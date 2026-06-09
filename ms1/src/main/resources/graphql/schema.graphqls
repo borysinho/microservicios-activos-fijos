@@ -119,6 +119,7 @@ type Baja {
   motivo: String!
   valorResidual: BigDecimal!
   numeroResolucion: String
+  autorizada: Boolean!
 }
 
 type RegistroBlockchain {
@@ -251,6 +252,7 @@ input ResponsableInput {
 }
 
 input FiltroActivoInput {
+  busqueda: String
   codigo: String
   nombre: String
   estado: EstadoActivo
@@ -263,7 +265,7 @@ input FiltroActivoInput {
 input UsuarioInput {
   username: String!
   email: String!
-  password: String!
+  password: String
   rol: RolUsuario!
 }
 
@@ -321,6 +323,8 @@ type Mutation {
   confirmarRecepcionActivo(trasladoId: ID!): Traslado!
 
   # Bajas
+  registrarBajaActivo(input: BajaInput!): Baja!
+  autorizarBajaActivo(bajaId: ID!, autorizadoPorId: ID!): Baja!
   darDeBajaActivo(input: BajaInput!): Baja!
 
   # Administración de catálogos

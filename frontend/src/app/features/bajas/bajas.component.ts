@@ -83,17 +83,35 @@ export class BajasComponent implements OnInit {
     if (!this.form.activoId || !this.form.autorizadoPorId || !this.form.motivo) return;
     this.saving.set(true);
     this.error.set('');
-    this.gql.darDeBaja(this.form).subscribe({
+    this.gql.registrarBaja(this.form).subscribe({
       next: () => {
         this.saving.set(false);
         this.showModal.set(false);
-        this.success.set('Activo dado de baja correctamente.');
+        this.success.set('Baja registrada. Queda pendiente de autorización.');
         this.cargar();
         setTimeout(() => this.success.set(''), 3000);
       },
       error: (e) => {
         this.saving.set(false);
         this.error.set(e?.message || 'Error.');
+      },
+    });
+  }
+
+  autorizar(baja: Baja): void {
+    if (!baja.autorizadoPor?.id) return;
+    this.saving.set(true);
+    this.error.set('');
+    this.gql.autorizarBaja(baja.id, baja.autorizadoPor.id).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.success.set('Baja autorizada correctamente.');
+        this.cargar();
+        setTimeout(() => this.success.set(''), 3000);
+      },
+      error: (e) => {
+        this.saving.set(false);
+        this.error.set(e?.graphQLErrors?.[0]?.message ?? e?.message ?? 'Error al autorizar baja.');
       },
     });
   }

@@ -34,7 +34,7 @@ export class CategoriasComponent implements OnInit {
     nombre: '',
     descripcion: '',
     metodoDepreciacion: 'LINEAL',
-    tasaDepreciacion: 20,
+    tasaDepreciacion: 0.2,
   };
 
   ngOnInit(): void {
@@ -63,7 +63,7 @@ export class CategoriasComponent implements OnInit {
 
   openNew(): void {
     this.editando.set(null);
-    this.form = { nombre: '', descripcion: '', metodoDepreciacion: 'LINEAL', tasaDepreciacion: 20 };
+    this.form = { nombre: '', descripcion: '', metodoDepreciacion: 'LINEAL', tasaDepreciacion: 0.2 };
     this.showModal.set(true);
   }
 

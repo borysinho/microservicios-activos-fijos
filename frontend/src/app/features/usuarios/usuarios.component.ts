@@ -128,17 +128,52 @@ export class UsuariosComponent implements OnInit {
     this.showUsuarioModal.set(true);
   }
 
+  openEditarUsuario(usuario: Usuario): void {
+    this.editingUsuarioId.set(usuario.id);
+    this.formUsuario = {
+      username: usuario.username,
+      email: usuario.email,
+      password: '',
+      rol: usuario.rol,
+    };
+    this.showUsuarioModal.set(true);
+  }
+
   guardarUsuario(): void {
-    if (!this.formUsuario.username || !this.formUsuario.email || !this.formUsuario.password) return;
+    const id = this.editingUsuarioId();
+    if (!this.formUsuario.username || !this.formUsuario.email || (!id && !this.formUsuario.password)) return;
     this.saving.set(true);
-    this.gql.crearUsuario(this.formUsuario).subscribe({
-      next: () => { this.saving.set(false); this.showUsuarioModal.set(false); },
+    const input = {
+      username: this.formUsuario.username,
+      email: this.formUsuario.email,
+      rol: this.formUsuario.rol,
+      ...(this.formUsuario.password ? { password: this.formUsuario.password } : {}),
+    };
+    const op = id ? this.gql.actualizarUsuario(id, input) : this.gql.crearUsuario(input as any);
+    op.subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.showUsuarioModal.set(false);
+        this.cargarTodo();
+      },
       error: () => { this.saving.set(false); this.error.set('Error al crear usuario.'); },
     });
   }
 
   toggleUsuario(u: Usuario): void {
-    this.gql.toggleUsuario(u.id).subscribe({ error: () => this.error.set('Error al cambiar estado.') });
+    this.gql.toggleUsuario(u.id).subscribe({
+      next: () => this.cargarTodo(),
+      error: () => this.error.set('Error al cambiar estado.'),
+    });
+  }
+
+  restablecerPassword(u: Usuario): void {
+    const nuevaPassword = window.prompt(`Nueva contraseña para ${u.username}`);
+    if (!nuevaPassword) return;
+    this.gql.restablecerPassword(u.id, nuevaPassword).subscribe({
+      next: () => this.cargarTodo(),
+      error: () => this.error.set('Error al restablecer contraseña.'),
+    });
   }
 
   // ── CRUD Áreas ───────────────────────────────────────────────────────────
@@ -161,7 +196,7 @@ export class UsuariosComponent implements OnInit {
     const id = this.editingAreaId();
     const op = id ? this.gql.actualizarArea(id, input) : this.gql.crearArea(input);
     op.subscribe({
-      next: () => { this.saving.set(false); this.showAreaModal.set(false); },
+      next: () => { this.saving.set(false); this.showAreaModal.set(false); this.cargarTodo(); },
       error: () => { this.saving.set(false); this.error.set('Error al guardar área.'); },
     });
   }
@@ -186,7 +221,7 @@ export class UsuariosComponent implements OnInit {
     const id = this.editingRespId();
     const op = id ? this.gql.actualizarResponsable(id, input) : this.gql.crearResponsable(input);
     op.subscribe({
-      next: () => { this.saving.set(false); this.showRespModal.set(false); },
+      next: () => { this.saving.set(false); this.showRespModal.set(false); this.cargarTodo(); },
       error: () => { this.saving.set(false); this.error.set('Error al guardar responsable.'); },
     });
   }
@@ -211,9 +246,8 @@ export class UsuariosComponent implements OnInit {
     const id = this.editingCatId();
     const op = id ? this.gql.actualizarCategoria(id, input) : this.gql.crearCategoria(input);
     op.subscribe({
-      next: () => { this.saving.set(false); this.showCatModal.set(false); },
+      next: () => { this.saving.set(false); this.showCatModal.set(false); this.cargarTodo(); },
       error: () => { this.saving.set(false); this.error.set('Error al guardar categoría.'); },
     });
   }
 }
-

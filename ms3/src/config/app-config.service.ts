@@ -6,6 +6,9 @@ function env(name: string, fallback = ''): string {
 
 @Injectable()
 export class AppConfig {
+  readonly nodeEnv = env('NODE_ENV', 'development');
+  readonly devToolsEnabled = env('MS3_DEV_TOOLS_ENABLED', env('NODE_ENV', 'development') === 'production' ? 'false' : 'true') === 'true';
+
   readonly port = Number(env('PORT', '3000'));
   readonly ms1GraphqlUrl = env('MS1_GRAPHQL_URL', 'http://localhost:8081/graphql');
   readonly ms1TicketsUrl = env('MS1_TICKETS_URL');

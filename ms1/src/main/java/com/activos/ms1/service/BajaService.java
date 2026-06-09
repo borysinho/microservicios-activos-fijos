@@ -28,7 +28,7 @@ public class BajaService {
     private final MS3WebhookClient ms3WebhookClient;
 
     @Transactional
-    public Baja darDeBaja(BajaInput input) {
+    public Baja registrarBaja(BajaInput input) {
         if (bajaRepository.existsByActivoId(input.activoId())) {
             throw new IllegalStateException("El activo ya tiene un registro de baja.");
         }
@@ -49,14 +49,46 @@ public class BajaService {
                 .motivo(input.motivo())
                 .valorResidual(input.valorResidual() != null ? input.valorResidual() : BigDecimal.ZERO)
                 .numeroResolucion(input.numeroResolucion())
+                .autorizada(false)
                 .build();
 
-        activoService.cambiarEstado(activo.getId(), EstadoActivo.DADO_DE_BAJA);
+        return bajaRepository.save(baja);
+    }
+
+    @Transactional
+    public Baja autorizarBaja(UUID bajaId, UUID autorizadoPorId) {
+        var baja = bajaRepository.findById(bajaId)
+                .orElseThrow(() -> new NoSuchElementException("Baja no encontrada: " + bajaId));
+        return autorizarBaja(baja, autorizadoPorId);
+    }
+
+    private Baja autorizarBaja(Baja baja, UUID autorizadoPorId) {
+        if (Boolean.TRUE.equals(baja.getAutorizada())) {
+            return baja;
+        }
+
+        var autorizadoPor = usuarioRepository.findById(autorizadoPorId)
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado: " + autorizadoPorId));
+
+        var activo = baja.getActivo();
+        if (activo.getEstado() == EstadoActivo.DADO_DE_BAJA) {
+            throw new IllegalStateException("El activo ya está dado de baja.");
+        }
+
+        baja.setAutorizadoPor(autorizadoPor);
+        baja.setAutorizada(true);
+        activo.setEstado(EstadoActivo.DADO_DE_BAJA);
 
         var saved = bajaRepository.save(baja);
         blockchainService.registrarTransaccion(activo, TipoTransaccionBlockchain.BAJA);
         ms3WebhookClient.notificarEvento("BAJA", activo.getId(), activo.getCodigo());
         return saved;
+    }
+
+    @Transactional
+    public Baja darDeBaja(BajaInput input) {
+        var baja = registrarBaja(input);
+        return autorizarBaja(baja, input.autorizadoPorId());
     }
 
     public Baja findByActivo(UUID activoId) {

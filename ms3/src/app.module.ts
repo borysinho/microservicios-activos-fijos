@@ -7,6 +7,7 @@ import { Ms2ClientModule } from './ms2-client/ms2-client.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { DevModule } from './dev/dev.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     NotificacionesModule,
     WebhooksModule,
     WhatsappModule,
+    DevModule,
   ],
 })
 export class AppModule {}

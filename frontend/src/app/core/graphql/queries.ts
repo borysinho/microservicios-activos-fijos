@@ -6,6 +6,7 @@ export const GET_ACTIVOS = gql`
       id
       codigo
       nombre
+      descripcion
       estado
       ubicacion
       valorAdquisicion
@@ -84,6 +85,14 @@ export const GET_ACTIVO = gql`
           id
           username
         }
+      }
+      registrosBlockchain {
+        id
+        hash
+        tipoTransaccion
+        bloqueId
+        timestamp
+        payload
       }
     }
   }
@@ -261,10 +270,53 @@ export const DAR_DE_BAJA = gql`
       fecha
       motivo
       valorResidual
+      autorizada
       activo {
         id
         codigo
         nombre
+      }
+    }
+  }
+`;
+
+export const REGISTRAR_BAJA = gql`
+  mutation RegistrarBajaActivo($input: BajaInput!) {
+    registrarBajaActivo(input: $input) {
+      id
+      fecha
+      motivo
+      valorResidual
+      numeroResolucion
+      autorizada
+      activo {
+        id
+        codigo
+        nombre
+      }
+      autorizadoPor {
+        id
+        username
+      }
+    }
+  }
+`;
+
+export const AUTORIZAR_BAJA = gql`
+  mutation AutorizarBajaActivo($bajaId: ID!, $autorizadoPorId: ID!) {
+    autorizarBajaActivo(bajaId: $bajaId, autorizadoPorId: $autorizadoPorId) {
+      id
+      autorizada
+      fecha
+      activo {
+        id
+        codigo
+        nombre
+        estado
+      }
+      autorizadoPor {
+        id
+        username
       }
     }
   }
@@ -583,6 +635,7 @@ export const GET_BAJA_POR_ACTIVO = gql`
       motivo
       valorResidual
       numeroResolucion
+      autorizada
       activo {
         id
         codigo
@@ -604,6 +657,7 @@ export const GET_BAJAS = gql`
       motivo
       valorResidual
       numeroResolucion
+      autorizada
       activo {
         id
         codigo

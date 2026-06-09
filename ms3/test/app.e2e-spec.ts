@@ -17,6 +17,8 @@ describe('MS3 API (e2e)', () => {
       .overrideProvider(AppConfig)
       .useValue({
         port: 3000,
+        nodeEnv: 'test',
+        devToolsEnabled: true,
         corsOrigins: ['*'],
         whatsappVerifyToken: 'verify-token',
         whatsappAppSecret: '',
@@ -136,6 +138,49 @@ describe('MS3 API (e2e)', () => {
         expect(response.body).toEqual({
           ticketId: 'TKT-1',
           mensaje: 'Reporte recibido para ACT-2024-001',
+        });
+      });
+  });
+
+  it('POST /api/dev/simular/whatsapp permite probar el flujo en desarrollo', async () => {
+    await request(app.getHttpServer())
+      .post('/api/dev/simular/whatsapp')
+      .send({
+        from: '59170000000',
+        text: 'Revision local ACT-2024-001',
+      })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body).toMatchObject({
+          recibido: true,
+          codigoActivo: 'ACT-2024-001',
+          ticketId: 'TKT-1',
+        });
+      });
+  });
+
+  it('POST /api/dev/simular/vencimiento-garantia permite probar CU-73 en desarrollo', async () => {
+    await request(app.getHttpServer())
+      .post('/api/dev/simular/vencimiento-garantia')
+      .send({})
+      .expect(201)
+      .expect((response) => {
+        expect(response.body).toMatchObject({
+          enviado: true,
+          flujo: 'alerta-garantia',
+        });
+      });
+  });
+
+  it('POST /api/dev/simular/mantenimiento-programado permite probar CU-74 en desarrollo', async () => {
+    await request(app.getHttpServer())
+      .post('/api/dev/simular/mantenimiento-programado')
+      .send({})
+      .expect(201)
+      .expect((response) => {
+        expect(response.body).toMatchObject({
+          enviado: true,
+          flujo: 'alerta-mantenimiento',
         });
       });
   });

@@ -36,7 +36,7 @@ export default function MapaScreen({ route, navigation }: Props) {
     activoId,
     latitud: latitudInicial,
     longitud: longitudInicial,
-  } = route.params;
+  } = route.params ?? {};
   const mapRef = useRef<MapView>(null);
   const { coords, cargando: gpsLoading, obtenerUbicacion } = useGPS();
   const [guardando, setGuardando] = useState(false);
@@ -44,10 +44,14 @@ export default function MapaScreen({ route, navigation }: Props) {
     lat: number;
     lng: number;
   } | null>(
-    latitudInicial && longitudInicial
+    latitudInicial != null && longitudInicial != null
       ? { lat: latitudInicial, lng: longitudInicial }
       : null,
   );
+
+  useEffect(() => {
+    obtenerUbicacion().catch(() => undefined);
+  }, [obtenerUbicacion]);
 
   useEffect(() => {
     // Centrar el mapa en la ubicación del activo si existe
@@ -61,6 +65,17 @@ export default function MapaScreen({ route, navigation }: Props) {
     }
   }, [ubicacionActivo]);
 
+  useEffect(() => {
+    if (!ubicacionActivo && coords && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: coords.latitud,
+        longitude: coords.longitud,
+        latitudeDelta: 0.008,
+        longitudeDelta: 0.008,
+      });
+    }
+  }, [coords, ubicacionActivo]);
+
   const handleRegistrarUbicacion = async () => {
     setGuardando(true);
     try {
@@ -68,7 +83,16 @@ export default function MapaScreen({ route, navigation }: Props) {
       const session = await offlineCache.loadSession();
 
       if (!activoId) {
-        Alert.alert("Sin activo", "No hay un activo seleccionado para guardar.");
+        mapRef.current?.animateToRegion({
+          latitude: coordenadas.latitud,
+          longitude: coordenadas.longitud,
+          latitudeDelta: 0.008,
+          longitudeDelta: 0.008,
+        });
+        Alert.alert(
+          "Ubicación actual",
+          "Selecciona un activo para registrar estas coordenadas en MS1.",
+        );
         return;
       }
 
@@ -130,6 +154,13 @@ export default function MapaScreen({ route, navigation }: Props) {
         latitudeDelta: 0.008,
         longitudeDelta: 0.008,
       }
+    : coords
+      ? {
+          latitude: coords.latitud,
+          longitude: coords.longitud,
+          latitudeDelta: 0.008,
+          longitudeDelta: 0.008,
+        }
     : {
         latitude: -17.7833, // Santa Cruz de la Sierra (fallback)
         longitude: -63.1821,
@@ -210,7 +241,9 @@ export default function MapaScreen({ route, navigation }: Props) {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.btnTexto}>
-              📍 Registrar ubicación GPS del activo
+              {activoId
+                ? "📍 Registrar ubicación GPS del activo"
+                : "📍 Obtener mi ubicación GPS"}
             </Text>
           )}
         </TouchableOpacity>

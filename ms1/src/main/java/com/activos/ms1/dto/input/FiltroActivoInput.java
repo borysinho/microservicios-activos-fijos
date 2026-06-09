@@ -4,6 +4,7 @@ import com.activos.ms1.entity.enums.EstadoActivo;
 import java.util.UUID;
 
 public record FiltroActivoInput(
+        String busqueda,
         String codigo,
         String nombre,
         EstadoActivo estado,

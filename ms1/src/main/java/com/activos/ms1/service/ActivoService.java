@@ -33,12 +33,16 @@ public class ActivoService {
         if (filtro == null) {
             return activoRepository.findAllActivos();
         }
+        String busqueda = normalizar(filtro.busqueda());
         return activoRepository.findAll().stream()
                 .filter(a -> filtro.estado() == null || a.getEstado() == filtro.estado())
                 .filter(a -> filtro.categoriaId() == null || a.getCategoria().getId().equals(filtro.categoriaId()))
                 .filter(a -> filtro.areaId() == null || (a.getAreaActual() != null && a.getAreaActual().getId().equals(filtro.areaId())))
-                .filter(a -> filtro.codigo() == null || a.getCodigo().contains(filtro.codigo()))
-                .filter(a -> filtro.nombre() == null || a.getNombre().toLowerCase().contains(filtro.nombre().toLowerCase()))
+                .filter(a -> filtro.anioAdquisicionDesde() == null || a.getFechaAdquisicion().getYear() >= filtro.anioAdquisicionDesde())
+                .filter(a -> filtro.anioAdquisicionHasta() == null || a.getFechaAdquisicion().getYear() <= filtro.anioAdquisicionHasta())
+                .filter(a -> esVacio(filtro.codigo()) || contiene(a.getCodigo(), filtro.codigo()))
+                .filter(a -> esVacio(filtro.nombre()) || contiene(a.getNombre(), filtro.nombre()))
+                .filter(a -> esVacio(busqueda) || coincideBusquedaLibre(a, busqueda))
                 .toList();
     }
 
@@ -154,5 +158,24 @@ public class ActivoService {
             throw new IllegalStateException(
                     "Transición de estado inválida: %s → %s".formatted(actual, nuevo));
         }
+    }
+
+    private boolean coincideBusquedaLibre(Activo activo, String busqueda) {
+        return contiene(activo.getCodigo(), busqueda)
+                || contiene(activo.getNombre(), busqueda)
+                || contiene(activo.getDescripcion(), busqueda)
+                || (activo.getCategoria() != null && contiene(activo.getCategoria().getNombre(), busqueda));
+    }
+
+    private boolean contiene(String valor, String busqueda) {
+        return valor != null && valor.toLowerCase().contains(normalizar(busqueda));
+    }
+
+    private String normalizar(String valor) {
+        return valor == null ? "" : valor.trim().toLowerCase();
+    }
+
+    private boolean esVacio(String valor) {
+        return normalizar(valor).isBlank();
     }
 }

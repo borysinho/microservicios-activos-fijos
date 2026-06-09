@@ -27,6 +27,18 @@ public class BajaResolver {
 
     @MutationMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public Baja registrarBajaActivo(@Argument @Valid BajaInput input) {
+        return bajaService.registrarBaja(input);
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public Baja autorizarBajaActivo(@Argument String bajaId, @Argument String autorizadoPorId) {
+        return bajaService.autorizarBaja(UUID.fromString(bajaId), UUID.fromString(autorizadoPorId));
+    }
+
+    @MutationMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public Baja darDeBajaActivo(@Argument @Valid BajaInput input) {
         return bajaService.darDeBaja(input);
     }

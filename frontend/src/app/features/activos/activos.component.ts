@@ -41,6 +41,7 @@ export class ActivosComponent implements OnInit {
   showTrasladarModal = signal(false);
   showBajaModal = signal(false);
   showDetallePanel = signal(false);
+  editingActivoId = signal<string | null>(null);
 
   selectedActivo = signal<Activo | null>(null);
   detalleLoading = signal(false);
@@ -87,6 +88,7 @@ export class ActivosComponent implements OnInit {
   };
 
   readonly estadoOpts = ['ACTIVO', 'EN_MANTENIMIENTO', 'TRANSFERIDO', 'DADO_DE_BAJA'];
+  readonly estadoCambioOpts = ['ACTIVO', 'EN_MANTENIMIENTO', 'TRANSFERIDO'];
 
   ngOnInit(): void {
     this.cargar();
@@ -98,6 +100,10 @@ export class ActivosComponent implements OnInit {
 
   cargar(): void {
     this.loading.set(true);
+    this.filtro = {
+      ...this.filtro,
+      busqueda: this.searchTerm.trim() || undefined,
+    };
     this.gql.getActivos(this.filtro).subscribe({
       next: (data) => {
         this.activos.set(data);
@@ -111,11 +117,7 @@ export class ActivosComponent implements OnInit {
   }
 
   get activosFiltrados(): Activo[] {
-    if (!this.searchTerm) return this.activos();
-    const term = this.searchTerm.toLowerCase();
-    return this.activos().filter(
-      (a) => a.nombre?.toLowerCase().includes(term) || a.codigo?.toLowerCase().includes(term),
-    );
+    return this.activos();
   }
 
   estadoBadge(estado?: string): string {
@@ -191,17 +193,18 @@ export class ActivosComponent implements OnInit {
   }
 
   // ── Registrar activo ─────────────────────────────────────────────────────
-  openModal(): void {
+  openModal(activo?: Activo): void {
+    this.editingActivoId.set(activo?.id ?? null);
     this.form = {
-      codigo: '',
-      nombre: '',
-      descripcion: '',
-      fechaAdquisicion: new Date().toISOString().split('T')[0],
-      valorAdquisicion: 0,
-      vidaUtilAnios: 5,
-      categoriaId: '',
-      areaActualId: '',
-      ubicacion: '',
+      codigo: activo?.codigo ?? '',
+      nombre: activo?.nombre ?? '',
+      descripcion: activo?.descripcion ?? '',
+      fechaAdquisicion: activo?.fechaAdquisicion ?? new Date().toISOString().split('T')[0],
+      valorAdquisicion: activo?.valorAdquisicion ?? 0,
+      vidaUtilAnios: activo?.vidaUtilAnios ?? 5,
+      categoriaId: activo?.categoria?.id ?? '',
+      areaActualId: activo?.areaActual?.id ?? '',
+      ubicacion: activo?.ubicacion ?? '',
     };
     this.showModal.set(true);
   }
@@ -217,15 +220,30 @@ export class ActivosComponent implements OnInit {
       return;
     }
     this.saving.set(true);
-    this.gql.registrarActivo(this.form).subscribe({
+    const editingId = this.editingActivoId();
+    const request = editingId
+      ? this.gql.actualizarActivo(editingId, this.form)
+      : this.gql.registrarActivo(this.form);
+    request.subscribe({
       next: () => {
         this.saving.set(false);
         this.showModal.set(false);
+        this.editingActivoId.set(null);
         this.cargar();
       },
       error: () => {
         this.saving.set(false);
       },
+    });
+  }
+
+  cambiarEstado(activo: Activo, nuevoEstado: string): void {
+    if (nuevoEstado === activo.estado) return;
+    this.error.set('');
+    this.gql.cambiarEstadoActivo(activo.id, nuevoEstado).subscribe({
+      next: () => this.cargar(),
+      error: (e) =>
+        this.error.set(e?.graphQLErrors?.[0]?.message ?? e?.message ?? 'No se pudo cambiar el estado.'),
     });
   }
 

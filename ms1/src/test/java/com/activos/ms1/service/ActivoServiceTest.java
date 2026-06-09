@@ -103,7 +103,7 @@ class ActivoServiceTest {
                 .build();
         when(activoRepository.findAll()).thenReturn(List.of(activo, activoBaja));
 
-        FiltroActivoInput filtro = new FiltroActivoInput(null, null, EstadoActivo.ACTIVO, null, null, null, null);
+        FiltroActivoInput filtro = new FiltroActivoInput(null, null, null, EstadoActivo.ACTIVO, null, null, null, null);
         List<Activo> result = activoService.findAll(filtro);
 
         assertThat(result).hasSize(1);

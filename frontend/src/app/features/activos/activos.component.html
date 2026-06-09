@@ -15,11 +15,17 @@
 <!-- Filtros -->
 <div class="filter-bar card">
   <input class="form-control filter-bar__search" type="text" [(ngModel)]="searchTerm"
-    placeholder="Buscar por nombre o código...">
+    (keyup.enter)="cargar()" placeholder="Buscar por código, nombre o categoría...">
   <select class="form-control" [(ngModel)]="filtro.estado" (change)="cargar()">
     <option [ngValue]="undefined">Todos los estados</option>
     @for (e of estadoOpts; track e) {
     <option [value]="e">{{ estadoLabel(e) }}</option>
+    }
+  </select>
+  <select class="form-control" [(ngModel)]="filtro.categoriaId" (change)="cargar()">
+    <option [ngValue]="undefined">Todas las categorías</option>
+    @for (c of categorias(); track c.id) {
+    <option [value]="c.id">{{ c.nombre }}</option>
     }
   </select>
   <button class="btn btn--secondary" (click)="cargar()">
@@ -64,7 +70,17 @@
       <tr>
         <td><span class="mono">{{ a.codigo }}</span></td>
         <td>{{ a.nombre }}</td>
-        <td><span [class]="estadoBadge(a.estado)">{{ estadoLabel(a.estado) }}</span></td>
+        <td>
+          <select class="form-control form-control--xs" [ngModel]="a.estado"
+            (ngModelChange)="cambiarEstado(a, $event)" [disabled]="a.estado === 'DADO_DE_BAJA'">
+            @for (e of estadoCambioOpts; track e) {
+            <option [value]="e">{{ estadoLabel(e) }}</option>
+            }
+            @if (a.estado === 'DADO_DE_BAJA') {
+            <option value="DADO_DE_BAJA">Dado de baja</option>
+            }
+          </select>
+        </td>
         <td>{{ a.categoria.nombre }}</td>
         <td>{{ a.areaActual?.nombre ?? '—' }}</td>
         <td class="mono">{{ a.valorAdquisicion | currency:'BOB':'symbol':'1.2-2' }}</td>
@@ -75,6 +91,12 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                 <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+            <button class="btn btn--ghost btn--sm" title="Editar activo" (click)="openModal(a)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             </button>
             @if (canAsignar(a)) {
@@ -120,7 +142,7 @@
 <div class="overlay" (click)="showModal.set(false)">
   <div class="modal" (click)="$event.stopPropagation()">
     <div class="modal__header">
-      <h3>Registrar nuevo activo</h3>
+      <h3>{{ editingActivoId() ? 'Editar activo' : 'Registrar nuevo activo' }}</h3>
       <button class="btn btn--ghost btn--icon" (click)="showModal.set(false)">✕</button>
     </div>
     <div class="modal__body">
@@ -177,7 +199,7 @@
       <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
       <button class="btn btn--primary" (click)="guardar()"
         [disabled]="saving() || !form.codigo || !form.nombre || !form.categoriaId">
-        {{ saving() ? 'Guardando...' : 'Registrar activo' }}
+        {{ saving() ? 'Guardando...' : (editingActivoId() ? 'Actualizar activo' : 'Registrar activo') }}
       </button>
     </div>
   </div>

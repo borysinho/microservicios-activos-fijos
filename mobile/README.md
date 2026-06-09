@@ -21,6 +21,7 @@
 | Cámara / Diagnóstico IA | `DiagnosticoIAScreen.tsx`        | CU-34, CU-35, CU-36               |
 | Resultado diagnóstico   | `ResultadoDiagnosticoScreen.tsx` | CU-37                             |
 | Mapa GPS                | `MapaScreen.tsx`                 | CU-42                             |
+| Herramientas de campo   | `HerramientasScreen.tsx`         | Acceso a cámara, GPS, offline, MS3 |
 | Notificaciones          | `NotificacionesScreen.tsx`       | CU-44                             |
 
 ## Instalación
@@ -33,6 +34,18 @@ npx react-native run-android
 cd ios && pod install && cd ..
 npx react-native run-ios
 ```
+
+## Ejecutar en emulador Android
+
+Con el emulador abierto, ejecuta estos dos comandos desde `mobile/`, en dos terminales:
+
+```bash
+npm run start
+npm run android
+```
+
+El primer comando levanta Metro en el puerto `8088`; el segundo instala y abre la app en el emulador.
+Para ahorrar espacio en el AVD, `npm run android` instala solo la arquitectura activa del emulador; las funcionalidades JS de la app se cargan completas desde Metro.
 
 ## Variables de entorno
 

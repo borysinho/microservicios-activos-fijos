@@ -85,7 +85,6 @@ class BajaServiceTest {
         when(bajaRepository.existsByActivoId(activoId)).thenReturn(false);
         when(activoService.findById(activoId)).thenReturn(activo);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(activoService.cambiarEstado(activoId, EstadoActivo.DADO_DE_BAJA)).thenReturn(activo);
         when(bajaRepository.save(any(Baja.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Baja result = bajaService.darDeBaja(input);
@@ -93,6 +92,8 @@ class BajaServiceTest {
         assertThat(result.getMotivo()).isEqualTo("Obsolescencia");
         assertThat(result.getValorResidual()).isEqualByComparingTo("100.00");
         assertThat(result.getNumeroResolucion()).isEqualTo("RES-001");
+        assertThat(result.getAutorizada()).isTrue();
+        assertThat(activo.getEstado()).isEqualTo(EstadoActivo.DADO_DE_BAJA);
         verify(blockchainService).registrarTransaccion(activo, TipoTransaccionBlockchain.BAJA);
         verify(ms3WebhookClient).notificarEvento(eq("BAJA"), eq(activoId), anyString());
     }
@@ -127,7 +128,6 @@ class BajaServiceTest {
         when(bajaRepository.existsByActivoId(activoId)).thenReturn(false);
         when(activoService.findById(activoId)).thenReturn(activo);
         when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
-        when(activoService.cambiarEstado(activoId, EstadoActivo.DADO_DE_BAJA)).thenReturn(activo);
         when(bajaRepository.save(any(Baja.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Baja result = bajaService.darDeBaja(input);
@@ -141,5 +141,47 @@ class BajaServiceTest {
 
         assertThatThrownBy(() -> bajaService.findByActivo(activoId))
                 .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    void registrarBaja_creaBajaPendienteSinBlockchain() {
+        BajaInput input = new BajaInput(activoId, usuarioId, "Pendiente de resolución", null, "RES-002");
+
+        when(bajaRepository.existsByActivoId(activoId)).thenReturn(false);
+        when(activoService.findById(activoId)).thenReturn(activo);
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(bajaRepository.save(any(Baja.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Baja result = bajaService.registrarBaja(input);
+
+        assertThat(result.getAutorizada()).isFalse();
+        assertThat(activo.getEstado()).isEqualTo(EstadoActivo.ACTIVO);
+        verifyNoInteractions(blockchainService);
+        verifyNoInteractions(ms3WebhookClient);
+    }
+
+    @Test
+    void autorizarBaja_pendiente_cambiaEstadoYRegistraBlockchain() {
+        UUID bajaId = UUID.randomUUID();
+        Baja baja = Baja.builder()
+                .id(bajaId)
+                .activo(activo)
+                .autorizadoPor(usuario)
+                .fecha(LocalDate.now())
+                .motivo("Obsolescencia")
+                .valorResidual(BigDecimal.ZERO)
+                .autorizada(false)
+                .build();
+
+        when(bajaRepository.findById(bajaId)).thenReturn(Optional.of(baja));
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(bajaRepository.save(any(Baja.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Baja result = bajaService.autorizarBaja(bajaId, usuarioId);
+
+        assertThat(result.getAutorizada()).isTrue();
+        assertThat(activo.getEstado()).isEqualTo(EstadoActivo.DADO_DE_BAJA);
+        verify(blockchainService).registrarTransaccion(activo, TipoTransaccionBlockchain.BAJA);
+        verify(ms3WebhookClient).notificarEvento(eq("BAJA"), eq(activoId), anyString());
     }
 }

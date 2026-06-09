@@ -81,6 +81,7 @@ export interface Baja {
   motivo: string;
   valorResidual: number;
   numeroResolucion?: string;
+  autorizada: boolean;
 }
 export interface RegistroBlockchain {
   id: string;
@@ -132,6 +133,7 @@ export interface ActivoInput {
   ubicacion?: string;
 }
 export interface FiltroActivoInput {
+  busqueda?: string;
   codigo?: string;
   nombre?: string;
   estado?: EstadoActivo;

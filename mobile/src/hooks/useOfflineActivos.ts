@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import NetInfo, { type NetInfoState } from "@react-native-community/netinfo";
 import { ms1Service } from "../services/ms1Service";
+import { ms3Service } from "../services/ms3Service";
 import { offlineCache } from "../services/offlineCache";
 import type { Activo } from "../types/activo.types";
 
@@ -79,6 +80,15 @@ export function useOfflineActivos(usuarioId: string): UseOfflineActivosReturn {
               op.payload.activoId as string,
               op.payload.descripcion as string,
             );
+            break;
+          case "reportar_problema":
+            await ms3Service.reportarProblema({
+              activoId: op.payload.activoId as string,
+              activoCodigo: op.payload.activoCodigo as string,
+              descripcion: op.payload.descripcion as string,
+              latitud: op.payload.latitud as number | undefined,
+              longitud: op.payload.longitud as number | undefined,
+            });
             break;
         }
         sincronizadas++;

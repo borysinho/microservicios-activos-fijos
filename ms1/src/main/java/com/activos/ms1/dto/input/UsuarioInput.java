@@ -13,7 +13,6 @@ public record UsuarioInput(
         @NotBlank
         @Email
         String email,
-        @NotBlank
         @Size(min = 6)
         String password,
         @NotNull

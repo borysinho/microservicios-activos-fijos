@@ -90,6 +90,9 @@ public class CatalogoResolver {
     @MutationMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public Usuario crearUsuario(@Argument @Valid UsuarioInput input) {
+        if (input.password() == null || input.password().isBlank() || input.password().length() < 6) {
+            throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres.");
+        }
         if (usuarioRepository.existsByUsername(input.username())) {
             throw new IllegalArgumentException("El username '" + input.username() + "' ya existe.");
         }
@@ -114,6 +117,9 @@ public class CatalogoResolver {
         u.setUsername(input.username());
         u.setEmail(input.email());
         u.setRol(input.rol());
+        if (input.password() != null && !input.password().isBlank()) {
+            u.setPasswordHash(passwordEncoder.encode(input.password()));
+        }
         return usuarioRepository.save(u);
     }
 

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "android": "react-native run-android --port 8088 --no-packager --active-arch-only --verbose",
+    "android:full": "react-native run-android --port 8088 --verbose",
     "ios": "react-native run-ios --port 8088",
     "start": "react-native start --port 8088",
     "test": "jest",
