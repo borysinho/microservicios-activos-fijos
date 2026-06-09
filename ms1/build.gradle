@@ -35,7 +35,7 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     // Flyway — migraciones de base de datos
-    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
     implementation 'org.flywaydb:flyway-database-postgresql'
 
     // Web3j — integración blockchain (Ethereum)

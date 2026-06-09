@@ -1,0 +1,10 @@
+.gradle
+build
+out
+target
+.env
+.env.*
+docker-compose.yml
+*.log
+*.tmp
+README.local*

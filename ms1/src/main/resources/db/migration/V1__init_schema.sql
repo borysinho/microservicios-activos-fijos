@@ -4,6 +4,9 @@
 -- Migración inicial — Flyway
 -- =====================================================================
 
+-- Supabase/PostgreSQL: habilita gen_random_uuid() usado como DEFAULT.
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Tipos enumerados de PostgreSQL
 CREATE TYPE estado_activo AS ENUM (
     'ACTIVO', 'EN_MANTENIMIENTO', 'TRANSFERIDO', 'DADO_DE_BAJA'

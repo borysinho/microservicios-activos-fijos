@@ -52,9 +52,15 @@ Para ahorrar espacio en el AVD, `npm run android` instala solo la arquitectura a
 Copia `.env.example` a `.env` y configura las URLs de los microservicios:
 
 ```
-MS1_BASE_URL=https://ms1.azurewebsites.net/api
+MS1_BASE_URL=https://ms1.azurewebsites.net
 MS2_BASE_URL=https://ms2.aws.example.com/api
 MS3_BASE_URL=https://ms3-gcp.a.run.app/api
+```
+
+Para el MS1 desplegado actualmente en Azure:
+
+```
+MS1_BASE_URL=https://ms1-activos-fijos-031456.azurewebsites.net
 ```
 
 ## Flujo principal — Diagnóstico IA
