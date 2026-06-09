@@ -1,0 +1,88 @@
+{
+  "name": "Flujo 02 - Alerta de Vencimiento de Garantia",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "alerta-garantia",
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
+      },
+      "id": "webhook-ms1",
+      "name": "Webhook MS1 Garantia",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.MS1_GRAPHQL_URL}}",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\"query\":\"query Activo($id: ID!) { activo(id: $id) { id codigo nombre estado } }\",\"variables\":{\"id\":\"{{$json.activoId}}\"}}"
+      },
+      "id": "datos-ms1",
+      "name": "Enriquecer Datos MS1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.MS2_BASE_URL}}/documentos?activoId={{$node['Webhook MS1 Garantia'].json.activoId}}"
+      },
+      "id": "docs-ms2",
+      "name": "Verificar Poliza MS2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [520, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sendgrid.com/v3/mail/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Authorization", "value": "=Bearer {{$env.SENDGRID_API_KEY}}" }]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\"personalizations\":[{\"to\":[{\"email\":\"{{$node['Webhook MS1 Garantia'].json.responsableEmail}}\"}]}],\"from\":{\"email\":\"{{$env.SENDGRID_FROM_EMAIL}}\"},\"subject\":\"Garantia por vencer {{$node['Webhook MS1 Garantia'].json.codigo}}\",\"content\":[{\"type\":\"text/plain\",\"value\":\"Revise la garantia y documentos asociados.\"}]}"
+      },
+      "id": "email-responsable",
+      "name": "Email Responsable",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [780, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.FCM_API_URL}}",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\"message\":{\"topic\":\"garantias\",\"notification\":{\"title\":\"Garantia por vencer\",\"body\":\"{{$node['Webhook MS1 Garantia'].json.codigo}} vence pronto\"}}}"
+      },
+      "id": "push-fcm",
+      "name": "Push FCM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1040, 0]
+    }
+  ],
+  "connections": {
+    "Webhook MS1 Garantia": {
+      "main": [[{ "node": "Enriquecer Datos MS1", "type": "main", "index": 0 }]]
+    },
+    "Enriquecer Datos MS1": {
+      "main": [[{ "node": "Verificar Poliza MS2", "type": "main", "index": 0 }]]
+    },
+    "Verificar Poliza MS2": {
+      "main": [[{ "node": "Email Responsable", "type": "main", "index": 0 }]]
+    },
+    "Email Responsable": {
+      "main": [[{ "node": "Push FCM", "type": "main", "index": 0 }]]
+    }
+  }
+}

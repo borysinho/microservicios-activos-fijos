@@ -1,0 +1,132 @@
+{
+  "name": "Flujo 01 - Solicitud de Revision por WhatsApp",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "solicitud-revision",
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
+      },
+      "id": "webhook-whatsapp",
+      "name": "WhatsApp Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.text || ''; const match = text.match(/ACT-\\d{4}-\\d+/i); return [{ json: { ...$json, codigoActivo: match ? match[0].toUpperCase() : null } }];"
+      },
+      "id": "extraer-codigo",
+      "name": "Extraer Codigo Activo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.MS1_GRAPHQL_URL}}",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\"query\":\"query BuscarActivoPorCodigo($codigo: String!) { activoPorCodigo(codigo: $codigo) { id codigo nombre estado } }\",\"variables\":{\"codigo\":\"{{$json.codigoActivo}}\"}}"
+      },
+      "id": "consultar-ms1",
+      "name": "Consultar Activo MS1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.MS1_TICKETS_URL}}",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\"activoId\":\"{{$json.data.activoPorCodigo.id}}\",\"solicitadoPorWhatsApp\":\"{{$node['WhatsApp Trigger'].json.from}}\",\"motivo\":\"{{$node['WhatsApp Trigger'].json.text}}\"}"
+      },
+      "id": "crear-ticket",
+      "name": "Crear Ticket MS1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [720, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.MS2_BASE_URL}}/documentos?activoId={{$node['Consultar Activo MS1'].json.data.activoPorCodigo.id}}"
+      },
+      "id": "verificar-documentos",
+      "name": "Verificar Documentos MS2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [960, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sendgrid.com/v3/mail/send",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.SENDGRID_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\"personalizations\":[{\"to\":[{\"email\":\"{{$env.RESPONSABLE_DEFAULT_EMAIL}}\"}]}],\"from\":{\"email\":\"{{$env.SENDGRID_FROM_EMAIL}}\"},\"subject\":\"Solicitud de revision {{$node['Extraer Codigo Activo'].json.codigoActivo}}\",\"content\":[{\"type\":\"text/plain\",\"value\":\"Solicitud recibida y documentos verificados en MS2.\"}]}"
+      },
+      "id": "sendgrid-email",
+      "name": "Enviar Email SendGrid",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.WHATSAPP_API_URL}}/{{$env.WHATSAPP_PHONE_NUMBER_ID}}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.WHATSAPP_TOKEN}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\"messaging_product\":\"whatsapp\",\"to\":\"{{$node['WhatsApp Trigger'].json.from}}\",\"type\":\"text\",\"text\":{\"body\":\"Tu solicitud de revision fue recibida.\"}}"
+      },
+      "id": "responder-whatsapp",
+      "name": "Responder WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1440, 0]
+    }
+  ],
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [[{ "node": "Extraer Codigo Activo", "type": "main", "index": 0 }]]
+    },
+    "Extraer Codigo Activo": {
+      "main": [[{ "node": "Consultar Activo MS1", "type": "main", "index": 0 }]]
+    },
+    "Consultar Activo MS1": {
+      "main": [[{ "node": "Crear Ticket MS1", "type": "main", "index": 0 }]]
+    },
+    "Crear Ticket MS1": {
+      "main": [[{ "node": "Verificar Documentos MS2", "type": "main", "index": 0 }]]
+    },
+    "Verificar Documentos MS2": {
+      "main": [[{ "node": "Enviar Email SendGrid", "type": "main", "index": 0 }]]
+    },
+    "Enviar Email SendGrid": {
+      "main": [[{ "node": "Responder WhatsApp", "type": "main", "index": 0 }]]
+    }
+  }
+}
