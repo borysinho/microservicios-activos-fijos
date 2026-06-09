@@ -1,8 +1,8 @@
-import Config from "react-native-config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { env } from "../config/env";
 import type { DiagnosticoIA } from "../types/activo.types";
 
-const BASE_URL = Config.MS2_BASE_URL ?? "http://10.0.2.2:8000/api";
+const BASE_URL = env.MS2_BASE_URL;
 
 /** CU-35, CU-36: Enviar imagen al MS2 para diagnóstico CNN */
 async function diagnosticarImagen(params: {

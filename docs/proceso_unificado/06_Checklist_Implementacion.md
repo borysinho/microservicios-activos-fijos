@@ -15,9 +15,9 @@
 | R02 | Multi-cloud                     | Azure/AWS/GCP       | URLs con dominios de cada proveedor           | [ ] |
 | R03 | Multi-lenguaje                  | Java/Python/Node.js | Cada MS en su lenguaje correspondiente        | [ ] |
 | R04 | Frontend Angular                | `frontend/`         | App Angular compilada y desplegada            | [ ] |
-| R05 | App Móvil React Native          | `mobile/`           | APK/demo con ≥ 3 recursos nativos             | [ ] |
-| R06 | ≥ 3 recursos nativos            | Mobile              | Cámara + GPS + AsyncStorage demostrados       | [ ] |
-| R07 | IA integrada en móvil           | Mobile + MS2        | Demo foto → diagnóstico CNN en app            | [ ] |
+| R05 | App Móvil React Native          | `mobile/`           | APK/demo con ≥ 3 recursos nativos             | [x] |
+| R06 | ≥ 3 recursos nativos            | Mobile              | Cámara + GPS + AsyncStorage demostrados       | [x] |
+| R07 | IA integrada en móvil           | Mobile + MS2        | Demo foto → diagnóstico CNN en app            | [x] |
 | R08 | GraphQL obligatorio             | MS1                 | Playground GraphQL accesible en MS1           | [ ] |
 | R09 | Gestión documental + auditoría  | MS2                 | Demo upload → log en DynamoDB                 | [x] |
 | R10 | Deep Learning (CNN)             | MS2                 | Endpoint `/ia/diagnostico` funcional          | [ ] |
@@ -113,17 +113,17 @@
 
 ### MS2 — Módulo 5: Diagnóstico IA (CU-35, CU-36)
 
-- [ ] CU-35: Enviar imagen para diagnóstico → `POST /api/ia/diagnostico`
-- [ ] CU-36: Procesar con CNN → `CNN_EstadoActivo.predecir()` + guardar en DynamoDB
+- [x] CU-35: Enviar imagen para diagnóstico → `POST /ia/diagnostico` en `ia_controller.py`
+- [x] CU-36: Procesar con CNN → `DiagnosticoIAService` + `CNN_EstadoActivo` + guardar en DynamoDB
 
 ### MS2 — Módulo 9: Machine Learning (CU-61 a CU-66)
 
-- [ ] CU-61: Predicción vida útil (RF) → `GET /api/ml/prediccion-vida-util?activoId=...`
-- [ ] CU-62: Probabilidad de fallo (RF clasificación) → `GET /api/ml/riesgo-fallo?activoId=...`
-- [ ] CU-63: Clustering K-Means → `GET /api/ml/clustering`
-- [ ] CU-64: Ver predicción en ficha del activo → integrado en frontend Angular y app móvil
-- [ ] CU-65: Recomendaciones de mantenimiento → campo `recomendaciones[]` en respuesta ML
-- [ ] CU-66: Visualizar clustering con etiquetas → componente en frontend Angular
+- [x] CU-61: Predicción vida útil (RF) → `GET /ml/prediccion-vida-util` en `ia_controller.py`
+- [x] CU-62: Probabilidad de fallo (RF clasificación) → campo `riesgo_fallo` en respuesta RF
+- [x] CU-63: Clustering K-Means → `GET /ml/clustering` en `ia_controller.py`
+- [x] CU-64: Ver predicción en ficha del activo → integrado en frontend Angular y app móvil
+- [x] CU-65: Recomendaciones de mantenimiento → campo `recomendaciones[]` en respuesta ML
+- [x] CU-66: Visualizar clustering con etiquetas → componente en frontend Angular
 
 ### MS3 — Módulo 10: Automatización N8N (CU-67 a CU-74)
 
@@ -138,16 +138,16 @@
 
 ### App Móvil — Módulos 5 y 6 (CU-34, CU-37 a CU-45)
 
-- [ ] CU-34: Fotografiar activo con cámara → `expo-camera` en `CameraScreen`
-- [ ] CU-37: Enviar imagen a MS2 y ver diagnóstico → `DiagnosticoScreen` + `ms2.service.ts`
-- [ ] CU-38: Historial de diagnósticos → `GET /api/ia/diagnosticos?activoId=...`
-- [ ] CU-39: Solicitar orden de mantenimiento → mutation MS1 desde `DiagnosticoScreen`
-- [ ] CU-40: Activos asignados en modo offline → `AsyncStorage` + `offline.service.ts`
-- [ ] CU-41: Ver detalle de activo en campo → `ActivoDetailScreen` con datos frescos/caché
-- [ ] CU-42: Geolocalizar activo con GPS → `expo-location` + mutation MS1
-- [ ] CU-43: Reportar problema vía WhatsApp → `Linking.openURL(whatsapp://...)`
-- [ ] CU-44: Recibir push notification → `expo-notifications` + FCM
-- [ ] CU-45: Sincronizar offline al reconectar → `sync.service.ts` + `NetInfo`
+- [x] CU-34: Fotografiar activo con cámara → `react-native-vision-camera` en `DiagnosticoIAScreen.tsx`
+- [x] CU-37: Enviar imagen a MS2 y ver diagnóstico → `DiagnosticoIAScreen` + `ms2Service.ts` + `ResultadoDiagnosticoScreen`
+- [x] CU-38: Historial de diagnósticos → `ms2Service.getHistorialDiagnosticos(activoId)` en `ActivoDetalleScreen`
+- [x] CU-39: Solicitar orden de mantenimiento → modal en `ActivoDetalleScreen` + `ms1Service.solicitarMantenimiento()`
+- [x] CU-40: Activos asignados en modo offline → `offlineCache.ts` (AsyncStorage) + `useOfflineActivos.ts`
+- [x] CU-41: Ver detalle de activo en campo → `ActivoDetalleScreen.tsx` con carga fresca + fallback caché
+- [x] CU-42: Geolocalizar activo con GPS → `useGPS.ts` (`react-native-geolocation-service`) + `MapaScreen.tsx` + mutation MS1
+- [x] CU-43: Reportar problema vía WhatsApp → `Linking.openURL(whatsapp://...)` en `ActivoDetalleScreen.tsx`
+- [x] CU-44: Recibir/consultar alertas push → `pushNotificationService.ts` registra token FCM, escucha foreground/background + `NotificacionesScreen`
+- [x] CU-45: Sincronizar offline al reconectar → `useOfflineActivos.ts` con `NetInfo` + `offlineCache.loadPendingOps()`
 
 ---
 
@@ -302,24 +302,36 @@
 
 #### Pantallas
 
-- [ ] `LoginScreen` — autenticación contra MS1
-- [ ] `HomeScreen` — resumen del área
-- [ ] `ActivosScreen` — lista con modo offline
-- [ ] `ActivoDetailScreen` — ficha completa
-- [ ] `CameraScreen` — captura de imagen con `expo-camera`
-- [ ] `DiagnosticoScreen` — resultado CNN de MS2
-- [ ] `MapScreen` — GPS con `expo-location`
-- [ ] `ReportarScreen` — deep link a WhatsApp
-- [ ] `NotificacionesScreen` — historial de alertas
+- [x] `LoginScreen.tsx` — autenticación JWT contra MS1 con AsyncStorage
+- [x] `ActivosScreen.tsx` — lista de activos asignados (offline-first), integra funcionalidad de HomeScreen
+- [x] `ActivoDetalleScreen.tsx` — ficha completa con historial diagnósticos, GPS, WhatsApp y orden de mantenimiento
+- [x] `DiagnosticoIAScreen.tsx` — captura de foto con `react-native-vision-camera` + envío a MS2 (CU-34, CU-35, CU-36, CU-37)
+- [x] `ResultadoDiagnosticoScreen.tsx` — visualización del resultado CNN con confianza y recomendación
+- [x] `MapaScreen.tsx` — mapa interactivo con `react-native-maps` + registro GPS (CU-42)
+- [x] `NotificacionesScreen.tsx` — historial de alertas push desde MS3 (CU-44)
+
+#### Hooks nativos
+
+- [x] `useCamera.ts` — abstracción de `react-native-vision-camera` con permisos y captura
+- [x] `useGPS.ts` — abstracción de `react-native-geolocation-service` con permisos
+- [x] `useOfflineActivos.ts` — hook principal offline/online con `NetInfo` + sincronización automática (CU-40, CU-45)
 
 #### Servicios
 
-- [ ] `auth.service.ts` — JWT en AsyncStorage
-- [ ] `ms1-graphql.service.ts` — queries/mutations a MS1
-- [ ] `ms2.service.ts` — diagnóstico + ML endpoints
-- [ ] `offline.service.ts` — AsyncStorage wrapper
-- [ ] `sync.service.ts` — sincronización offline → online con NetInfo
-- [ ] `push-notifications.ts` — FCM token registro
+- [x] `ms1Service.ts` — queries/mutations GraphQL a MS1, login JWT, actualizarUbicacion, solicitarMantenimiento
+- [x] `ms2Service.ts` — diagnóstico CNN e historial de diagnósticos para la app móvil
+- [x] `ms3Service.ts` — reportarProblema, registrarTokenPush (FCM), getNotificaciones
+- [x] `pushNotificationService.ts` — permisos, token FCM, refresh de token y listeners foreground/background
+- [x] `offlineCache.ts` — AsyncStorage wrapper: activos, sesión, operaciones pendientes (CU-40, CU-45)
+
+#### Navegación y configuración
+
+- [x] `AppNavigator.tsx` — Stack Navigator + Bottom Tab Navigator (React Navigation)
+- [x] `activo.types.ts` — tipos TypeScript para Activo, Usuario, DiagnosticoIA, Notificacion, RootStackParamList
+- [x] `env.ts` — URLs configurables para MS1 GraphQL, MS2 REST y MS3 REST
+- [x] `@react-native-firebase/messaging` — declarado en `package.json` para FCM (CU-44)
+- [x] `android/app/build.gradle` + `google-services.json` — integración Android con Firebase/Google Services
+- [x] `android/app/build/outputs/apk/debug/app-debug.apk` — APK demo generado para validación local
 
 ---
 

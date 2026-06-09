@@ -1,0 +1,31 @@
+{
+  "jdk.jdkhome": "/usr/lib/jvm/java-25-openjdk",
+  "jdk.project.jdkhome": "/opt/android-studio/jbr",
+  "java.jdt.ls.java.home": "/opt/android-studio/jbr",
+  "java.import.gradle.java.home": "/opt/android-studio/jbr",
+  "java.import.gradle.wrapper.enabled": true,
+  "java.import.exclusions": [
+    "**/node_modules/**"
+  ],
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "/opt/android-studio/jbr",
+      "default": true
+    }
+  ],
+  "gradle.java.home": "/opt/android-studio/jbr",
+  "terminal.integrated.env.linux": {
+    "JAVA_HOME": "/opt/android-studio/jbr",
+    "PATH": "/opt/android-studio/jbr/bin:${env:PATH}"
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true
+  },
+  "files.exclude": {
+    "**/node_modules/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true
+  }
+}

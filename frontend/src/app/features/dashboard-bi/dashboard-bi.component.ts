@@ -1,11 +1,13 @@
 import { Component, OnInit, ViewChild, ElementRef, inject, signal, OnDestroy } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { environment } from '../../../environments/environment';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
 import { AuthService } from '../../core/services/auth.service';
+import { Ms2Service } from '../../core/services/ms2.service';
 import type { DashboardMetricasDTO } from '../../core/models/models';
+import type { ClusteringResult } from '../../core/services/ms2.service';
 import { Subscription } from 'rxjs';
 
 Chart.register(...registerables);
@@ -13,7 +15,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-dashboard-bi',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe],
+  imports: [CommonModule, CurrencyPipe, PercentPipe],
   templateUrl: './dashboard-bi.component.html',
   styleUrl: './dashboard-bi.component.scss',
 })
@@ -24,18 +26,41 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
   @ViewChild('lineCanvas') lineRef?: ElementRef<HTMLCanvasElement>;
 
   private gql = inject(ActivosGqlService);
+  private ms2 = inject(Ms2Service);
   private auth = inject(AuthService);
   private router = inject(Router);
   private sub?: Subscription;
+  private subClustering?: Subscription;
   private charts: Chart[] = [];
 
   data = signal<DashboardMetricasDTO | null>(null);
+  // CU-59: Proyección de vida útil de activos críticos
+  clusteringData = signal<ClusteringResult | null>(null);
+  clusteringLoading = signal(false);
   loading = signal(true);
   error = signal('');
   refreshing = signal(false);
 
   ngOnInit(): void {
     this.load();
+    this.loadClustering();
+  }
+
+  // CU-59: Carga activos críticos desde el clustering de MS2
+  private loadClustering(): void {
+    this.clusteringLoading.set(true);
+    this.subClustering = this.ms2.clustering().subscribe({
+      next: (r) => {
+        this.clusteringData.set(r);
+        this.clusteringLoading.set(false);
+      },
+      error: () => this.clusteringLoading.set(false),
+    });
+  }
+
+  // Obtiene el cluster de "Alta criticidad" para CU-59
+  get activosCriticos(): string[] {
+    return this.clusteringData()?.clusters.find((c) => c.id === 0)?.activos ?? [];
   }
 
   refresh(): void {
@@ -105,6 +130,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+    this.subClustering?.unsubscribe();
     this.charts.forEach((c) => c.destroy());
   }
 

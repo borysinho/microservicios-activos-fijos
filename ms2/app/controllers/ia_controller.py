@@ -8,12 +8,16 @@ Rutas registradas bajo /api:
 
 import logging
 from typing import Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 
 from app.auth.jwt_middleware import get_current_user
+from app.infrastructure.dynamodb_adapter import DynamoDBAdapter
+from app.infrastructure.s3_adapter import S3Adapter
 from app.modelos.model_loader import model_loader
 from app.schemas.ia_schema import ClusteringResponse, DiagnosticoResponse, PrediccionVidaUtilResponse
+from app.services.auditoria_service import AuditoriaService
 from app.services.diagnostico_ia_service import DiagnosticoIAService
 from app.services.ml_service import MLService
 
@@ -25,6 +29,22 @@ ml_router = APIRouter(prefix="/ml", tags=["ML"])
 
 _diagnostico_service = DiagnosticoIAService()
 _ml_service = MLService()
+
+# Infraestructura AWS — instanciada con lazy init para tolerancia a fallos en dev
+_s3: Optional[S3Adapter] = None
+_auditoria: Optional[AuditoriaService] = None
+
+
+def _get_infraestructura() -> tuple[Optional[S3Adapter], Optional[AuditoriaService]]:
+    """Inicializa S3 y AuditoriaService la primera vez que se necesitan (lazy)."""
+    global _s3, _auditoria  # noqa: PLW0603
+    if _s3 is None:
+        try:
+            _s3 = S3Adapter()
+            _auditoria = AuditoriaService(DynamoDBAdapter())
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("No se pudo inicializar infraestructura AWS: %s", exc)
+    return _s3, _auditoria
 
 # ── Tipos de imagen permitidos ────────────────────────────────────────────────
 _MIME_IMAGEN = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
@@ -69,12 +89,53 @@ async def diagnostico_imagen(
         cnn_model=model_loader.cnn_model,
     )
 
+    # ── Persistencia: imagen en S3 + registro en DynamoDB (CU-35/36) ─────────
+    s3, auditoria = _get_infraestructura()
+    imagen_s3_key: Optional[str] = None
+
+    if s3 is not None:
+        try:
+            diagnostico_id = str(uuid4())
+            s3_key = f"diagnosticos/{activoId or 'unknown'}/{diagnostico_id}{_ext(imagen.content_type)}"
+            s3.upload(imagen_bytes, s3_key, imagen.content_type)
+            imagen_s3_key = s3_key
+            logger.info("Imagen diagnóstico subida a S3: %s", s3_key)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("No se pudo subir imagen a S3: %s", exc)
+
+    if auditoria is not None:
+        try:
+            usuario = current_user.get("sub", "desconocido")
+            ip = request.client.host if request.client else "0.0.0.0"
+            auditoria.registrar(
+                documento_id=imagen_s3_key or "sin-s3",
+                activo_id=activoId or "",
+                accion="DIAGNOSTICO_CNN",
+                usuario=usuario,
+                ip_origen=ip,
+                detalles={
+                    "diagnostico": resultado["diagnostico"],
+                    "confianza": resultado["confianza"],
+                    "recomendacion": resultado["recomendacion"],
+                    "imagenS3Key": imagen_s3_key,
+                },
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("No se pudo registrar diagnóstico en DynamoDB: %s", exc)
+
     return DiagnosticoResponse(
         activoId=activoId,
         diagnostico=resultado["diagnostico"],
         confianza=resultado["confianza"],
         recomendacion=resultado["recomendacion"],
+        imagenS3Key=imagen_s3_key,
     )
+
+
+def _ext(content_type: Optional[str]) -> str:
+    """Retorna la extensión de archivo según el content-type."""
+    _map = {"image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+    return _map.get(content_type or "", ".jpg")
 
 
 # ── CU-61/62: Predicción de vida útil y riesgo de fallo ──────────────────────

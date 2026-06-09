@@ -233,6 +233,38 @@
 </div>
 }
 
+<!-- CU-59: Proyección de vida útil de activos críticos -->
+<div class="charts-grid-2" style="margin-top:1.5rem">
+  <div class="card" style="grid-column: 1 / -1">
+    <h3 class="chart-card__title">Activos Críticos — Proyección de Vida Útil</h3>
+    @if (clusteringLoading()) {
+    <p style="color: var(--text-muted, #8da3c0); font-size: .875rem">Cargando datos de MS2...</p>
+    } @else if (activosCriticos.length) {
+    <div style="display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem">
+      @for (activo of activosCriticos; track activo) {
+      <span class="badge badge--red" style="font-size:.8rem; padding:.35rem .75rem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"
+          style="margin-right:.3rem; vertical-align:middle">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        {{ activo }}
+      </span>
+      }
+    </div>
+    <p style="color: var(--text-muted, #8da3c0); font-size: .8rem; margin-top: .75rem">
+      {{ activosCriticos.length }} activo(s) identificado(s) con alta criticidad por K-Means.
+      Se recomienda revisión técnica prioritaria.
+    </p>
+    } @else {
+    <p style="color: #22c55e; font-size: .875rem; margin-top: .5rem">
+      Sin activos críticos detectados en el análisis de clustering.
+    </p>
+    }
+  </div>
+</div>
+
 <!-- CU-60: Exportar reporte BI en PDF -->
 <div class="export-row">
   <button class="btn btn--secondary" (click)="exportarPDF()">

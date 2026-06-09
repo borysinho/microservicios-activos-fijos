@@ -21,6 +21,10 @@ import ResultadoDiagnosticoScreen from "../screens/ResultadoDiagnosticoScreen";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
+type AppNavigatorProps = {
+  initialRouteName: keyof Pick<RootStackParamList, "Login" | "Main">;
+};
+
 function MainTabs() {
   return (
     <Tab.Navigator
@@ -59,10 +63,11 @@ function MainTabs() {
   );
 }
 
-export function AppNavigator() {
+export function AppNavigator({ initialRouteName }: AppNavigatorProps) {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName={initialRouteName}
         screenOptions={{
           headerStyle: { backgroundColor: "#1565C0" },
           headerTintColor: "#FFFFFF",

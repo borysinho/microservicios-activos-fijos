@@ -16,11 +16,19 @@ from app.modelos.model_loader import model_loader
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Inicializar recursos AWS al arrancar
-    s3 = S3Adapter()
-    s3.ensure_bucket()
-    db = DynamoDBAdapter()
-    db.ensure_tables()
+    # Inicializar recursos AWS al arrancar (omitir si no hay conectividad)
+    try:
+        s3 = S3Adapter()
+        s3.ensure_bucket()
+        db = DynamoDBAdapter()
+        db.ensure_tables()
+    except Exception as _aws_exc:
+        import logging
+        logging.getLogger(__name__).warning(
+            "AWS/LocalStack no disponible al arrancar (%s). "
+            "Endpoints de documentos y auditoría funcionarán en modo degradado.",
+            _aws_exc.__class__.__name__,
+        )
     # Cargar modelos IA/ML (con fallback si S3 no disponible)
     model_loader.load_all()
     yield

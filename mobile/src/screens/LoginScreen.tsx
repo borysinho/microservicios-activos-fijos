@@ -14,6 +14,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/activo.types";
 import { ms1Service } from "../services/ms1Service";
 import { offlineCache } from "../services/offlineCache";
+import { pushNotificationService } from "../services/pushNotificationService";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
@@ -31,10 +32,11 @@ export default function LoginScreen({ navigation }: Props) {
     setCargando(true);
     try {
       const response = await ms1Service.login({
-        email: email.trim(),
+        username: email.trim(),
         password,
       });
       await offlineCache.saveSession(response.token, response.usuario);
+      pushNotificationService.registerDeviceToken().catch(() => undefined);
       navigation.replace("Main");
     } catch (err: any) {
       const mensaje =

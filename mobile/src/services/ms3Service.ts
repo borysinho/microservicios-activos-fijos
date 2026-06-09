@@ -1,8 +1,8 @@
 import axios from "axios";
-import Config from "react-native-config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { env } from "../config/env";
 
-const BASE_URL = Config.MS3_BASE_URL ?? "http://10.0.2.2:3000/api";
+const BASE_URL = env.MS3_BASE_URL;
 
 const http = axios.create({
   baseURL: BASE_URL,

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { offlineCache } from "./services/offlineCache";
+import { pushNotificationService } from "./services/pushNotificationService";
 
 export default function App() {
   const [iniciando, setIniciando] = useState(true);
@@ -14,6 +15,23 @@ export default function App() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!autenticado) {
+      return;
+    }
+
+    pushNotificationService.registerDeviceToken().catch(() => undefined);
+    const unsubscribeTokenRefresh =
+      pushNotificationService.listenTokenRefresh();
+    const unsubscribeForeground =
+      pushNotificationService.listenForegroundMessages();
+
+    return () => {
+      unsubscribeTokenRefresh();
+      unsubscribeForeground();
+    };
+  }, [autenticado]);
+
   if (iniciando) {
     return (
       <View style={styles.splash}>
@@ -22,7 +40,7 @@ export default function App() {
     );
   }
 
-  return <AppNavigator />;
+  return <AppNavigator initialRouteName={autenticado ? "Main" : "Login"} />;
 }
 
 const styles = StyleSheet.create({

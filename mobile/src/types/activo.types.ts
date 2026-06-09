@@ -36,9 +36,9 @@ export interface Area {
 export interface CategoriaActivo {
   id: string;
   nombre: string;
+  descripcion?: string;
   tasaDepreciacion: number;
-  metodDepreciacion: "LINEAL" | "ACELERADO" | "SUMA_DIGITOS";
-  vidaUtilAnios: number;
+  metodoDepreciacion: "LINEAL" | "ACELERADO" | "SUMA_DIGITOS";
 }
 
 export interface Activo {
@@ -54,6 +54,7 @@ export interface Activo {
   categoria: CategoriaActivo;
   area?: Area;
   responsable?: Usuario;
+  ubicacion?: string;
   latitud?: number;
   longitud?: number;
   imageUrl?: string;
@@ -101,7 +102,7 @@ export interface AuthState {
 }
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -112,9 +113,15 @@ export interface LoginResponse {
 
 export interface PrediccionVidaUtil {
   activoId: string;
+  activoCodigo: string;
+  activoNombre: string;
+  vidaUtilAnios: number;
+  aniosTranscurridos: number;
+  aniosRestantes: number;
   mesesRestantes: number;
-  riesgoFallo: "BAJO" | "MEDIO" | "ALTO";
-  recomendacion: string;
+  porcentajeDepreciado: number;
+  valorLibros: number;
+  estaDepreciadoCompletamente: boolean;
 }
 
 // Tipos de navegación

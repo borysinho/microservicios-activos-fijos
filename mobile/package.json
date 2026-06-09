@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "start": "react-native start",
+    "android": "react-native run-android --port 8088 --no-packager --active-arch-only --verbose",
+    "ios": "react-native run-ios --port 8088",
+    "start": "react-native start --port 8088",
     "test": "jest",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
@@ -24,7 +24,7 @@
     "@react-native-community/netinfo": "^11.4.1",
     "axios": "^1.7.7",
     "react-native-config": "^1.5.3",
-    "react-native-maps": "^1.18.0",
+    "react-native-maps": "1.18.0",
     "react-native-vector-icons": "^10.2.0",
     "@react-native-firebase/app": "^21.0.0",
     "@react-native-firebase/messaging": "^21.0.0"

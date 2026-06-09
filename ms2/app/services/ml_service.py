@@ -23,6 +23,38 @@ _CLUSTER_LABELS: Dict[int, str] = {
     2: "Rendimiento eficiente",
 }
 
+# CU-65: Recomendaciones de mantenimiento preventivo por combinación cluster + riesgo
+def _generar_recomendacion(cluster: int, prob_fallo: float, meses_restantes: int) -> str:
+    """Genera recomendación textual de mantenimiento preventivo (CU-65)."""
+    if prob_fallo >= 0.7 or meses_restantes <= 6:
+        return (
+            "URGENTE: Programar revisión técnica inmediata. "
+            "La probabilidad de fallo es alta y la vida útil restante es crítica. "
+            "Considerar reemplazo preventivo."
+        )
+    if prob_fallo >= 0.4 or meses_restantes <= 18:
+        return (
+            "PREVENTIVO: Revisar el activo en los próximos 30 días. "
+            "Se recomienda inspección de componentes clave y lubricación. "
+            "Evaluar posibles reparaciones menores."
+        )
+    if cluster == 0:  # Alta criticidad pero bajo riesgo inmediato
+        return (
+            "MONITOREO: El activo pertenece a un grupo de alta criticidad operativa. "
+            "Mantener plan de mantenimiento preventivo mensual y registrar incidencias."
+        )
+    if cluster == 1:  # Mantenimiento regular
+        return (
+            "RUTINARIO: El activo se encuentra en parámetros normales. "
+            "Continuar con el plan de mantenimiento programado trimestral."
+        )
+    # Rendimiento eficiente
+    return (
+        "ÓPTIMO: El activo opera eficientemente. "
+        "Mantenimiento preventivo anual es suficiente. Sin acciones urgentes requeridas."
+    )
+
+
 # Features esperadas por Random Forest (en orden)
 _RF_FEATURES = ["edad_anios", "num_mantenimientos", "promedio_confianza_cnn", "categoria_encoded"]
 
@@ -83,6 +115,7 @@ class MLService:
                 "cluster": cluster_idx,
                 "cluster_label": cluster_label,
                 "confianza": round(1.0 - prob_fallo, 4),
+                "recomendacion_mantenimiento": _generar_recomendacion(cluster_idx, prob_fallo, meses_restantes),
             }
         except Exception as exc:  # noqa: BLE001
             logger.error("Error en inferencia RF/KMeans: %s. Usando fallback.", exc)
@@ -101,6 +134,7 @@ class MLService:
             "cluster": cluster,
             "cluster_label": _CLUSTER_LABELS[cluster],
             "confianza": round(1.0 - prob_fallo, 4),
+            "recomendacion_mantenimiento": _generar_recomendacion(cluster, prob_fallo, meses),
         }
 
     # ── CU-63/66: Clustering K-Means ─────────────────────────────────────────

@@ -440,6 +440,12 @@
           <span class="proyeccion-label">Confianza ML</span>
           <span class="proyeccion-val">{{ mlPrediccion()!.confianza | percent:'1.0-1' }}</span>
         </div>
+        @if (mlPrediccion()!.recomendacion_mantenimiento) {
+        <div class="ml-recomendacion">
+          <span class="ml-recomendacion__title">Recomendación — CU-65</span>
+          <p class="ml-recomendacion__text">{{ mlPrediccion()!.recomendacion_mantenimiento }}</p>
+        </div>
+        }
       </div>
     </div>
     }

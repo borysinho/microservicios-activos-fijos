@@ -49,6 +49,7 @@ export interface PrediccionVidaUtil {
   cluster: number;
   cluster_label: string; // "Alta criticidad" | "Mantenimiento regular" | "Rendimiento eficiente"
   confianza: number;
+  recomendacion_mantenimiento: string; // CU-65
 }
 
 export interface ClusteringResult {

@@ -27,6 +27,7 @@ class PrediccionVidaUtilResponse(BaseModel):
     cluster: int                   # índice del cluster K-Means
     cluster_label: str             # "Alta criticidad" | "Mantenimiento regular" | "Rendimiento eficiente"
     confianza: float               # confianza del modelo RF
+    recomendacion_mantenimiento: str  # CU-65: recomendación textual de mantenimiento preventivo
 
 
 # ── Clustering K-Means (CU-63/66) ────────────────────────────────────────────

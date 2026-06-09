@@ -59,6 +59,12 @@
       <span class="result-metric__label">Confianza del modelo</span>
       <span class="result-metric__value mono">{{ (r.confianza ?? 0) | percent:'1.0-1' }}</span>
     </div>
+    @if (r.recomendacion_mantenimiento) {
+    <div class="result-recomendacion">
+      <span class="result-recomendacion__title">Recomendación de mantenimiento</span>
+      <p class="result-recomendacion__text">{{ r.recomendacion_mantenimiento }}</p>
+    </div>
+    }
   </div>
   }
 </div>

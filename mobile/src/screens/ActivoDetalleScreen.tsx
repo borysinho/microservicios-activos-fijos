@@ -32,6 +32,22 @@ const ESTADO_FISICO_COLOR: Record<string, string> = {
   oxidado: "#8D6E63",
 };
 
+async function cargarActivoDesdeCache(activoId: string): Promise<Activo | null> {
+  const activos = await offlineCache.loadActivos();
+  return activos.find((item) => item.id === activoId) ?? null;
+}
+
+async function guardarUbicacionPendiente(
+  activoId: string,
+  latitud: number,
+  longitud: number,
+): Promise<void> {
+  await offlineCache.enqueuePendingOp({
+    tipo: "actualizar_ubicacion",
+    payload: { activoId, latitud, longitud },
+  });
+}
+
 export default function ActivoDetalleScreen({ route, navigation }: Props) {
   const { activoId } = route.params;
   const { obtenerUbicacion, cargando: gpsLoading } = useGPS();
@@ -47,14 +63,26 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const [data, historial] = await Promise.all([
-          ms1Service.getActivoById(activoId),
-          ms2Service.getHistorialDiagnosticos(activoId),
-        ]);
+        const data = await ms1Service.getActivoById(activoId);
+        const historial = await ms2Service
+          .getHistorialDiagnosticos(activoId)
+          .catch(() => []);
         setActivo(data);
         setHistorialDiagnosticos(historial);
       } catch {
-        Alert.alert("Error", "No se pudo cargar el detalle del activo.");
+        const cached = await cargarActivoDesdeCache(activoId);
+        if (cached) {
+          setActivo(cached);
+          setHistorialDiagnosticos(
+            cached.ultimoDiagnostico ? [cached.ultimoDiagnostico] : [],
+          );
+          Alert.alert(
+            "Modo offline",
+            "Mostrando la ficha del activo desde la caché local.",
+          );
+        } else {
+          Alert.alert("Error", "No se pudo cargar el detalle del activo.");
+        }
       } finally {
         setCargando(false);
       }
@@ -62,43 +90,53 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
     cargar();
   }, [activoId]);
 
-  /** CU-42: Registrar ubicación GPS del activo */
+  /** CU-42, CU-45: Registrar ubicación GPS y encolar si falla la red */
   const handleRegistrarUbicacion = async () => {
     setGuardandoUbicacion(true);
     try {
       const coords = await obtenerUbicacion();
       const session = await offlineCache.loadSession();
-
-      if (session) {
-        await ms1Service.actualizarUbicacion(
-          activoId,
-          coords.latitud,
-          coords.longitud,
-        );
+      const actualizarEstadoLocal = () => {
         setActivo((prev) =>
           prev
             ? { ...prev, latitud: coords.latitud, longitud: coords.longitud }
             : prev,
         );
-        Alert.alert(
-          "Ubicación registrada",
-          "Las coordenadas GPS se guardaron correctamente.",
-        );
-      } else {
-        // Encolar para sincronizar offline (CU-45)
-        await offlineCache.enqueuePendingOp({
-          tipo: "actualizar_ubicacion",
-          payload: {
+      };
+
+      if (session) {
+        try {
+          await ms1Service.actualizarUbicacion(
             activoId,
-            latitud: coords.latitud,
-            longitud: coords.longitud,
-          },
-        });
-        Alert.alert(
-          "Sin conexión",
-          "La ubicación se sincronizará al recuperar la conexión.",
+            coords.latitud,
+            coords.longitud,
+          );
+          actualizarEstadoLocal();
+          Alert.alert(
+            "Ubicación registrada",
+            "Las coordenadas GPS se guardaron correctamente.",
+          );
+          return;
+        } catch {
+          await guardarUbicacionPendiente(
+            activoId,
+            coords.latitud,
+            coords.longitud,
+          );
+        }
+      } else {
+        await guardarUbicacionPendiente(
+          activoId,
+          coords.latitud,
+          coords.longitud,
         );
       }
+
+      actualizarEstadoLocal();
+      Alert.alert(
+        "Sin conexión",
+        "La ubicación se sincronizará al recuperar la conexión.",
+      );
     } catch (err: any) {
       Alert.alert("Error GPS", err.message);
     } finally {
@@ -165,10 +203,20 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
     }
   };
 
-  if (cargando || !activo) {
+  if (cargando) {
     return (
       <View style={styles.centrado}>
         <ActivityIndicator size="large" color="#1565C0" />
+      </View>
+    );
+  }
+
+  if (!activo) {
+    return (
+      <View style={styles.centrado}>
+        <Text style={styles.textoError}>
+          No se pudo cargar este activo. Sincroniza la lista e intenta de nuevo.
+        </Text>
       </View>
     );
   }
@@ -177,7 +225,6 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Modal de mantenimiento (Android) */}
       <Modal
         visible={modalMantenimiento}
         transparent
@@ -222,7 +269,7 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
           </View>
         </View>
       </Modal>
-      {/* Encabezado */}
+
       <View style={styles.encabezado}>
         <Text style={styles.codigo}>{activo.codigo}</Text>
         <Text style={styles.nombre}>{activo.nombre}</Text>
@@ -231,7 +278,6 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
         )}
       </View>
 
-      {/* Información general */}
       <View style={styles.seccion}>
         <Text style={styles.tituloSeccion}>Información General</Text>
         <InfoFila label="Categoría" valor={activo.categoria?.nombre} />
@@ -252,7 +298,6 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
         <InfoFila label="Vida útil" valor={`${activo.vidaUtilAnios} años`} />
       </View>
 
-      {/* Último diagnóstico IA (CU-38) */}
       {ultimoDiag && (
         <View style={styles.seccion}>
           <Text style={styles.tituloSeccion}>Último Diagnóstico IA</Text>
@@ -282,7 +327,6 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
         </View>
       )}
 
-      {/* Ubicación GPS (CU-42) */}
       <View style={styles.seccion}>
         <Text style={styles.tituloSeccion}>Ubicación GPS</Text>
         {activo.latitud && activo.longitud ? (
@@ -323,7 +367,6 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Acciones */}
       <View style={styles.acciones}>
         <TouchableOpacity
           style={styles.btnAccion}
@@ -364,6 +407,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   content: { padding: 16, paddingBottom: 32 },
   centrado: { flex: 1, justifyContent: "center", alignItems: "center" },
+  textoError: {
+    color: "#546E7A",
+    fontSize: 15,
+    paddingHorizontal: 24,
+    textAlign: "center",
+  },
   encabezado: {
     backgroundColor: "#1565C0",
     borderRadius: 12,
@@ -462,7 +511,6 @@ const styles = StyleSheet.create({
   btnAccionNaranja: { backgroundColor: "#E65100" },
   btnAccionVerde: { backgroundColor: "#2E7D32" },
   btnAccionTexto: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
-  // Modal mantenimiento
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

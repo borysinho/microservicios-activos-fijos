@@ -16,6 +16,17 @@ import { offlineCache } from "../services/offlineCache";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Mapa">;
 
+async function guardarUbicacionPendiente(
+  activoId: string,
+  latitud: number,
+  longitud: number,
+): Promise<void> {
+  await offlineCache.enqueuePendingOp({
+    tipo: "actualizar_ubicacion",
+    payload: { activoId, latitud, longitud },
+  });
+}
+
 /**
  * CU-42: Geolocalizar activo y registrar coordenadas GPS
  * Muestra el mapa con la posición actual y la ubicación registrada del activo
@@ -56,12 +67,12 @@ export default function MapaScreen({ route, navigation }: Props) {
       const coordenadas = await obtenerUbicacion();
       const session = await offlineCache.loadSession();
 
-      if (session && activoId) {
-        await ms1Service.actualizarUbicacion(
-          activoId,
-          coordenadas.latitud,
-          coordenadas.longitud,
-        );
+      if (!activoId) {
+        Alert.alert("Sin activo", "No hay un activo seleccionado para guardar.");
+        return;
+      }
+
+      const actualizarMarcador = () => {
         setUbicacionActivo({
           lat: coordenadas.latitud,
           lng: coordenadas.longitud,
@@ -73,14 +84,38 @@ export default function MapaScreen({ route, navigation }: Props) {
           latitudeDelta: 0.003,
           longitudeDelta: 0.003,
         });
+      };
 
-        Alert.alert("Éxito", "Ubicación GPS registrada correctamente.");
+      if (session) {
+        try {
+          await ms1Service.actualizarUbicacion(
+            activoId,
+            coordenadas.latitud,
+            coordenadas.longitud,
+          );
+          actualizarMarcador();
+          Alert.alert("Éxito", "Ubicación GPS registrada correctamente.");
+          return;
+        } catch {
+          await guardarUbicacionPendiente(
+            activoId,
+            coordenadas.latitud,
+            coordenadas.longitud,
+          );
+        }
       } else {
-        Alert.alert(
-          "Sin sesión",
-          "No hay sesión activa para guardar la ubicación.",
+        await guardarUbicacionPendiente(
+          activoId,
+          coordenadas.latitud,
+          coordenadas.longitud,
         );
       }
+
+      actualizarMarcador();
+      Alert.alert(
+        "Sin conexión",
+        "La ubicación se sincronizará al recuperar la conexión.",
+      );
     } catch (err: any) {
       Alert.alert("Error GPS", err.message);
     } finally {

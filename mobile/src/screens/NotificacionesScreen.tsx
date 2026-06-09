@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { ms3Service } from "../services/ms3Service";
 import { offlineCache } from "../services/offlineCache";
+import { pushNotificationService } from "../services/pushNotificationService";
 import type { Notificacion } from "../types/activo.types";
 
 const TIPO_CONFIG = {
@@ -42,6 +43,16 @@ export default function NotificacionesScreen() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  useEffect(() => {
+    const unsubscribe = pushNotificationService.listenForegroundMessages(
+      (notification) => {
+        setNotificaciones((current) => [notification, ...current]);
+      },
+      { showAlert: false },
+    );
+    return unsubscribe;
+  }, []);
 
   const renderItem = ({ item }: { item: Notificacion }) => {
     const config = TIPO_CONFIG[item.tipo] ?? TIPO_CONFIG.info;
