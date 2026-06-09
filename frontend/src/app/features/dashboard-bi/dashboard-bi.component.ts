@@ -15,7 +15,7 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-dashboard-bi',
   standalone: true,
-  imports: [CommonModule, CurrencyPipe, PercentPipe],
+  imports: [CommonModule, CurrencyPipe],
   templateUrl: './dashboard-bi.component.html',
   styleUrl: './dashboard-bi.component.scss',
 })
