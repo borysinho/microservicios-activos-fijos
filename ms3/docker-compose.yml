@@ -5,6 +5,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      MS3_DEV_TOOLS_ENABLED: "true"
       PORT: 3000
       MS1_GRAPHQL_URL: http://host.docker.internal:8081/graphql
       MS2_BASE_URL: http://host.docker.internal:8000/api

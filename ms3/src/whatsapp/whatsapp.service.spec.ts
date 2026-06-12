@@ -61,6 +61,55 @@ describe('WhatsappService', () => {
     expect(() => signed.validarFirma('sha256=bad', raw)).toThrow(ForbiddenException);
   });
 
+  it('omite validacion HMAC cuando el proveedor es WAHA', () => {
+    const wahaConfig = {
+      ...config,
+      whatsappProvider: 'waha',
+      whatsappAppSecret: 'secret',
+    };
+    const signed = new WhatsappService(
+      wahaConfig,
+      flujosService as any,
+      ms1Client as any,
+      ms2Client as any,
+      notificacionesService as any,
+    );
+
+    expect(() => signed.validarFirma(undefined, undefined)).not.toThrow();
+  });
+
+  it('extrae mensajes entrantes desde webhook WAHA', () => {
+    expect(
+      service.extraerMensaje({
+        event: 'message',
+        session: 'default',
+        payload: {
+          timestamp: 1710000000,
+          from: '59170000000@c.us',
+          fromMe: false,
+          body: 'Solicito revision de ACT-2024-001',
+        },
+      }),
+    ).toEqual({
+      from: '59170000000@c.us',
+      text: 'Solicito revision de ACT-2024-001',
+      timestamp: '1710000000',
+    });
+  });
+
+  it('ignora mensajes salientes reportados por WAHA', () => {
+    expect(
+      service.extraerMensaje({
+        event: 'message',
+        payload: {
+          from: '59170000000@c.us',
+          fromMe: true,
+          body: 'Respuesta automatica',
+        },
+      }),
+    ).toBeNull();
+  });
+
   it('procesa CU-67 a CU-72 para solicitud de revision', async () => {
     ms1Client.buscarActivoPorCodigo.mockResolvedValue({
       id: '11111111-1111-1111-1111-111111111111',

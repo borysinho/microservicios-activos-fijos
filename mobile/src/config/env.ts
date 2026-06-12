@@ -11,9 +11,9 @@ type NativeConfigModule = {
 };
 
 const DEFAULT_ENV: MobileEnv = {
-  MS1_BASE_URL: "https://ms1-activos-fijos-031456.azurewebsites.net",
-  MS2_BASE_URL: "http://10.0.2.2:8000/api",
-  MS3_BASE_URL: "http://10.0.2.2:3000/api",
+  MS1_BASE_URL: "http://10.109.210.250:8081",
+  MS2_BASE_URL: "http://10.109.210.250:8002/api",
+  MS3_BASE_URL: "http://10.109.210.250:3000/api",
 };
 
 function readNativeConfig(): Partial<MobileEnv> {

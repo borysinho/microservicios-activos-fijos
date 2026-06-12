@@ -6,7 +6,7 @@ Este documento deja MS1 con despliegue continuo: cada `push` a `main` que modifi
 
 - **Aplicacion**: Azure App Service for Containers.
 - **Imagen**: Azure Container Registry Basic.
-- **Base de datos**: PostgreSQL administrado ya documentado para MS1.
+- **Base de datos**: Supabase PostgreSQL administrado para MS1.
 - **CI/CD**: GitHub Actions en `.github/workflows/ms1-azure-cd.yml`.
 - **Rama productiva**: `main`.
 

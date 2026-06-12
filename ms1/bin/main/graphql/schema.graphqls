@@ -1,0 +1,349 @@
+# =====================================================================
+#  MS1 — Gestión de Activos Fijos
+#  Esquema GraphQL — Spring GraphQL 2.0 / Spring Boot 4.x
+# =====================================================================
+
+# ---------------------  Scalars  ------------------------------------
+scalar Date
+scalar DateTime
+scalar BigDecimal
+scalar UUID
+
+# ---------------------  Enums  --------------------------------------
+enum EstadoActivo {
+  ACTIVO
+  EN_MANTENIMIENTO
+  TRANSFERIDO
+  DADO_DE_BAJA
+}
+
+enum MetodoDepreciacion {
+  LINEAL
+  ACELERADO
+  SUMA_DIGITOS
+}
+
+enum RolUsuario {
+  ADMINISTRADOR
+  RESPONSABLE_AREA
+  AUDITOR
+  SOLO_LECTURA
+}
+
+enum TipoTransaccionBlockchain {
+  REGISTRO
+  ASIGNACION
+  TRASLADO
+  MANTENIMIENTO
+  BAJA
+}
+
+# ---------------------  Tipos  --------------------------------------
+type CategoriaActivo {
+  id: ID!
+  nombre: String!
+  descripcion: String
+  metodoDepreciacion: MetodoDepreciacion!
+  tasaDepreciacion: Float!
+}
+
+type Area {
+  id: ID!
+  codigo: String!
+  nombre: String!
+  descripcion: String
+  responsable: Responsable
+}
+
+type Responsable {
+  id: ID!
+  nombre: String!
+  cargo: String!
+  email: String!
+  telefono: String
+}
+
+type Usuario {
+  id: ID!
+  username: String!
+  email: String!
+  rol: RolUsuario!
+  activo: Boolean!
+}
+
+type Activo {
+  id: ID!
+  codigo: String!
+  nombre: String!
+  descripcion: String
+  fechaAdquisicion: Date!
+  valorAdquisicion: BigDecimal!
+  vidaUtilAnios: Int!
+  estado: EstadoActivo!
+  categoria: CategoriaActivo!
+  areaActual: Area
+  ubicacion: String
+  valorLibros: BigDecimal
+  asignaciones: [Asignacion!]!
+  traslados: [Traslado!]!
+  registrosBlockchain: [RegistroBlockchain!]!
+}
+
+type Asignacion {
+  id: ID!
+  activo: Activo!
+  responsable: Responsable!
+  area: Area!
+  fechaAsignacion: Date!
+  fechaDevolucion: Date
+  observaciones: String
+  activa: Boolean!
+}
+
+type Traslado {
+  id: ID!
+  activo: Activo!
+  areaOrigen: Area!
+  areaDestino: Area!
+  autorizadoPor: Usuario!
+  fecha: Date!
+  motivoTraslado: String
+  recepcionConfirmada: Boolean!
+}
+
+type Baja {
+  id: ID!
+  activo: Activo!
+  autorizadoPor: Usuario!
+  fecha: Date!
+  motivo: String!
+  valorResidual: BigDecimal!
+  numeroResolucion: String
+  autorizada: Boolean!
+}
+
+type RegistroBlockchain {
+  id: ID!
+  activo: Activo!
+  hash: String!
+  tipoTransaccion: TipoTransaccionBlockchain!
+  payload: String!
+  bloqueId: String
+  timestamp: DateTime!
+}
+
+# ---------------------  BI / Reportes  ------------------------------
+type DashboardMetricasDTO {
+  totalActivos: Int!
+  activosActivos: Int!
+  activosEnMantenimiento: Int!
+  activosTransferidos: Int!
+  activosDadoDeBaja: Int!
+  valorTotalInventario: BigDecimal!
+  depreciacionAcumuladaTotal: BigDecimal!
+  activosPorCategoria: [ParCategoriaConteo!]!
+  activosPorArea: [ParAreaConteo!]!
+  asignacionesActivas: Int!
+  trasladosPendientes: Int!
+  adquisicionesPorAnio: [ParAnioConteo!]!
+}
+
+type ParCategoriaConteo {
+  categoria: String!
+  cantidad: Int!
+}
+
+type ParAreaConteo {
+  area: String!
+  cantidad: Int!
+}
+
+type ParAnioConteo {
+  anio: Int!
+  cantidad: Int!
+}
+
+type ProyeccionVidaUtilDTO {
+  activoId: ID!
+  activoCodigo: String!
+  activoNombre: String!
+  vidaUtilAnios: Int!
+  aniosTranscurridos: Int!
+  aniosRestantes: Int!
+  mesesRestantes: Int!
+  porcentajeDepreciado: Float!
+  valorLibros: BigDecimal!
+  estaDepreciadoCompletamente: Boolean!
+}
+
+type ReporteDepreciacionDTO {
+  anio: Int!
+  detalles: [DetalleDepreciacionDTO!]!
+  totalDepreciacionAnio: BigDecimal!
+  totalValorLibros: BigDecimal!
+}
+
+type DetalleDepreciacionDTO {
+  activoCodigo: String!
+  activoNombre: String!
+  metodoDepreciacion: String!
+  valorAdquisicion: BigDecimal!
+  depreciacionAcumulada: BigDecimal!
+  depreciacionAnio: BigDecimal!
+  valorLibros: BigDecimal!
+}
+
+# ---------------------  Inputs  -------------------------------------
+input ActivoInput {
+  codigo: String!
+  nombre: String!
+  descripcion: String
+  fechaAdquisicion: Date!
+  valorAdquisicion: BigDecimal!
+  vidaUtilAnios: Int!
+  categoriaId: ID!
+  areaActualId: ID
+  ubicacion: String
+}
+
+input AsignacionInput {
+  activoId: ID!
+  responsableId: ID!
+  areaId: ID!
+  fechaAsignacion: Date!
+  observaciones: String
+}
+
+input TrasladoInput {
+  activoId: ID!
+  areaDestinoId: ID!
+  autorizadoPorId: ID!
+  fecha: Date!
+  motivoTraslado: String!
+}
+
+input BajaInput {
+  activoId: ID!
+  autorizadoPorId: ID!
+  motivo: String!
+  valorResidual: BigDecimal
+  numeroResolucion: String
+}
+
+input CategoriaActivoInput {
+  nombre: String!
+  descripcion: String
+  metodoDepreciacion: MetodoDepreciacion!
+  tasaDepreciacion: Float!
+}
+
+input AreaInput {
+  codigo: String!
+  nombre: String!
+  descripcion: String
+  responsableId: ID
+}
+
+input ResponsableInput {
+  nombre: String!
+  cargo: String!
+  email: String!
+  telefono: String
+}
+
+input FiltroActivoInput {
+  busqueda: String
+  codigo: String
+  nombre: String
+  estado: EstadoActivo
+  categoriaId: ID
+  areaId: ID
+  anioAdquisicionDesde: Int
+  anioAdquisicionHasta: Int
+}
+
+input UsuarioInput {
+  username: String!
+  email: String!
+  password: String
+  rol: RolUsuario!
+}
+
+# ---------------------  Queries  ------------------------------------
+type Query {
+  # Activos
+  activos(filtro: FiltroActivoInput): [Activo!]!
+  activo(id: ID!): Activo
+
+  # Asignaciones
+  asignacionesPorActivo(activoId: ID!): [Asignacion!]!
+  asignacionesPorResponsable(responsableId: ID!): [Asignacion!]!
+  activosPorArea(areaId: ID!): [Activo!]!
+  activosPorResponsable(responsableId: ID!): [Activo!]!
+
+  # Traslados
+  trasladosPorActivo(activoId: ID!): [Traslado!]!
+
+  # Bajas
+  bajaPorActivo(activoId: ID!): Baja
+  bajas: [Baja!]!
+
+  # Blockchain
+  historialBlockchain(activoId: ID!): [RegistroBlockchain!]!
+  verificarIntegridadBlockchain(registroId: ID!): Boolean!
+
+  # Catálogos
+  usuarios: [Usuario!]!
+  usuario(id: ID!): Usuario
+  buscarUsuarios(query: String!): [Usuario!]!
+  categorias: [CategoriaActivo!]!
+  areas: [Area!]!
+  responsables: [Responsable!]!
+
+  # BI / Reportes
+  reporteDepreciacion(anio: Int!): ReporteDepreciacionDTO!
+  dashboardBI: DashboardMetricasDTO!
+  proyectarVidaUtil(activoId: ID!): ProyeccionVidaUtilDTO!
+}
+
+# ---------------------  Mutations  ----------------------------------
+type Mutation {
+  # Activos
+  registrarActivo(input: ActivoInput!): Activo!
+  actualizarActivo(id: ID!, input: ActivoInput!): Activo!
+  cambiarEstadoActivo(activoId: ID!, nuevoEstado: EstadoActivo!): Activo!
+  actualizarUbicacionActivo(activoId: ID!, ubicacion: String): Activo!
+
+  # Asignaciones
+  asignarActivo(input: AsignacionInput!): Asignacion!
+  devolverActivo(asignacionId: ID!): Asignacion!
+
+  # Traslados
+  trasladarActivo(input: TrasladoInput!): Traslado!
+  confirmarRecepcionActivo(trasladoId: ID!): Traslado!
+
+  # Bajas
+  registrarBajaActivo(input: BajaInput!): Baja!
+  autorizarBajaActivo(bajaId: ID!, autorizadoPorId: ID!): Baja!
+  darDeBajaActivo(input: BajaInput!): Baja!
+
+  # Administración de catálogos
+  crearUsuario(input: UsuarioInput!): Usuario!
+  actualizarUsuario(id: ID!, input: UsuarioInput!): Usuario!
+  cambiarRolUsuario(id: ID!, rol: RolUsuario!): Usuario!
+  toggleUsuario(id: ID!): Usuario!
+  restablecerPassword(id: ID!, nuevaPassword: String!): Usuario!
+
+  crearArea(input: AreaInput!): Area!
+  actualizarArea(id: ID!, input: AreaInput!): Area!
+  eliminarArea(id: ID!): Boolean!
+
+  crearResponsable(input: ResponsableInput!): Responsable!
+  actualizarResponsable(id: ID!, input: ResponsableInput!): Responsable!
+
+  crearCategoriaActivo(input: CategoriaActivoInput!): CategoriaActivo!
+  actualizarCategoriaActivo(
+    id: ID!
+    input: CategoriaActivoInput!
+  ): CategoriaActivo!
+}

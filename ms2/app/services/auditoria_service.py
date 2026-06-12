@@ -40,3 +40,6 @@ class AuditoriaService:
 
     def obtener_por_documento(self, documento_id: str) -> list[dict]:
         return self._db.query_auditoria_by_documento(documento_id)
+
+    def obtener_diagnosticos_por_activo(self, activo_id: str) -> list[dict]:
+        return self._db.query_auditoria_by_activo_accion(activo_id, "DIAGNOSTICO_CNN")

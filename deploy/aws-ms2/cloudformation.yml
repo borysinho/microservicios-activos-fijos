@@ -1,0 +1,237 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: MS2 Documentos e IA - FastAPI on Lambda, API Gateway, S3 and DynamoDB.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: activos-fijos-ms2
+  ImageUri:
+    Type: String
+  BucketName:
+    Type: String
+  DocsTableName:
+    Type: String
+    Default: documentos
+  AuditTableName:
+    Type: String
+    Default: auditoria
+  JwtSecret:
+    Type: String
+    NoEcho: true
+  JwtAlgorithm:
+    Type: String
+    Default: HS512
+  AllowedOrigins:
+    Type: String
+    Default: "*"
+
+Resources:
+  DocumentosBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
+  DocumentosTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Ref DocsTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: activoId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: activoId-index
+          KeySchema:
+            - AttributeName: activoId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  AuditoriaTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Ref AuditTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: documentoId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: documentoId-index
+          KeySchema:
+            - AttributeName: documentoId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ms2-s3-dynamodb-access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt DocumentosBucket.Arn
+                  - !Sub "${DocumentosBucket.Arn}/*"
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:ListTables
+                  - dynamodb:DescribeTable
+                  - dynamodb:CreateTable
+                Resource:
+                  - !GetAtt DocumentosTable.Arn
+                  - !Sub "${DocumentosTable.Arn}/index/*"
+                  - !GetAtt AuditoriaTable.Arn
+                  - !Sub "${AuditoriaTable.Arn}/index/*"
+
+  Ms2Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref ProjectName
+      PackageType: Image
+      Code:
+        ImageUri: !Ref ImageUri
+      Role: !GetAtt LambdaRole.Arn
+      MemorySize: 512
+      Timeout: 30
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          AWS_ENDPOINT_URL: ""
+          S3_BUCKET_NAME: !Ref BucketName
+          DYNAMODB_TABLE_DOCS: !Ref DocsTableName
+          DYNAMODB_TABLE_AUDITORIA: !Ref AuditTableName
+          JWT_SECRET: !Ref JwtSecret
+          JWT_ALGORITHM: !Ref JwtAlgorithm
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+
+  HttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${ProjectName}-http-api"
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+
+  HttpApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref HttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt Ms2Function.Arn
+      PayloadFormatVersion: "2.0"
+
+  HttpApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "ANY /{proxy+}"
+      Target: !Sub "integrations/${HttpApiIntegration}"
+
+  HttpApiRootRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: "ANY /"
+      Target: !Sub "integrations/${HttpApiIntegration}"
+
+  HttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref HttpApi
+      StageName: "$default"
+      AutoDeploy: true
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Ms2Function
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*"
+
+Outputs:
+  ApiUrl:
+    Description: Base URL for MS2 API Gateway.
+    Value: !GetAtt HttpApi.ApiEndpoint
+  HealthUrl:
+    Description: Health endpoint.
+    Value: !Sub "${HttpApi.ApiEndpoint}/health"
+  Bucket:
+    Description: S3 bucket for documents and IA images.
+    Value: !Ref DocumentosBucket
+  DocsTable:
+    Description: DynamoDB table for document metadata.
+    Value: !Ref DocumentosTable
+  AuditTable:
+    Description: DynamoDB table for audit events.
+    Value: !Ref AuditoriaTable

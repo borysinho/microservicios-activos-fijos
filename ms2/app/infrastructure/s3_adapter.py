@@ -25,9 +25,10 @@ class S3Adapter:
     def __init__(self) -> None:
         kwargs: dict = {
             "region_name": settings.aws_region,
-            "aws_access_key_id": settings.aws_access_key_id,
-            "aws_secret_access_key": settings.aws_secret_access_key,
         }
+        if settings.aws_endpoint_url or _has_real_static_credentials():
+            kwargs["aws_access_key_id"] = settings.aws_access_key_id
+            kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
         if settings.aws_endpoint_url:
             kwargs["endpoint_url"] = settings.aws_endpoint_url
         self._client = boto3.client("s3", **kwargs)
@@ -133,3 +134,12 @@ class S3Adapter:
                 local_path = os.path.join(local_dir, relative)
                 os.makedirs(os.path.dirname(local_path), exist_ok=True)
                 self._client.download_file(self._bucket, key, local_path)
+
+
+def _has_real_static_credentials() -> bool:
+    return (
+        bool(settings.aws_access_key_id)
+        and bool(settings.aws_secret_access_key)
+        and settings.aws_access_key_id != "test"
+        and settings.aws_secret_access_key != "test"
+    )

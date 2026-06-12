@@ -49,19 +49,21 @@ Para ahorrar espacio en el AVD, `npm run android` instala solo la arquitectura a
 
 ## Variables de entorno
 
-Copia `.env.example` a `.env` y configura las URLs de los microservicios:
+La app queda configurada por defecto para consumir los servicios locales del repo desde Android vía USB. El script `npm run android` ejecuta primero `adb reverse` para que `127.0.0.1` dentro del dispositivo apunte al equipo local. Copia `.env.example` a `.env` si necesitas regenerarlo:
 
 ```
-MS1_BASE_URL=https://ms1.azurewebsites.net
-MS2_BASE_URL=https://ms2.aws.example.com/api
-MS3_BASE_URL=https://ms3-gcp.a.run.app/api
+MS1_BASE_URL=http://127.0.0.1:8081
+MS2_BASE_URL=http://127.0.0.1:8002/api
+MS3_BASE_URL=http://127.0.0.1:3000/api
 ```
 
-Para el MS1 desplegado actualmente en Azure:
+Estos puertos corresponden a los `docker-compose.yml` locales:
 
-```
-MS1_BASE_URL=https://ms1-activos-fijos-031456.azurewebsites.net
-```
+- MS1 Spring Boot: host `8081` → contenedor `8080`
+- MS2 FastAPI: host `8002`
+- MS3 NestJS/N8N gateway: host `3000`
+
+Si ejecutas los servicios directamente sin Docker, ajusta los puertos según tus procesos locales, por ejemplo `MS1_BASE_URL=http://127.0.0.1:8080` y `MS2_BASE_URL=http://127.0.0.1:8000/api`, y agrega esos puertos al script `android:reverse` si cambian. En emulador Android también puedes usar `10.0.2.2` en lugar de `127.0.0.1`; en simulador iOS puedes usar `localhost`.
 
 ## Flujo principal — Diagnóstico IA
 

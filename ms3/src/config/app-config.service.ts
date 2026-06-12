@@ -11,6 +11,7 @@ export class AppConfig {
 
   readonly port = Number(env('PORT', '3000'));
   readonly ms1GraphqlUrl = env('MS1_GRAPHQL_URL', 'http://localhost:8081/graphql');
+  readonly ms1AuthToken = env('MS1_AUTH_TOKEN');
   readonly ms1TicketsUrl = env('MS1_TICKETS_URL');
   readonly ms2BaseUrl = env('MS2_BASE_URL', 'http://localhost:8000/api');
   readonly n8nWebhookUrl = env('N8N_WEBHOOK_URL');
@@ -21,6 +22,10 @@ export class AppConfig {
   readonly whatsappToken = env('WHATSAPP_TOKEN');
   readonly whatsappAppSecret = env('WHATSAPP_APP_SECRET');
   readonly whatsappVerifyToken = env('WHATSAPP_VERIFY_TOKEN', 'activos-ms3-verify');
+  readonly whatsappProvider = env('WHATSAPP_PROVIDER', 'meta').toLowerCase();
+  readonly wahaBaseUrl = env('WAHA_BASE_URL', 'http://localhost:3001');
+  readonly wahaSession = env('WAHA_SESSION', 'default');
+  readonly wahaApiKey = env('WAHA_API_KEY');
 
   readonly sendgridApiKey = env('SENDGRID_API_KEY');
   readonly sendgridFromEmail = env('SENDGRID_FROM_EMAIL', 'noreply@activos.empresa.com');

@@ -49,14 +49,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.WHATSAPP_API_URL}}/{{$env.WHATSAPP_PHONE_NUMBER_ID}}/messages",
+        "url": "={{$env.WAHA_BASE_URL}}/api/sendText",
         "sendHeaders": true,
         "headerParameters": {
-          "parameters": [{ "name": "Authorization", "value": "=Bearer {{$env.WHATSAPP_TOKEN}}" }]
+          "parameters": [{ "name": "X-Api-Key", "value": "={{$env.WAHA_API_KEY}}" }]
         },
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"messaging_product\":\"whatsapp\",\"to\":\"{{$node['Webhook MS1 Mantenimiento'].json.responsablePhone}}\",\"type\":\"text\",\"text\":{\"body\":\"Recordatorio: el activo {{$node['Webhook MS1 Mantenimiento'].json.codigo}} tiene mantenimiento programado para {{$node['Webhook MS1 Mantenimiento'].json.fechaMantenimiento}}.\"}}"
+        "jsonBody": "={\"session\":\"{{$env.WAHA_SESSION || 'default'}}\",\"chatId\":\"{{$node['Webhook MS1 Mantenimiento'].json.responsablePhone.includes('@') ? $node['Webhook MS1 Mantenimiento'].json.responsablePhone : $node['Webhook MS1 Mantenimiento'].json.responsablePhone.replace(/[^0-9]/g, '') + '@c.us'}}\",\"text\":\"Recordatorio: el activo {{$node['Webhook MS1 Mantenimiento'].json.codigo}} tiene mantenimiento programado para {{$node['Webhook MS1 Mantenimiento'].json.fechaMantenimiento}}.\"}"
       },
       "id": "whatsapp",
       "name": "Enviar WhatsApp",

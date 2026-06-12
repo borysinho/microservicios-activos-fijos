@@ -88,19 +88,19 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.WHATSAPP_API_URL}}/{{$env.WHATSAPP_PHONE_NUMBER_ID}}/messages",
+        "url": "={{$env.WAHA_BASE_URL}}/api/sendText",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
-              "name": "Authorization",
-              "value": "=Bearer {{$env.WHATSAPP_TOKEN}}"
+              "name": "X-Api-Key",
+              "value": "={{$env.WAHA_API_KEY}}"
             }
           ]
         },
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"messaging_product\":\"whatsapp\",\"to\":\"{{$node['WhatsApp Trigger'].json.from}}\",\"type\":\"text\",\"text\":{\"body\":\"Tu solicitud de revision fue recibida.\"}}"
+        "jsonBody": "={\"session\":\"{{$env.WAHA_SESSION || 'default'}}\",\"chatId\":\"{{$node['WhatsApp Trigger'].json.from.includes('@') ? $node['WhatsApp Trigger'].json.from : $node['WhatsApp Trigger'].json.from.replace(/[^0-9]/g, '') + '@c.us'}}\",\"text\":\"Tu solicitud de revision fue recibida.\"}"
       },
       "id": "responder-whatsapp",
       "name": "Responder WhatsApp",

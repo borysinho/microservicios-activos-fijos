@@ -1,0 +1,12 @@
+FROM public.ecr.aws/lambda/python:3.11
+
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+COPY deploy/aws-ms2/requirements-lambda.txt /tmp/requirements-lambda.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-lambda.txt
+
+COPY ms2/app ./app
+COPY ms2/main.py ./main.py
+COPY deploy/aws-ms2/main_lambda.py ./main_lambda.py
+
+CMD ["main_lambda.handler"]

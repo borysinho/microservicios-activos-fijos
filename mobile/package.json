@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "android": "react-native run-android --port 8088 --no-packager --active-arch-only --verbose",
+    "android": "npm run android:reverse && react-native run-android --port 8088 --no-packager --active-arch-only --verbose",
     "android:full": "react-native run-android --port 8088 --verbose",
+    "android:reverse": "adb reverse tcp:8088 tcp:8088 && adb reverse tcp:8081 tcp:8081 && adb reverse tcp:8002 tcp:8002 && adb reverse tcp:3000 tcp:3000",
     "ios": "react-native run-ios --port 8088",
     "start": "react-native start --port 8088",
     "test": "jest",

@@ -67,6 +67,10 @@ export class NotificacionesService {
   }
 
   async enviarWhatsAppTexto(to: string, body: string): Promise<ResultadoEnvio> {
+    if (this.config.whatsappProvider === 'waha') {
+      return this.enviarWhatsAppWaha(to, body);
+    }
+
     if (!this.config.whatsappToken || !this.config.whatsappPhoneNumberId) {
       return { enviado: false, canal: 'whatsapp', modo: 'simulado', destino: to };
     }
@@ -95,6 +99,40 @@ export class NotificacionesService {
       this.logger.warn(`WhatsApp fallo para ${to}: ${(error as Error).message}`);
       return { enviado: false, canal: 'whatsapp', modo: 'simulado', destino: to };
     }
+  }
+
+  private async enviarWhatsAppWaha(to: string, body: string): Promise<ResultadoEnvio> {
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (this.config.wahaApiKey) {
+        headers['X-Api-Key'] = this.config.wahaApiKey;
+      }
+
+      await firstValueFrom(
+        this.http.post(
+          `${this.config.wahaBaseUrl.replace(/\/$/, '')}/api/sendText`,
+          {
+            session: this.config.wahaSession,
+            chatId: this.toWahaChatId(to),
+            text: body,
+          },
+          { headers },
+        ),
+      );
+
+      return { enviado: true, canal: 'whatsapp', modo: 'real', destino: to };
+    } catch (error) {
+      this.logger.warn(`WAHA fallo para ${to}: ${(error as Error).message}`);
+      return { enviado: false, canal: 'whatsapp', modo: 'simulado', destino: to };
+    }
+  }
+
+  private toWahaChatId(to: string): string {
+    if (to.includes('@c.us') || to.includes('@g.us')) {
+      return to;
+    }
+
+    return `${to.replace(/\D/g, '')}@c.us`;
   }
 
   async enviarWhatsAppMantenimiento(params: {

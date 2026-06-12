@@ -28,6 +28,28 @@ En desarrollo, MS3 puede probar los flujos sin credenciales reales de Meta, Send
 MS3_DEV_TOOLS_ENABLED=true npm run start:dev
 ```
 
+Si MS1 o MS2 no estan disponibles localmente, el modo desarrollo usa datos demo para los activos `ACT-2024-001`, `ACT-2024-002` y `ACT-2024-003`, y genera tickets simulados. Si MS1 esta protegido con JWT, configura `MS1_AUTH_TOKEN` para que MS3 envie `Authorization: Bearer <token>` en las llamadas GraphQL y de tickets.
+
+## WhatsApp local con WAHA
+
+El `docker-compose.yml` local levanta `devlikeapro/waha` junto a MS3 y N8N. WAHA queda publicado en `http://localhost:3001`, mientras que MS3 y N8N lo consumen dentro de Docker como `http://waha:3000`.
+
+```bash
+docker compose up --build
+```
+
+Abre `http://localhost:3001`, autoriza con usuario `admin` y clave `activos-local-admin`, e inicia/escanea la sesion `default`. Las llamadas HTTP usan `X-Api-Key: activos-local-waha-key`.
+
+Para ejecutar MS3 fuera de Docker contra WAHA local:
+
+```bash
+WHATSAPP_PROVIDER=waha \
+WAHA_BASE_URL=http://localhost:3001 \
+WAHA_SESSION=default \
+WAHA_API_KEY=activos-local-waha-key \
+npm run start:dev
+```
+
 ## Probar funcionalidades en modo desarrollo
 
 ### 1. Ver que MS3 esta listo

@@ -12,9 +12,10 @@ class DynamoDBAdapter:
     def __init__(self) -> None:
         kwargs: dict = {
             "region_name": settings.aws_region,
-            "aws_access_key_id": settings.aws_access_key_id,
-            "aws_secret_access_key": settings.aws_secret_access_key,
         }
+        if settings.aws_endpoint_url or _has_real_static_credentials():
+            kwargs["aws_access_key_id"] = settings.aws_access_key_id
+            kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
         if settings.aws_endpoint_url:
             kwargs["endpoint_url"] = settings.aws_endpoint_url
         self._resource = boto3.resource("dynamodb", **kwargs)
@@ -145,3 +146,18 @@ class DynamoDBAdapter:
             ScanIndexForward=False,
         )
         return resp.get("Items", [])
+
+    def query_auditoria_by_activo_accion(self, activo_id: str, accion: str) -> list[dict]:
+        resp = self._audit.scan(
+            FilterExpression=Attr("activoId").eq(activo_id) & Attr("accion").eq(accion),
+        )
+        return sorted(resp.get("Items", []), key=lambda item: item.get("timestamp", ""), reverse=True)
+
+
+def _has_real_static_credentials() -> bool:
+    return (
+        bool(settings.aws_access_key_id)
+        and bool(settings.aws_secret_access_key)
+        and settings.aws_access_key_id != "test"
+        and settings.aws_secret_access_key != "test"
+    )

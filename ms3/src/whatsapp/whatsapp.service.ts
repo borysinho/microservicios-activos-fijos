@@ -27,6 +27,10 @@ export class WhatsappService {
   }
 
   validarFirma(signature: string | undefined, rawBody?: Buffer): void {
+    if (this.config.whatsappProvider === 'waha') {
+      return;
+    }
+
     if (!this.config.whatsappAppSecret) {
       return;
     }
@@ -49,6 +53,18 @@ export class WhatsappService {
   }
 
   extraerMensaje(payload: any): WhatsappMensajeEntrante | null {
+    if (payload?.event === 'message' && payload?.payload) {
+      if (payload.payload.fromMe) {
+        return null;
+      }
+
+      return {
+        from: payload.payload.from,
+        text: payload.payload.body?.trim() ?? '',
+        timestamp: String(payload.payload.timestamp ?? ''),
+      };
+    }
+
     const value = payload?.entry?.[0]?.changes?.[0]?.value;
     const message = value?.messages?.[0];
     if (!message) {

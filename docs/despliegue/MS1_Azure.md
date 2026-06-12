@@ -433,7 +433,7 @@ Marcar en el checklist:
 [x] MS1 conectado a PostgreSQL en Supabase
 ```
 
-> Si el checklist aun menciona "Azure PostgreSQL Flexible Server", registrar esta modificacion como decision tecnica del proyecto: MS1 se despliega en Azure, pero la base PostgreSQL administrada corre en Supabase.
+> Decision tecnica vigente: MS1 se despliega en Azure, pero la base PostgreSQL administrada corre en Supabase.
 
 ---
 

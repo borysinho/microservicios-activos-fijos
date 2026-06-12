@@ -1,6 +1,6 @@
 """Esquemas Pydantic para IA y ML — CU-35/36, CU-61, CU-62, CU-63."""
 
-from typing import List, Literal, Optional
+from typing import List, Optional
 from pydantic import BaseModel
 
 
@@ -16,6 +16,11 @@ class DiagnosticoResponse(BaseModel):
     confianza: float  # 0.0 – 1.0
     recomendacion: str
     imagenS3Key: Optional[str] = None
+    # Alias consumidos por la app móvil React Native.
+    estado: Optional[str] = None
+    detalle: Optional[str] = None
+    imagenUrl: Optional[str] = None
+    fechaDiagnostico: Optional[str] = None
 
 
 # ── Predicción de vida útil — Random Forest (CU-61/62) ───────────────────────
