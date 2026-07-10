@@ -26,7 +26,8 @@ Para una licencia Azure for Students, mantener esta infraestructura pequena. La 
 | VM size | `Standard_B1ms` |
 | Usuario SSH | `azureuser` |
 | IP publica | `13.82.148.244` |
-| URL MS1 | `http://13.82.148.244` |
+| DNS Azure | `ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com` |
+| URL MS1 | `http://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com` |
 | Imagen | `ms1-activos` |
 
 ## 1. Confirmar sesion y elegir nombres
@@ -135,6 +136,11 @@ az vm open-port \
   --name "$VM" \
   --port 80 \
   --priority 1001
+
+az network public-ip update \
+  --resource-group "$RG" \
+  --name "${VM}PublicIP" \
+  --dns-name ms1-activos-fijos-bq20260710
 ```
 
 ## 5. Configurar variables de produccion en la VM
@@ -168,7 +174,7 @@ JWT_SECRET=<jwt-secret-largo>
 BLOCKCHAIN_RPC_URL=<rpc-url>
 BLOCKCHAIN_PRIVATE_KEY=<private-key>
 MS3_WEBHOOK_URL=<url-ms3-o-placeholder>
-CORS_ALLOWED_ORIGIN_PATTERNS=http://<IP_PUBLICA>,https://<IP_PUBLICA>
+CORS_ALLOWED_ORIGIN_PATTERNS=http://<IP_PUBLICA>,https://<IP_PUBLICA>,http://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com,https://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com
 ```
 
 ## 6. Configurar secrets de GitHub Actions
@@ -216,7 +222,7 @@ Luego revisa:
 gh run list --workflow "MS1 Azure CD"
 gh run watch
 
-curl "http://<IP_PUBLICA>/actuator/health"
+curl "http://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com/actuator/health"
 ```
 
 Si el workflow termina bien, cada cambio futuro en `ms1/**` desplegara automaticamente a produccion.
