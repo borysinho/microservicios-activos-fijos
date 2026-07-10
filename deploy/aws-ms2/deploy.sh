@@ -28,8 +28,8 @@ if [[ -n "${AWS_PROFILE:-}" ]]; then
   AWS_PROFILE_ARG=(--profile "$AWS_PROFILE")
 fi
 
-DOCS_TABLE_NAME="${DYNAMODB_TABLE_DOCS:-documentos}"
-AUDIT_TABLE_NAME="${DYNAMODB_TABLE_AUDITORIA:-auditoria}"
+DOCS_TABLE_NAME="${DYNAMODB_TABLE_DOCS:-activos-fijos-ms2-documentos}"
+AUDIT_TABLE_NAME="${DYNAMODB_TABLE_AUDITORIA:-activos-fijos-ms2-auditoria}"
 JWT_SECRET="${JWT_SECRET:-saf-ms1-super-secret-key-2026-activos-fijos-bolivia-uagrm}"
 JWT_ALGORITHM="${JWT_ALGORITHM:-HS512}"
 ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-*}"
@@ -62,6 +62,26 @@ if ! "$AWS_CLI" "${AWS_PROFILE_ARG[@]}" ecr describe-repositories \
     --repository-name "$ECR_REPO" \
     --image-scanning-configuration scanOnPush=true >/dev/null
 fi
+
+"$AWS_CLI" "${AWS_PROFILE_ARG[@]}" ecr put-lifecycle-policy \
+  --region "$AWS_REGION" \
+  --repository-name "$ECR_REPO" \
+  --lifecycle-policy-text '{
+    "rules": [
+      {
+        "rulePriority": 1,
+        "description": "Mantener solo las ultimas 5 imagenes de MS2",
+        "selection": {
+          "tagStatus": "any",
+          "countType": "imageCountMoreThan",
+          "countNumber": 5
+        },
+        "action": {
+          "type": "expire"
+        }
+      }
+    ]
+  }' >/dev/null
 
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}"
 IMAGE_TAG="${IMAGE_TAG:-$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)}"

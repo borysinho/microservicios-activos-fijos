@@ -1,5 +1,8 @@
 FROM public.ecr.aws/lambda/python:3.11
 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR ${LAMBDA_TASK_ROOT}
 
 COPY deploy/aws-ms2/requirements-lambda.txt /tmp/requirements-lambda.txt

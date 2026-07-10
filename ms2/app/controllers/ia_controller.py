@@ -154,7 +154,7 @@ async def diagnostico_imagen(
     "/diagnosticos",
     summary="CU-38 — Historial de diagnósticos CNN por activo",
 )
-def historial_diagnosticos(
+async def historial_diagnosticos(
     activoId: str,
     current_user: dict = Depends(get_current_user),
 ):
@@ -215,7 +215,7 @@ def _ext(content_type: Optional[str]) -> str:
     response_model=PrediccionVidaUtilResponse,
     summary="CU-61/62 — Predicción de vida útil (RF regresión) y probabilidad de fallo (RF clasificación)",
 )
-def prediccion_vida_util(
+async def prediccion_vida_util(
     categoriaId: Optional[str] = None,
     valorAdquisicion: float = 0.0,
     aniosFabricacion: int = 0,
@@ -243,7 +243,7 @@ def prediccion_vida_util(
     response_model=ClusteringResponse,
     summary="CU-63/66 — Clustering de activos por patrones (K-Means)",
 )
-def clustering(
+async def clustering(
     categoriaId: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
 ):

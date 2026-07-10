@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: MS2 Documentos e IA - FastAPI on Lambda, API Gateway, S3 and DynamoDB.
+Description: MS2 Documentos e IA - FastAPI on Lambda Function URL, S3 and DynamoDB.
 
 Parameters:
   ProjectName:
@@ -11,10 +11,10 @@ Parameters:
     Type: String
   DocsTableName:
     Type: String
-    Default: documentos
+    Default: activos-fijos-ms2-documentos
   AuditTableName:
     Type: String
-    Default: auditoria
+    Default: activos-fijos-ms2-auditoria
   JwtSecret:
     Type: String
     NoEcho: true
@@ -24,6 +24,11 @@ Parameters:
   AllowedOrigins:
     Type: String
     Default: "*"
+  LambdaReservedConcurrency:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    MaxValue: 20
 
 Resources:
   DocumentosBucket:
@@ -37,6 +42,10 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
       VersioningConfiguration:
         Status: Enabled
       LifecycleConfiguration:
@@ -133,9 +142,7 @@ Resources:
                   - dynamodb:UpdateItem
                   - dynamodb:Query
                   - dynamodb:Scan
-                  - dynamodb:ListTables
                   - dynamodb:DescribeTable
-                  - dynamodb:CreateTable
                 Resource:
                   - !GetAtt DocumentosTable.Arn
                   - !Sub "${DocumentosTable.Arn}/index/*"
@@ -152,11 +159,14 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       MemorySize: 512
       Timeout: 30
+      ReservedConcurrentExecutions: !Ref LambdaReservedConcurrency
       Architectures:
         - x86_64
       Environment:
         Variables:
           AWS_ENDPOINT_URL: ""
+          AUTO_BOOTSTRAP_AWS_RESOURCES: "false"
+          AWS_REGION: !Ref AWS::Region
           S3_BUCKET_NAME: !Ref BucketName
           DYNAMODB_TABLE_DOCS: !Ref DocsTableName
           DYNAMODB_TABLE_AUDITORIA: !Ref AuditTableName
@@ -164,68 +174,27 @@ Resources:
           JWT_ALGORITHM: !Ref JwtAlgorithm
           ALLOWED_ORIGINS: !Ref AllowedOrigins
 
-  HttpApi:
-    Type: AWS::ApiGatewayV2::Api
+  Ms2FunctionUrl:
+    Type: AWS::Lambda::Url
     Properties:
-      Name: !Sub "${ProjectName}-http-api"
-      ProtocolType: HTTP
-      CorsConfiguration:
-        AllowOrigins:
-          - "*"
-        AllowMethods:
-          - GET
-          - POST
-          - PUT
-          - DELETE
-          - OPTIONS
-        AllowHeaders:
-          - Authorization
-          - Content-Type
+      AuthType: NONE
+      TargetFunctionArn: !GetAtt Ms2Function.Arn
 
-  HttpApiIntegration:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-      ApiId: !Ref HttpApi
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt Ms2Function.Arn
-      PayloadFormatVersion: "2.0"
-
-  HttpApiRoute:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref HttpApi
-      RouteKey: "ANY /{proxy+}"
-      Target: !Sub "integrations/${HttpApiIntegration}"
-
-  HttpApiRootRoute:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref HttpApi
-      RouteKey: "ANY /"
-      Target: !Sub "integrations/${HttpApiIntegration}"
-
-  HttpApiStage:
-    Type: AWS::ApiGatewayV2::Stage
-    Properties:
-      ApiId: !Ref HttpApi
-      StageName: "$default"
-      AutoDeploy: true
-
-  LambdaInvokePermission:
+  Ms2FunctionUrlPermission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref Ms2Function
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*"
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
 
 Outputs:
   ApiUrl:
-    Description: Base URL for MS2 API Gateway.
-    Value: !GetAtt HttpApi.ApiEndpoint
+    Description: Base URL for MS2 Lambda Function URL.
+    Value: !GetAtt Ms2FunctionUrl.FunctionUrl
   HealthUrl:
     Description: Health endpoint.
-    Value: !Sub "${HttpApi.ApiEndpoint}/health"
+    Value: !Sub "${Ms2FunctionUrl.FunctionUrl}health"
   Bucket:
     Description: S3 bucket for documents and IA images.
     Value: !Ref DocumentosBucket

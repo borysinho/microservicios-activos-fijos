@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     s3_bucket_name: str = "activos-fijos-documentos-dev"
     dynamodb_table_docs: str = "documentos"
     dynamodb_table_auditoria: str = "auditoria"
+    auto_bootstrap_aws_resources: bool = True
 
     # JWT (mismo secret que MS1)
     jwt_secret: str = "saf-ms1-super-secret-key-2026-activos-fijos-bolivia-uagrm"
@@ -26,6 +27,7 @@ class Settings(BaseSettings):
     # en vez de descargarse desde S3 (útil para probar TensorFlow sin AWS)
     # Ejecutar primero: python scripts/train_models.py
     local_models_path: Optional[str] = None
+    load_ai_models: bool = True
 
 
 settings = Settings()

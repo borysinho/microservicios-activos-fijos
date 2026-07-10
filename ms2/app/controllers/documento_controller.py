@@ -15,7 +15,7 @@ router = APIRouter(prefix="/documentos", tags=["Documentos"])
 # ── Inyección de dependencias ─────────────────────────────────────────────────
 
 
-def _get_service() -> DocumentoService:
+async def _get_service() -> DocumentoService:
     s3 = S3Adapter()
     db = DynamoDBAdapter()
     auditoria = AuditoriaService(db)
@@ -59,7 +59,7 @@ async def upload_documento(
 # ── CU-27: URL presignada ─────────────────────────────────────────────────────
 
 @router.get("/{documento_id}/url")
-def get_url(
+async def get_url(
     documento_id: str,
     request: Request,
     current_user: dict = Depends(get_current_user),
@@ -105,7 +105,7 @@ async def nueva_version(
 # ── CU-29: Historial de versiones ─────────────────────────────────────────────
 
 @router.get("/{documento_id}/versiones")
-def get_versiones(
+async def get_versiones(
     documento_id: str,
     request: Request,
     current_user: dict = Depends(get_current_user),
@@ -119,7 +119,7 @@ def get_versiones(
 # ── CU-30: Soft delete ────────────────────────────────────────────────────────
 
 @router.delete("/{documento_id}")
-def eliminar_documento(
+async def eliminar_documento(
     documento_id: str,
     request: Request,
     current_user: dict = Depends(get_current_user),
@@ -133,7 +133,7 @@ def eliminar_documento(
 # ── CU-31: Log de auditoría de un documento ────────────────────────────────────
 
 @router.get("/{documento_id}/auditoria")
-def get_auditoria_documento(
+async def get_auditoria_documento(
     documento_id: str,
     current_user: dict = Depends(get_current_user),
     service: DocumentoService = Depends(_get_service),
@@ -153,7 +153,7 @@ def get_auditoria_documento(
 # ── CU-32/33: Listar y buscar documentos ─────────────────────────────────────
 
 @router.get("")
-def listar_documentos(
+async def listar_documentos(
     activoId: str,
     tipo: Optional[str] = None,
     desde: Optional[str] = None,

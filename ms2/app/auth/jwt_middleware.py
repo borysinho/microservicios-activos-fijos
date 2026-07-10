@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from app.config import settings
 
 
-def get_current_user(request: Request) -> dict:
+async def get_current_user(request: Request) -> dict:
     """
     Extrae y valida el JWT emitido por MS1.
     Retorna el payload con 'sub' (username) y 'roles'.
@@ -42,8 +42,8 @@ def get_current_user(request: Request) -> dict:
 def require_roles(*allowed_roles: str):
     """Dependencia que restringe el acceso a roles específicos."""
 
-    def _check(request: Request) -> dict:
-        user = get_current_user(request)
+    async def _check(request: Request) -> dict:
+        user = await get_current_user(request)
         user_roles: list[str] = user.get("roles", [])
         if not any(r in user_roles for r in allowed_roles):
             raise HTTPException(

@@ -9,12 +9,12 @@ from app.services.auditoria_service import AuditoriaService
 router = APIRouter(prefix="/auditoria", tags=["Auditoría"])
 
 
-def _get_auditoria_service() -> AuditoriaService:
+async def _get_auditoria_service() -> AuditoriaService:
     return AuditoriaService(DynamoDBAdapter())
 
 
 @router.get("/{documento_id}")
-def get_auditoria(
+async def get_auditoria(
     documento_id: str,
     current_user: dict = Depends(get_current_user),
     service: AuditoriaService = Depends(_get_auditoria_service),

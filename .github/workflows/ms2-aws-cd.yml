@@ -1,0 +1,102 @@
+name: MS2 AWS CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "ms2/**"
+      - "deploy/aws-ms2/**"
+      - ".github/workflows/ms2-aws-cd.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "ms2/**"
+      - "deploy/aws-ms2/**"
+      - ".github/workflows/ms2-aws-cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  PROJECT_NAME: ${{ vars.MS2_PROJECT_NAME || 'activos-fijos-ms2' }}
+  STACK_NAME: ${{ vars.MS2_STACK_NAME || 'activos-fijos-ms2' }}
+  ECR_REPO: ${{ vars.MS2_ECR_REPO || 'activos-fijos-ms2' }}
+  DYNAMODB_TABLE_DOCS: ${{ vars.DYNAMODB_TABLE_DOCS || 'activos-fijos-ms2-documentos' }}
+  DYNAMODB_TABLE_AUDITORIA: ${{ vars.DYNAMODB_TABLE_AUDITORIA || 'activos-fijos-ms2-auditoria' }}
+  ALLOWED_ORIGINS: ${{ vars.MS2_ALLOWED_ORIGINS || '*' }}
+
+jobs:
+  test:
+    name: Test MS2
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ms2
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ms2/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest
+
+  build-and-deploy:
+    name: Build image and deploy
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name != 'pull_request'
+    environment: production
+    concurrency:
+      group: ms2-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check deployment configuration
+        id: deployment-config
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "::warning::AWS credentials are not configured. Build/deploy will be skipped until AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are added."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test -n "$JWT_SECRET" || { echo "::error::JWT_SECRET secret is required"; exit 1; }
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        if: steps.deployment-config.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy MS2 to AWS
+        if: steps.deployment-config.outputs.configured == 'true'
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_ALGORITHM: ${{ vars.JWT_ALGORITHM || 'HS512' }}
+          S3_BUCKET_NAME: ${{ vars.MS2_S3_BUCKET_NAME }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: bash deploy/aws-ms2/deploy.sh

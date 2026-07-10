@@ -11,6 +11,9 @@ os.environ.setdefault("AWS_ACCESS_KEY_ID", "testing")
 os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "testing")
 os.environ.setdefault("AWS_REGION", "us-east-1")
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
+os.environ["AWS_ENDPOINT_URL"] = ""
+os.environ["AUTO_BOOTSTRAP_AWS_RESOURCES"] = "false"
+os.environ["LOAD_AI_MODELS"] = "false"
 os.environ.setdefault("S3_BUCKET_NAME", "test-bucket")
 os.environ.setdefault("DYNAMODB_TABLE_DOCS", "documentos")
 os.environ.setdefault("DYNAMODB_TABLE_AUDITORIA", "auditoria")
