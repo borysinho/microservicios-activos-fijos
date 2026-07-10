@@ -4,7 +4,7 @@ Este documento deja MS1 con CI/CD: cada `pull_request` hacia `main` que modifiqu
 
 ## Estrategia
 
-- **Aplicacion**: Azure VM Linux `Standard_B1ms` con Docker Compose.
+- **Aplicacion**: Azure VM Linux `Standard_B1ms` con Docker Compose y Caddy para HTTPS.
 - **Imagen**: Azure Container Registry Basic.
 - **Base de datos**: PostgreSQL 16 en contenedor, volumen persistente Docker.
 - **CI/CD**: GitHub Actions en `.github/workflows/ms1-azure-cd.yml`.
@@ -27,7 +27,7 @@ Para una licencia Azure for Students, mantener esta infraestructura pequena. La 
 | Usuario SSH | `azureuser` |
 | IP publica | `13.82.148.244` |
 | DNS Azure | `ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com` |
-| URL MS1 | `http://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com` |
+| URL MS1 | `https://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com` |
 | Imagen | `ms1-activos` |
 
 ## 1. Confirmar sesion y elegir nombres
@@ -116,7 +116,7 @@ runcmd:
   - chown -R azureuser:azureuser /opt/ms1
 ```
 
-Luego crea la VM y abre el puerto HTTP:
+Luego crea la VM y abre los puertos HTTP/HTTPS:
 
 ```bash
 az vm create \
@@ -136,6 +136,12 @@ az vm open-port \
   --name "$VM" \
   --port 80 \
   --priority 1001
+
+az vm open-port \
+  --resource-group "$RG" \
+  --name "$VM" \
+  --port 443 \
+  --priority 1002
 
 az network public-ip update \
   --resource-group "$RG" \
@@ -167,7 +173,9 @@ POSTGRES_PASSWORD=<password-postgres>
 SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/activos_db
 SPRING_DATASOURCE_USERNAME=activos_user
 SPRING_DATASOURCE_PASSWORD=<password-postgres>
-MS1_PORT=80
+MS1_DOMAIN=ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com
+MS1_HTTP_PORT=80
+MS1_HTTPS_PORT=443
 ADMIN_USER=admin
 ADMIN_PASSWORD=<password-admin>
 JWT_SECRET=<jwt-secret-largo>
@@ -222,7 +230,7 @@ Luego revisa:
 gh run list --workflow "MS1 Azure CD"
 gh run watch
 
-curl "http://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com/actuator/health"
+curl "https://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com/actuator/health"
 ```
 
 Si el workflow termina bien, cada cambio futuro en `ms1/**` desplegara automaticamente a produccion.
@@ -237,6 +245,9 @@ ssh -i /tmp/ms1_vm_key "$VM_USER@<IP_PUBLICA>" \
 
 ssh -i /tmp/ms1_vm_key "$VM_USER@<IP_PUBLICA>" \
   "cd /opt/ms1 && docker compose --env-file .env -f docker-compose.yml logs --tail=120 ms1"
+
+ssh -i /tmp/ms1_vm_key "$VM_USER@<IP_PUBLICA>" \
+  "cd /opt/ms1 && docker compose --env-file .env -f docker-compose.yml logs --tail=120 caddy"
 ```
 
 Errores comunes:

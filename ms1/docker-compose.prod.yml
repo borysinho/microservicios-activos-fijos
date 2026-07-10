@@ -36,8 +36,8 @@ services:
       BLOCKCHAIN_PRIVATE_KEY: ${BLOCKCHAIN_PRIVATE_KEY:?BLOCKCHAIN_PRIVATE_KEY requerida}
       MS3_WEBHOOK_URL: ${MS3_WEBHOOK_URL:?MS3_WEBHOOK_URL requerida}
       CORS_ALLOWED_ORIGIN_PATTERNS: ${CORS_ALLOWED_ORIGIN_PATTERNS:-*}
-    ports:
-      - "${MS1_PORT:-80}:8080"
+    expose:
+      - "8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,8 +45,32 @@ services:
     networks:
       - ms1_prod_net
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: ms1-caddy-prod
+    command:
+      - caddy
+      - reverse-proxy
+      - --from
+      - ${MS1_DOMAIN:-ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com}
+      - --to
+      - ms1:8080
+    ports:
+      - "${MS1_HTTP_PORT:-80}:80"
+      - "${MS1_HTTPS_PORT:-443}:443"
+    volumes:
+      - ms1_caddy_data_prod:/data
+      - ms1_caddy_config_prod:/config
+    depends_on:
+      - ms1
+    restart: unless-stopped
+    networks:
+      - ms1_prod_net
+
 volumes:
   ms1_pgdata_prod:
+  ms1_caddy_data_prod:
+  ms1_caddy_config_prod:
 
 networks:
   ms1_prod_net:
