@@ -1,16 +1,28 @@
-# ── Etapa 1: Build ────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jdk-alpine AS builder
+# ── Base con Gradle Wrapper ────────────────────────────────────────────
+FROM eclipse-temurin:21-jdk-alpine AS gradle-base
 
 WORKDIR /workspace
 
-COPY gradlew settings.gradle build.gradle ./
+COPY gradlew settings.gradle build.gradle gradle.properties ./
 COPY gradle/ gradle/
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon -q
+RUN chmod +x gradlew && ./gradlew dependencies --no-daemon -q >/dev/null
+
+# ── Desarrollo: ejecuta Spring Boot con el codigo montado ──────────────
+FROM gradle-base AS dev
+
+COPY src/ src/
+
+EXPOSE 8080
+
+ENTRYPOINT ["./gradlew", "-Dorg.gradle.java.home=/opt/java/openjdk", "bootRun", "--no-daemon"]
+
+# ── Build de produccion ────────────────────────────────────────────────
+FROM gradle-base AS builder
 
 COPY src/ src/
 RUN ./gradlew bootJar --no-daemon -x test
 
-# ── Etapa 2: Runtime ──────────────────────────────────────────────────
+# ── Runtime de produccion ──────────────────────────────────────────────
 FROM eclipse-temurin:21-jre-alpine AS runtime
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

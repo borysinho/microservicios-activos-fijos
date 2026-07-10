@@ -1,6 +1,6 @@
 # CI/CD de MS1 en Azure App Service
 
-Este documento deja MS1 con despliegue continuo: cada `push` a `main` que modifique `ms1/**` construye una nueva imagen Docker, la publica en Azure Container Registry y actualiza el contenedor en Azure App Service.
+Este documento deja MS1 con CI/CD: cada `pull_request` hacia `main` que modifique `ms1/**` ejecuta tests, y cada `push` a `main` construye una nueva imagen Docker, la publica en Azure Container Registry y actualiza el contenedor en Azure App Service.
 
 ## Estrategia
 
@@ -9,8 +9,23 @@ Este documento deja MS1 con despliegue continuo: cada `push` a `main` que modifi
 - **Base de datos**: Supabase PostgreSQL administrado para MS1.
 - **CI/CD**: GitHub Actions en `.github/workflows/ms1-azure-cd.yml`.
 - **Rama productiva**: `main`.
+- **Environment de GitHub**: `production`.
+- **CI en PR**: ejecuta `./gradlew test --no-daemon` sin desplegar.
+- **Imagen productiva**: Docker target `runtime` de `ms1/Dockerfile`.
 
 Para una licencia Azure for Students, mantener esta infraestructura pequena. El plan `B1` sirve para demo academica con contenedor; si no se esta usando, detener o eliminar recursos para no consumir credito.
+
+## Recursos creados para este proyecto
+
+| Recurso | Valor |
+| --- | --- |
+| Resource Group | `rg-activos-fijos` |
+| Azure Container Registry | `acracfijosbq20260710` |
+| ACR login server | `acracfijosbq20260710.azurecr.io` |
+| App Service Plan | `asp-ms1-activos` |
+| Azure Web App | `ms1-activos-fijos-bq20260710` |
+| URL MS1 | `https://ms1-activos-fijos-bq20260710.azurewebsites.net` |
+| Imagen | `ms1-activos` |
 
 ## 1. Confirmar sesion y elegir nombres
 
@@ -20,9 +35,9 @@ az account show -o table
 
 RG=rg-activos-fijos
 LOC=eastus
-ACR=acracfijos$(date +%H%M%S)
+ACR=acracfijosbq20260710
 PLAN=asp-ms1-activos
-APP=ms1-activos-fijos
+APP=ms1-activos-fijos-bq20260710
 IMAGE=ms1-activos
 ```
 
@@ -174,8 +189,10 @@ Tambien puedes cargarlos desde GitHub: **Settings > Secrets and variables > Acti
 ## 8. Probar despliegue continuo
 
 ```bash
-git add .github/workflows/ms1-azure-cd.yml ms1/.dockerignore
-git add -f docs/despliegue/MS1_CI_CD_Azure.md docs/despliegue/MS1_Azure.md
+git add .github/workflows/ms1-azure-cd.yml
+git add ms1/.gitignore ms1/.dockerignore ms1/Dockerfile ms1/build.gradle ms1/gradle.properties
+git add ms1/gradle/wrapper/gradle-wrapper.jar
+git add docs/despliegue/MS1_CI_CD_Azure.md
 git commit -m "ci(ms1): deploy to Azure App Service"
 git push origin main
 ```
@@ -190,6 +207,8 @@ curl "https://$APP.azurewebsites.net/actuator/health"
 ```
 
 Si el workflow termina bien, cada cambio futuro en `ms1/**` desplegara automaticamente a produccion.
+
+El despliegue conjunto de los 3 microservicios esta documentado en `docs/despliegue/CI_CD_Produccion_3MS.md`.
 
 ## 9. Logs y diagnostico
 
