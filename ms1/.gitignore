@@ -23,6 +23,7 @@ logs/
 
 # ── Secrets / Config local ────────────────────────────────────────────
 .env
+.env.*
 .env.local
 application-local.yml
 application-dev.yml
