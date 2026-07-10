@@ -11,8 +11,16 @@ if [[ -f "$ROOT_DIR/ms2/.env" ]]; then
   set +a
 fi
 
+if [[ "${AWS_ACCESS_KEY_ID:-}" == "test" && "${AWS_SECRET_ACCESS_KEY:-}" == "test" ]]; then
+  unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+fi
+
 if [[ "${AWS_ENDPOINT_URL:-}" =~ (localhost|127\.0\.0\.1|localstack) ]]; then
   unset AWS_ENDPOINT_URL
+fi
+
+if [[ "${S3_BUCKET_NAME:-}" == "activos-fijos-documentos-dev" ]]; then
+  unset S3_BUCKET_NAME
 fi
 
 AWS_CLI="${AWS_CLI:-$(command -v aws || true)}"
@@ -90,8 +98,10 @@ IMAGE_URI="${ECR_URI}:${IMAGE_TAG}"
 "$AWS_CLI" "${AWS_PROFILE_ARG[@]}" ecr get-login-password --region "$AWS_REGION" \
   | docker login --username AWS --password-stdin "$ECR_URI"
 
-docker build \
+docker buildx build \
   --platform linux/amd64 \
+  --provenance=false \
+  --load \
   -f "$DEPLOY_DIR/Dockerfile.lambda" \
   -t "$IMAGE_URI" \
   "$ROOT_DIR"

@@ -24,12 +24,6 @@ Parameters:
   AllowedOrigins:
     Type: String
     Default: "*"
-  LambdaReservedConcurrency:
-    Type: Number
-    Default: 5
-    MinValue: 1
-    MaxValue: 20
-
 Resources:
   DocumentosBucket:
     Type: AWS::S3::Bucket
@@ -159,14 +153,12 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       MemorySize: 512
       Timeout: 30
-      ReservedConcurrentExecutions: !Ref LambdaReservedConcurrency
       Architectures:
         - x86_64
       Environment:
         Variables:
           AWS_ENDPOINT_URL: ""
           AUTO_BOOTSTRAP_AWS_RESOURCES: "false"
-          AWS_REGION: !Ref AWS::Region
           S3_BUCKET_NAME: !Ref BucketName
           DYNAMODB_TABLE_DOCS: !Ref DocsTableName
           DYNAMODB_TABLE_AUDITORIA: !Ref AuditTableName
@@ -187,6 +179,14 @@ Resources:
       Action: lambda:InvokeFunctionUrl
       Principal: "*"
       FunctionUrlAuthType: NONE
+
+  Ms2FunctionUrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Ms2Function
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
 
 Outputs:
   ApiUrl:

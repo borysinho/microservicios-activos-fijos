@@ -8,7 +8,7 @@ Este despliegue publica el microservicio **MS2 - Documentos e IA** en AWS usando
 - Amazon DynamoDB en modo `PAY_PER_REQUEST` para metadatos y auditoria.
 - ECR para almacenar la imagen de Lambda.
 
-La ruta prioriza cuenta gratuita y demos de bajo trafico: no deja EC2/App Runner/ECS encendido 24/7, evita API Gateway y limita concurrencia de Lambda.
+La ruta prioriza cuenta gratuita y demos de bajo trafico: no deja EC2/App Runner/ECS encendido 24/7 y evita API Gateway.
 
 ## Requisitos locales
 
@@ -64,18 +64,30 @@ El pipeline ejecuta:
 
 1. `pip install -r requirements.txt`
 2. `pytest`
-3. si existen credenciales AWS, autenticacion con `aws-actions/configure-aws-credentials`
-4. si existen credenciales AWS, `bash deploy/aws-ms2/deploy.sh`
+3. si existe `AWS_ROLE_TO_ASSUME`, autenticacion por OIDC con `aws-actions/configure-aws-credentials`
+4. si no hay OIDC pero existen access keys, autenticacion por secretos AWS
+5. si hay credenciales AWS, `bash deploy/aws-ms2/deploy.sh`
 
-Si `AWS_ACCESS_KEY_ID` o `AWS_SECRET_ACCESS_KEY` no existen, el workflow deja pasar CI y omite el despliegue con un warning. Al agregar esos secretos, el siguiente `push` o `workflow_dispatch` despliega MS2.
+Si no existe `AWS_ROLE_TO_ASSUME` ni access keys, el workflow deja pasar CI y omite el despliegue con un warning. Al agregar OIDC o secretos, el siguiente `push` o `workflow_dispatch` despliega MS2.
+
+Variable recomendada para GitHub OIDC:
+
+| Variable | Uso |
+| --- | --- |
+| `AWS_ROLE_TO_ASSUME` | ARN del rol IAM que GitHub Actions asume sin access keys permanentes |
 
 Secretos requeridos en GitHub Actions:
 
 | Secreto | Uso |
 | --- | --- |
+| `JWT_SECRET` | Secreto compartido con MS1 para validar JWT |
+
+Secretos alternativos si no usas OIDC:
+
+| Secreto | Uso |
+| --- | --- |
 | `AWS_ACCESS_KEY_ID` | Credencial del usuario o rol con permisos de despliegue |
 | `AWS_SECRET_ACCESS_KEY` | Credencial del usuario o rol con permisos de despliegue |
-| `JWT_SECRET` | Secreto compartido con MS1 para validar JWT |
 
 Secretos opcionales:
 
