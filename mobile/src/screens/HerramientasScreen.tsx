@@ -98,8 +98,8 @@ export default function HerramientasScreen() {
       <AccionCampo
         color="#6A1B9A"
         emoji="🔍"
-        titulo="Diagnóstico IA por cámara"
-        detalle="Selecciona un activo y toma una fotografía"
+        titulo="Verificación IA por cámara"
+        detalle="Valida evidencia visual de un activo"
         onPress={() => navigation.navigate("Activos")}
       />
       <AccionCampo

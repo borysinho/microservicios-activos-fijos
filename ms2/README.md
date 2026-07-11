@@ -1,6 +1,6 @@
 # MS2 - Documentos e IA
 
-Microservicio FastAPI para gestion documental, auditoria, diagnostico de estado con imagenes y modelos ML para vida util y clustering.
+Microservicio FastAPI para gestion documental, auditoria, verificacion visual de evidencia con imagenes y modelos ML para vida util y clustering.
 
 ## Stack
 
@@ -9,7 +9,7 @@ Microservicio FastAPI para gestion documental, auditoria, diagnostico de estado 
 - DynamoDB
 - Amazon S3
 - LocalStack para desarrollo
-- CNN para diagnostico de imagenes
+- Deep Learning/CNN como senal auxiliar para verificacion visual de evidencia
 - Random Forest para prediccion de vida util/riesgo
 - K-Means para clustering
 - Docker
@@ -25,13 +25,54 @@ Microservicio FastAPI para gestion documental, auditoria, diagnostico de estado 
 - `DELETE /api/documentos/{documento_id}`: soft delete.
 - `GET /api/documentos/{documento_id}/auditoria`: auditoria del documento.
 - `GET /api/auditoria/{documento_id}`: auditoria global.
-- `POST /api/ia/diagnostico`: diagnostico CNN por imagen.
+- `POST /api/ia/diagnostico`: verificacion visual IA por imagen.
 - `POST /api/ia/diagnostico-imagen`: alias usado por mobile.
-- `GET /api/ia/diagnosticos?activoId=<id>`: historial de diagnosticos.
+- `GET /api/ia/diagnosticos?activoId=<id>`: historial de verificaciones.
 - `GET /api/ml/prediccion-vida-util`: prediccion Random Forest.
 - `GET /api/ml/clustering`: clustering K-Means.
 
 Los endpoints protegidos requieren JWT compatible con MS1.
+
+## IA de imagen: verificacion visual, no diagnostico absoluto
+
+MS2 ya no intenta determinar con precision el estado fisico de un activo usando
+solo una fotografia, porque los modelos entrenados con datasets externos no
+representan necesariamente los activos reales de la organizacion. La imagen se
+usa como evidencia documental y de auditoria.
+
+El endpoint de IA retorna uno de estos resultados:
+
+- `EVIDENCIA_VALIDADA`: la foto tiene calidad suficiente y muestra evidencia visual util.
+- `REQUIERE_REVISION`: la evidencia no permite validacion automatica y requiere confirmacion humana.
+- `FOTO_NO_CONFIABLE`: la imagen es oscura, borrosa, uniforme o insuficiente para auditoria.
+- `POSIBLE_INCONSISTENCIA`: la imagen actual difiere de una imagen historica del mismo activo.
+
+La respuesta conserva los campos compatibles con mobile/frontend:
+
+```json
+{
+  "diagnostico": "EVIDENCIA_VALIDADA",
+  "estado": "evidencia_validada",
+  "confianza": 0.82,
+  "detalle": "Resultado de verificacion visual...",
+  "recomendacion": "La fotografia es util como evidencia documental...",
+  "tipoAnalisis": "VERIFICACION_VISUAL_EVIDENCIA",
+  "verificaciones": [
+    {
+      "criterio": "calidad_fotografica",
+      "resultado": "OK",
+      "detalle": "Calidad 82.1%; brillo=..."
+    }
+  ],
+  "similitudReferencia": 0.91
+}
+```
+
+Si existe una imagen historica en S3 para el activo, MS2 la descarga y compara
+la similitud visual mediante hash perceptual simple. Si no existe referencia,
+solo valida calidad de captura y presencia visual. Si hay un CNN cargado desde
+S3 o `LOCAL_MODELS_PATH`, su salida se registra como `senalModelo`, pero no
+decide por si sola el resultado final.
 
 ## Variables principales
 

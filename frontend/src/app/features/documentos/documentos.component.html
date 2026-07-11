@@ -1,7 +1,7 @@
 <div class="page-header">
   <div>
     <h1>Gestión Documental</h1>
-    <p>Carga, versiones, auditoría y diagnóstico IA de documentos — MS2 FastAPI + S3 + DynamoDB</p>
+    <p>Carga, versiones, auditoría y verificación IA de evidencia — MS2 FastAPI + S3 + DynamoDB</p>
   </div>
 </div>
 
@@ -170,22 +170,28 @@
           {{ uploading() ? 'Subiendo...' : 'Subir a S3' }}
         </button>
         <button class="btn btn--primary" (click)="diagnosticar()" [disabled]="!selectedFile || diagnosing()">
-          {{ diagnosing() ? 'Analizando...' : 'Diagnóstico IA (CNN)' }}
+          {{ diagnosing() ? 'Analizando...' : 'Verificación IA' }}
         </button>
       </div>
 
       @if (resultado(); as r) {
       <div class="ia-result">
-        <h4>Resultado del Diagnóstico IA</h4>
+        <h4>Resultado de Verificación IA</h4>
         <div class="ia-result__body">
           <div class="ia-result__row">
-            <span>Diagnóstico</span>
+            <span>Resultado</span>
             <strong>{{ r.diagnostico ?? r.clase ?? '—' }}</strong>
           </div>
           <div class="ia-result__row">
             <span>Confianza</span>
             <strong class="mono">{{ ((r.confianza ?? r.confidence ?? 0) * 100) | number:'1.1-1' }}%</strong>
           </div>
+          @if (r.detalle) {
+          <div class="ia-result__row ia-result__row--full">
+            <span>Detalle</span>
+            <p>{{ r.detalle }}</p>
+          </div>
+          }
           @if (r.recomendacion) {
           <div class="ia-result__row ia-result__row--full">
             <span>Recomendación</span>

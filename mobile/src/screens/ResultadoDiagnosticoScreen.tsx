@@ -20,9 +20,29 @@ const ESTADO_CONFIG = {
     label: "REQUIERE MANTENIMIENTO",
   },
   oxidado: { emoji: "🔴", color: "#8D6E63", label: "OXIDADO" },
+  evidencia_validada: {
+    emoji: "✅",
+    color: "#2E7D32",
+    label: "EVIDENCIA VALIDADA",
+  },
+  requiere_revision: {
+    emoji: "⚠️",
+    color: "#F57C00",
+    label: "REQUIERE REVISIÓN",
+  },
+  foto_no_confiable: {
+    emoji: "📷",
+    color: "#6D4C41",
+    label: "FOTO NO CONFIABLE",
+  },
+  posible_inconsistencia: {
+    emoji: "🔎",
+    color: "#C62828",
+    label: "POSIBLE INCONSISTENCIA",
+  },
 } as const;
 
-/** CU-37: Pantalla de resultado del diagnóstico CNN (guardado en MS2) */
+/** CU-37: Pantalla de resultado de verificación visual IA (guardado en MS2) */
 export default function ResultadoDiagnosticoScreen({
   route,
   navigation,
@@ -55,7 +75,7 @@ export default function ResultadoDiagnosticoScreen({
 
       {/* Detalle */}
       <View style={styles.seccion}>
-        <Text style={styles.tituloSeccion}>Diagnóstico</Text>
+        <Text style={styles.tituloSeccion}>Verificación visual</Text>
         <Text style={styles.detalle}>{resultado.detalle}</Text>
       </View>
 
@@ -67,7 +87,7 @@ export default function ResultadoDiagnosticoScreen({
 
       {/* Metadatos */}
       <View style={styles.seccion}>
-        <Text style={styles.tituloSeccion}>Detalles del diagnóstico</Text>
+        <Text style={styles.tituloSeccion}>Detalles de la verificación</Text>
         <View style={styles.metaFila}>
           <Text style={styles.metaLabel}>Activo ID</Text>
           <Text style={styles.metaValor}>{resultado.activoId}</Text>

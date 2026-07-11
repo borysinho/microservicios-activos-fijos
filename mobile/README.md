@@ -18,8 +18,8 @@
 | Login                   | `LoginScreen.tsx`                | Autenticación JWT                 |
 | Lista de activos        | `ActivosScreen.tsx`              | CU-40, CU-41                      |
 | Detalle de activo       | `ActivoDetalleScreen.tsx`        | CU-38, CU-39, CU-41, CU-42, CU-43 |
-| Cámara / Diagnóstico IA | `DiagnosticoIAScreen.tsx`        | CU-34, CU-35, CU-36               |
-| Resultado diagnóstico   | `ResultadoDiagnosticoScreen.tsx` | CU-37                             |
+| Cámara / Verificación IA | `DiagnosticoIAScreen.tsx`        | CU-34, CU-35, CU-36               |
+| Resultado verificación   | `ResultadoDiagnosticoScreen.tsx` | CU-37                             |
 | Mapa GPS                | `MapaScreen.tsx`                 | CU-42                             |
 | Herramientas de campo   | `HerramientasScreen.tsx`         | Acceso a cámara, GPS, offline, MS3 |
 | Notificaciones          | `NotificacionesScreen.tsx`       | CU-44                             |
@@ -122,14 +122,14 @@ Para iOS release:
 npm run ios:release:prod
 ```
 
-## Flujo principal — Diagnóstico IA
+## Flujo principal — Verificación IA
 
 1. El responsable selecciona un activo de su lista (CU-40, CU-41)
-2. Pulsa **"Diagnóstico IA"** → se activa la cámara (CU-34)
+2. Pulsa **"Verificación IA"** → se activa la cámara (CU-34)
 3. Toma la fotografía → la app obtiene coordenadas GPS (CU-42)
 4. La imagen se envía a MS2 vía `multipart/form-data` (CU-35)
-5. MS2 procesa con CNN y retorna estado + confianza (CU-36)
-6. El resultado se muestra y queda guardado en el historial (CU-37)
+5. MS2 valida calidad, evidencia visual y posible similitud con imagen histórica (CU-36)
+6. El resultado se muestra y queda guardado en el historial como evidencia auditable (CU-37)
 
 ## Modo offline (CU-40, CU-45)
 

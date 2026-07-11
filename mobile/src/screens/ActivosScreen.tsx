@@ -77,7 +77,7 @@ export default function ActivosScreen() {
               navigation.navigate("DiagnosticoIA", { activoId: item.id })
             }
           >
-            <Text style={styles.btnDiagnosticoTexto}>🔍 Diagnóstico IA</Text>
+            <Text style={styles.btnDiagnosticoTexto}>🔍 Verificación IA</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>

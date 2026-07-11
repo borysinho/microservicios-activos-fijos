@@ -95,6 +95,11 @@ class S3Adapter:
                 url = urlunparse(parsed._replace(netloc=f"localhost:{internal.port}"))
         return url
 
+    def download_bytes(self, s3_key: str) -> bytes:
+        """Descarga un objeto de S3 y retorna su contenido en memoria."""
+        obj = self._client.get_object(Bucket=self._bucket, Key=s3_key)
+        return obj["Body"].read()
+
     # ── Delete ────────────────────────────────────────────────────────────────
 
     def delete(self, s3_key: str) -> None:

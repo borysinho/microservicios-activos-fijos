@@ -19,9 +19,9 @@ type Props = NativeStackScreenProps<RootStackParamList, "DiagnosticoIA">;
 
 /**
  * CU-34: Fotografiar activo con cámara del dispositivo
- * CU-35: Enviar imagen al MS2 para diagnóstico CNN
- * CU-36: Procesar imagen con CNN y retornar diagnóstico
- * CU-37: Guardar imagen y diagnóstico en historial del activo
+ * CU-35: Enviar imagen al MS2 para verificación visual IA
+ * CU-36: Procesar imagen y retornar evidencia/alerta auditable
+ * CU-37: Guardar imagen y verificación en historial del activo
  */
 export default function DiagnosticoIAScreen({ route, navigation }: Props) {
   const { activoId } = route.params;
@@ -64,7 +64,7 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
         // GPS opcional — continuar sin coordenadas
       }
 
-      // 3. Enviar a MS2 para diagnóstico CNN (CU-35, CU-36)
+      // 3. Enviar a MS2 para verificación visual IA (CU-35, CU-36)
       const resultado = await ms2Service.diagnosticarImagen({
         imagePath: photo.path,
         activoId,
@@ -76,7 +76,7 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
       navigation.replace("ResultadoDiagnostico", { resultado });
     } catch (err: any) {
       Alert.alert(
-        "Error en diagnóstico",
+        "Error en verificación",
         err.message ?? "Ocurrió un error al procesar la imagen.",
       );
     } finally {
@@ -111,7 +111,7 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
       <View style={styles.overlay}>
         <View style={styles.visor} />
         <Text style={styles.instruccion}>
-          Encuadra el activo dentro del recuadro
+          Encuadra el activo y su etiqueta dentro del recuadro
         </Text>
       </View>
 

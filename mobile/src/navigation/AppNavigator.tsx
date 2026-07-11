@@ -105,7 +105,7 @@ export function AppNavigator({ initialRouteName }: AppNavigatorProps) {
         <Stack.Screen
           name="DiagnosticoIA"
           component={DiagnosticoIAScreen}
-          options={{ title: "Diagnóstico IA", headerShown: false }}
+          options={{ title: "Verificación IA", headerShown: false }}
         />
         <Stack.Screen
           name="Mapa"
@@ -115,7 +115,7 @@ export function AppNavigator({ initialRouteName }: AppNavigatorProps) {
         <Stack.Screen
           name="ResultadoDiagnostico"
           component={ResultadoDiagnosticoScreen}
-          options={{ title: "Resultado del Diagnóstico" }}
+          options={{ title: "Resultado de Verificación" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

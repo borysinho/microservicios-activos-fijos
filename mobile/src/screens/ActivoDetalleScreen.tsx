@@ -31,6 +31,10 @@ const ESTADO_FISICO_COLOR: Record<string, string> = {
   deteriorado: "#E53935",
   requiere_mantenimiento: "#FB8C00",
   oxidado: "#8D6E63",
+  evidencia_validada: "#2E7D32",
+  requiere_revision: "#F57C00",
+  foto_no_confiable: "#6D4C41",
+  posible_inconsistencia: "#C62828",
 };
 
 async function cargarActivoDesdeCache(activoId: string): Promise<Activo | null> {
@@ -390,7 +394,7 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
 
       {ultimoDiag && (
         <View style={styles.seccion}>
-          <Text style={styles.tituloSeccion}>Último Diagnóstico IA</Text>
+          <Text style={styles.tituloSeccion}>Última Verificación IA</Text>
           <View
             style={[
               styles.diagBadge,
@@ -497,7 +501,7 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
           style={styles.btnAccion}
           onPress={() => navigation.navigate("DiagnosticoIA", { activoId })}
         >
-          <Text style={styles.btnAccionTexto}>🔍 Diagnosticar con IA</Text>
+          <Text style={styles.btnAccionTexto}>🔍 Verificar con IA</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.btnAccion, styles.btnAccionNaranja]}

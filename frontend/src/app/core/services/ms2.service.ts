@@ -40,6 +40,11 @@ export interface DiagnosticoIA {
   diagnostico: string;
   confianza: number;
   recomendacion: string;
+  estado?: string;
+  detalle?: string;
+  tipoAnalisis?: string;
+  similitudReferencia?: number | null;
+  verificaciones?: { criterio: string; resultado: string; detalle: string }[];
 }
 
 export interface PrediccionVidaUtil {

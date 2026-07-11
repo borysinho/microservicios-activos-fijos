@@ -1,7 +1,7 @@
 """Controlador IA/ML — CU-35/36, CU-61, CU-62, CU-63, CU-65, CU-66.
 
 Rutas registradas bajo /api:
-  POST  /ia/diagnostico              — diagnóstico CNN (CU-35/36)
+  POST  /ia/diagnostico              — verificación visual IA (CU-35/36)
   GET   /ml/prediccion-vida-util     — Random Forest vida útil + riesgo (CU-61/62)
   GET   /ml/clustering               — K-Means clustering (CU-63/66)
 """
@@ -52,31 +52,36 @@ def _get_infraestructura() -> tuple[Optional[S3Adapter], Optional[AuditoriaServi
 _MIME_IMAGEN = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 
 
-# ── CU-35/36: Diagnóstico CNN ────────────────────────────────────────────────
+# ── CU-35/36: Verificación visual IA ─────────────────────────────────────────
 
 @ia_router.post(
     "/diagnostico",
     response_model=DiagnosticoResponse,
     status_code=status.HTTP_200_OK,
-    summary="CU-35/36 — Diagnóstico de estado del activo por imagen (CNN)",
+    summary="CU-35/36 — Verificación visual del activo por imagen (IA)",
 )
 @ia_router.post(
     "/diagnostico-imagen",
     response_model=DiagnosticoResponse,
     status_code=status.HTTP_200_OK,
-    summary="CU-35/36 — Diagnóstico de estado del activo por imagen (alias móvil)",
+    summary="CU-35/36 — Verificación visual del activo por imagen (alias móvil)",
 )
 async def diagnostico_imagen(
     request: Request,
     imagen: UploadFile = File(..., description="Imagen JPG/PNG/WEBP del activo"),
     activoId: Optional[str] = Form(None, description="UUID del activo (opcional)"),
+    codigoEsperado: Optional[str] = Form(None, description="Código patrimonial esperado (opcional)"),
+    imagenReferenciaS3Key: Optional[str] = Form(None, description="Imagen histórica S3 para comparación (opcional)"),
+    latitud: Optional[float] = Form(None, description="Latitud GPS enviada por mobile (opcional)"),
+    longitud: Optional[float] = Form(None, description="Longitud GPS enviada por mobile (opcional)"),
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Recibe una imagen del activo, ejecuta la CNN y retorna el estado diagnosticado
-    con su nivel de confianza y recomendación de acción.
+    Recibe una imagen del activo y genera una verificación visual auditable.
 
-    Clases posibles: BUENO | DETERIORADO | REQUIERE_MANTENIMIENTO | OXIDADO
+    No determina el estado físico exacto. La salida indica si la foto es una
+    evidencia válida, si requiere revisión humana, si no es confiable o si
+    difiere de una fotografía histórica del activo.
     """
     content_type = imagen.content_type or ""
     if content_type not in _MIME_IMAGEN:
@@ -92,24 +97,38 @@ async def diagnostico_imagen(
             detail="El archivo está vacío.",
         )
 
-    resultado = _diagnostico_service.inferir(
-        imagen_bytes=imagen_bytes,
-        cnn_model=model_loader.cnn_model,
-    )
-
     # ── Persistencia: imagen en S3 + registro en DynamoDB (CU-35/36) ─────────
     s3, auditoria = _get_infraestructura()
     imagen_s3_key: Optional[str] = None
     imagen_s3_url: Optional[str] = None
+    referencia_s3_key: Optional[str] = imagenReferenciaS3Key
+    referencia_bytes: Optional[bytes] = None
     fecha_diagnostico = datetime.now(timezone.utc).isoformat()
+
+    if referencia_s3_key is None and auditoria is not None and activoId:
+        referencia_s3_key = _ultima_imagen_historial(auditoria, activoId)
+
+    if s3 is not None and referencia_s3_key:
+        try:
+            referencia_bytes = s3.download_bytes(referencia_s3_key)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("No se pudo descargar imagen histórica %s: %s", referencia_s3_key, exc)
+            referencia_s3_key = None
+
+    resultado = _diagnostico_service.inferir(
+        imagen_bytes=imagen_bytes,
+        cnn_model=model_loader.cnn_model,
+        referencia_bytes=referencia_bytes,
+        codigo_esperado=codigoEsperado,
+    )
 
     if s3 is not None:
         try:
             diagnostico_id = str(uuid4())
-            s3_key = f"diagnosticos/{activoId or 'unknown'}/{diagnostico_id}{_ext(imagen.content_type)}"
+            s3_key = f"verificaciones/{activoId or 'unknown'}/{diagnostico_id}{_ext(imagen.content_type)}"
             imagen_s3_url = s3.upload(imagen_bytes, s3_key, imagen.content_type)
             imagen_s3_key = s3_key
-            logger.info("Imagen diagnóstico subida a S3: %s", s3_key)
+            logger.info("Imagen de verificación subida a S3: %s", s3_key)
         except Exception as exc:  # noqa: BLE001
             logger.warning("No se pudo subir imagen a S3: %s", exc)
 
@@ -125,17 +144,26 @@ async def diagnostico_imagen(
                 ip_origen=ip,
                 detalles={
                     "diagnostico": resultado["diagnostico"],
-                    "estado": _estado_mobile(resultado["diagnostico"]),
+                    "estado": resultado.get("estado") or _estado_mobile(resultado["diagnostico"]),
                     "confianza": resultado["confianza"],
-                    "detalle": _detalle_diagnostico(resultado["diagnostico"], resultado["confianza"]),
+                    "detalle": resultado["detalle"],
                     "recomendacion": resultado["recomendacion"],
                     "imagenS3Key": imagen_s3_key,
                     "imagenUrl": imagen_s3_url,
                     "fechaDiagnostico": fecha_diagnostico,
+                    "tipoAnalisis": resultado.get("tipoAnalisis"),
+                    "verificaciones": resultado.get("verificaciones", []),
+                    "metricas": resultado.get("metricas", {}),
+                    "similitudReferencia": resultado.get("similitudReferencia"),
+                    "referenciaS3Key": referencia_s3_key,
+                    "senalModelo": resultado.get("senalModelo"),
+                    "codigoEsperado": codigoEsperado,
+                    "latitud": latitud,
+                    "longitud": longitud,
                 },
             )
         except Exception as exc:  # noqa: BLE001
-            logger.warning("No se pudo registrar diagnóstico en DynamoDB: %s", exc)
+            logger.warning("No se pudo registrar verificación en DynamoDB: %s", exc)
 
     return DiagnosticoResponse(
         activoId=activoId,
@@ -143,27 +171,33 @@ async def diagnostico_imagen(
         confianza=resultado["confianza"],
         recomendacion=resultado["recomendacion"],
         imagenS3Key=imagen_s3_key,
-        estado=_estado_mobile(resultado["diagnostico"]),
-        detalle=_detalle_diagnostico(resultado["diagnostico"], resultado["confianza"]),
+        estado=resultado.get("estado") or _estado_mobile(resultado["diagnostico"]),
+        detalle=resultado["detalle"],
         imagenUrl=imagen_s3_url,
         fechaDiagnostico=fecha_diagnostico,
+        tipoAnalisis=resultado.get("tipoAnalisis"),
+        verificaciones=resultado.get("verificaciones", []),
+        metricas=resultado.get("metricas", {}),
+        similitudReferencia=resultado.get("similitudReferencia"),
+        referenciaS3Key=referencia_s3_key,
+        senalModelo=resultado.get("senalModelo"),
     )
 
 
 @ia_router.get(
     "/diagnosticos",
-    summary="CU-38 — Historial de diagnósticos CNN por activo",
+    summary="CU-38 — Historial de verificaciones visuales IA por activo",
 )
 async def historial_diagnosticos(
     activoId: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """Retorna diagnósticos registrados para la app móvil y el detalle del activo."""
+    """Retorna verificaciones visuales registradas para la app móvil y el detalle del activo."""
     try:
         auditoria = AuditoriaService(DynamoDBAdapter())
         eventos = auditoria.obtener_diagnosticos_por_activo(activoId)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("No se pudo consultar historial de diagnósticos: %s", exc)
+        logger.warning("No se pudo consultar historial de verificaciones: %s", exc)
         return []
 
     historial = []
@@ -174,7 +208,7 @@ async def historial_diagnosticos(
         except json.JSONDecodeError:
             detalles = {}
 
-        diagnostico = detalles.get("diagnostico", "BUENO")
+        diagnostico = detalles.get("diagnostico", "REQUIERE_REVISION")
         confianza = float(detalles.get("confianza", 0.0))
         historial.append(
             {
@@ -188,6 +222,12 @@ async def historial_diagnosticos(
                 "imagenS3Key": detalles.get("imagenS3Key"),
                 "imagenUrl": detalles.get("imagenUrl"),
                 "fechaDiagnostico": detalles.get("fechaDiagnostico") or evento.get("timestamp"),
+                "tipoAnalisis": detalles.get("tipoAnalisis"),
+                "verificaciones": detalles.get("verificaciones", []),
+                "metricas": detalles.get("metricas", {}),
+                "similitudReferencia": detalles.get("similitudReferencia"),
+                "referenciaS3Key": detalles.get("referenciaS3Key"),
+                "senalModelo": detalles.get("senalModelo"),
             }
         )
     return historial
@@ -199,7 +239,25 @@ def _estado_mobile(diagnostico: str) -> str:
 
 def _detalle_diagnostico(diagnostico: str, confianza: float) -> str:
     porcentaje = round(confianza * 100, 1)
-    return f"Diagnóstico {diagnostico.replace('_', ' ').lower()} detectado con {porcentaje}% de confianza."
+    return f"Verificación {diagnostico.replace('_', ' ').lower()} con {porcentaje}% de confianza."
+
+
+def _ultima_imagen_historial(auditoria: AuditoriaService, activo_id: str) -> Optional[str]:
+    """Obtiene la última imagen histórica registrada para comparar evidencia."""
+    try:
+        eventos = auditoria.obtener_diagnosticos_por_activo(activo_id)
+        for evento in eventos:
+            detalles_raw = evento.get("detalles") or "{}"
+            try:
+                detalles = json.loads(detalles_raw)
+            except json.JSONDecodeError:
+                continue
+            s3_key = detalles.get("imagenS3Key")
+            if s3_key:
+                return s3_key
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("No se pudo obtener referencia histórica del activo %s: %s", activo_id, exc)
+    return None
 
 
 def _ext(content_type: Optional[str]) -> str:

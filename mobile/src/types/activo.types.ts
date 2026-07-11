@@ -10,7 +10,11 @@ export type EstadoFisicoActivo =
   | "bueno"
   | "deteriorado"
   | "requiere_mantenimiento"
-  | "oxidado";
+  | "oxidado"
+  | "evidencia_validada"
+  | "requiere_revision"
+  | "foto_no_confiable"
+  | "posible_inconsistencia";
 
 export type RolUsuario =
   | "ADMINISTRADOR"
@@ -76,6 +80,7 @@ export interface DiagnosticoIA {
   id?: string;
   activoId: string;
   estado: EstadoFisicoActivo;
+  diagnostico?: string;
   confianza: number;
   detalle: string;
   recomendacion: string;
@@ -83,6 +88,8 @@ export interface DiagnosticoIA {
   latitud?: number;
   longitud?: number;
   fechaDiagnostico: string;
+  tipoAnalisis?: string;
+  similitudReferencia?: number | null;
 }
 
 export interface Notificacion {

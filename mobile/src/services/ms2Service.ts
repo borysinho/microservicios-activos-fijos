@@ -4,7 +4,7 @@ import type { DiagnosticoIA } from "../types/activo.types";
 
 const BASE_URL = env.MS2_BASE_URL;
 
-/** CU-35, CU-36: Enviar imagen al MS2 para diagnóstico CNN */
+/** CU-35, CU-36: Enviar imagen al MS2 para verificación visual IA */
 async function diagnosticarImagen(params: {
   imagePath: string;
   activoId: string;
@@ -34,7 +34,7 @@ async function diagnosticarImagen(params: {
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Error en diagnóstico IA: ${response.status} — ${error}`);
+    throw new Error(`Error en verificación IA: ${response.status} — ${error}`);
   }
 
   const resultado = await response.json();
@@ -47,7 +47,7 @@ async function diagnosticarImagen(params: {
   };
 }
 
-/** CU-38: Obtener historial de diagnósticos de un activo desde MS2 */
+/** CU-38: Obtener historial de verificaciones de un activo desde MS2 */
 async function getHistorialDiagnosticos(
   activoId: string,
 ): Promise<DiagnosticoIA[]> {
