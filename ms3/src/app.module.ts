@@ -8,6 +8,7 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { DevModule } from './dev/dev.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -21,5 +22,6 @@ import { DevModule } from './dev/dev.module';
     WhatsappModule,
     DevModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}

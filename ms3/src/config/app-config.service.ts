@@ -14,6 +14,7 @@ export class AppConfig {
   readonly ms1AuthToken = env('MS1_AUTH_TOKEN');
   readonly ms1TicketsUrl = env('MS1_TICKETS_URL');
   readonly ms2BaseUrl = env('MS2_BASE_URL', 'http://localhost:8000/api');
+  readonly ms2AuthToken = env('MS2_AUTH_TOKEN');
   readonly n8nWebhookUrl = env('N8N_WEBHOOK_URL');
   readonly corsOrigins = env('CORS_ORIGINS', '*').split(',').map((origin) => origin.trim());
 

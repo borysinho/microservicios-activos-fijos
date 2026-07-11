@@ -66,8 +66,10 @@ jobs:
       - name: Validate deployment configuration
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          MS2_AUTH_TOKEN: ${{ secrets.MS2_AUTH_TOKEN }}
         run: |
           test -n "$GCP_SA_KEY" || { echo "::error::GCP_SA_KEY secret is required"; exit 1; }
+          test -n "$MS2_AUTH_TOKEN" || { echo "::error::MS2_AUTH_TOKEN secret is required"; exit 1; }
           test -n "$GCP_PROJECT_ID" || { echo "::error::GCP_PROJECT_ID variable is required"; exit 1; }
           test -n "$MS1_GRAPHQL_URL" || { echo "::error::MS1_GRAPHQL_URL variable is required"; exit 1; }
           test -n "$MS2_BASE_URL" || { echo "::error::MS2_BASE_URL variable is required"; exit 1; }
@@ -81,6 +83,8 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Deploy MS3 to Cloud Run
+        env:
+          MS2_AUTH_TOKEN: ${{ secrets.MS2_AUTH_TOKEN }}
         run: |
           gcloud run deploy "$GCP_RUN_SERVICE" \
             --source ms3 \
@@ -93,11 +97,22 @@ jobs:
             --memory=512Mi \
             --concurrency=20 \
             --timeout=60 \
-            --set-env-vars "^@^NODE_ENV=production@MS3_DEV_TOOLS_ENABLED=false@MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL}@MS2_BASE_URL=${MS2_BASE_URL}@SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}@N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}"
+            --cpu-throttling \
+            --no-cpu-boost \
+            --set-env-vars "^@^NODE_ENV=production@MS3_DEV_TOOLS_ENABLED=false@MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL}@MS2_BASE_URL=${MS2_BASE_URL}@MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN}@SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}@N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}"
 
       - name: Show deployed URL
+        id: service-url
         run: |
           gcloud run services describe "$GCP_RUN_SERVICE" \
             --project "$GCP_PROJECT_ID" \
             --region "$GCP_REGION" \
             --format='value(status.url)'
+
+      - name: Smoke test deployed MS3
+        run: |
+          SERVICE_URL="$(gcloud run services describe "$GCP_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format='value(status.url)')"
+          curl -fsS "$SERVICE_URL/health"

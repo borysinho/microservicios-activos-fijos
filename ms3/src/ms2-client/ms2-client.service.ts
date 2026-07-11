@@ -24,7 +24,10 @@ export class Ms2ClientService {
     const base = this.config.ms2BaseUrl.replace(/\/$/, '');
     try {
       const { data } = await firstValueFrom(
-        this.http.get(`${base}/documentos`, { params: { activoId } }),
+        this.http.get(`${base}/documentos`, {
+          params: { activoId },
+          ...this.authOptions(),
+        }),
       );
       if (Array.isArray(data)) {
         return data;
@@ -37,5 +40,16 @@ export class Ms2ClientService {
       this.logger.warn(`MS2 no respondio al consultar documentos ${activoId}: ${(error as Error).message}`);
       return [];
     }
+  }
+
+  private authOptions() {
+    if (!this.config.ms2AuthToken) {
+      return {};
+    }
+    return {
+      headers: {
+        Authorization: `Bearer ${this.config.ms2AuthToken}`,
+      },
+    };
   }
 }

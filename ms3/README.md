@@ -15,6 +15,7 @@ Microservicio NestJS encargado de automatizar flujos entre WhatsApp, MS1, MS2, e
 
 ## Endpoints principales
 
+- `GET /health`: health check productivo para Cloud Run y CI/CD.
 - `GET /whatsapp/webhook`: verificacion inicial de WhatsApp Business API.
 - `POST /whatsapp/webhook`: recibe mensajes entrantes y dispara el flujo de revision.
 - `POST /webhooks/vencimiento-garantia`: alerta de garantia desde MS1.
@@ -42,6 +43,7 @@ Variables clave:
 - `MS1_GRAPHQL_URL`: endpoint GraphQL de MS1.
 - `MS1_TICKETS_URL`: endpoint de tickets/solicitudes en MS1 si aplica.
 - `MS2_BASE_URL`: URL base REST de MS2 con prefijo `/api`.
+- `MS2_AUTH_TOKEN`: JWT Bearer para consultar endpoints protegidos de MS2.
 - `N8N_WEBHOOK_URL`: URL de N8N.
 - `WHATSAPP_PROVIDER`: `meta` o `waha`.
 - `WAHA_BASE_URL`, `WAHA_SESSION`, `WAHA_API_KEY`: WhatsApp local con WAHA.
@@ -134,6 +136,7 @@ PORT=3000
 MS3_DEV_TOOLS_ENABLED=false
 MS1_GRAPHQL_URL=https://<ms1-azure>/graphql
 MS2_BASE_URL=https://<ms2-aws>/api
+MS2_AUTH_TOKEN=<JWT_MS2>
 N8N_WEBHOOK_URL=https://<n8n-o-webhook>
 SENDGRID_API_KEY=<SENDGRID_API_KEY>
 SENDGRID_FROM_EMAIL=noreply@activos.empresa.com
@@ -156,6 +159,7 @@ El workflow se ejecuta al hacer `push` a `main` con cambios en `ms3/**`, o manua
 Secreto requerido:
 
 - `GCP_SA_KEY`
+- `MS2_AUTH_TOKEN`
 
 Variables requeridas:
 
@@ -169,6 +173,11 @@ Variables opcionales:
 - `MS3_CLOUD_RUN_SERVICE`
 - `SENDGRID_FROM_EMAIL`
 - `N8N_WEBHOOK_URL`
+
+El despliegue usa limites conservadores para presentacion y capa gratuita:
+`--min-instances=0`, `--max-instances=1`, `--cpu=1`, `--memory=512Mi`,
+`--cpu-throttling` y `--no-cpu-boost`. Tras desplegar, GitHub Actions ejecuta
+un smoke test contra `/health`.
 
 ## Probar funcionalidades en desarrollo
 

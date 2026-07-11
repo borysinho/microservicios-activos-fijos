@@ -72,6 +72,19 @@ describe('MS3 API (e2e)', () => {
     await app.close();
   });
 
+  it('GET /health expone health check productivo', async () => {
+    await request(app.getHttpServer())
+      .get('/health')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual({
+          status: 'ok',
+          service: 'ms3-automatizacion',
+          mode: 'test',
+        });
+      });
+  });
+
   it('GET /whatsapp/webhook devuelve challenge valido', async () => {
     await request(app.getHttpServer())
       .get('/whatsapp/webhook')
