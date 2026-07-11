@@ -274,6 +274,7 @@ def _ext(content_type: Optional[str]) -> str:
     summary="CU-61/62 — Predicción de vida útil (RF regresión) y probabilidad de fallo (RF clasificación)",
 )
 async def prediccion_vida_util(
+    request: Request,
     categoriaId: Optional[str] = None,
     valorAdquisicion: float = 0.0,
     aniosFabricacion: int = 0,
@@ -291,6 +292,22 @@ async def prediccion_vida_util(
         rf_model=model_loader.rf_model,
         kmeans_model=model_loader.kmeans_model,
     )
+    _registrar_auditoria_ml(
+        request=request,
+        current_user=current_user,
+        accion="PREDICCION_RANDOM_FOREST",
+        documento_id=f"ml#vida-util#{categoriaId or 'global'}",
+        activo_id="",
+        detalles={
+            "modelo": "RandomForest_VidaUtil",
+            "entrada": {
+                "categoriaId": categoriaId,
+                "valorAdquisicion": valorAdquisicion,
+                "aniosFabricacion": aniosFabricacion,
+            },
+            "resultado": resultado,
+        },
+    )
     return PrediccionVidaUtilResponse(**resultado)
 
 
@@ -302,6 +319,7 @@ async def prediccion_vida_util(
     summary="CU-63/66 — Clustering de activos por patrones (K-Means)",
 )
 async def clustering(
+    request: Request,
     categoriaId: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
 ):
@@ -316,4 +334,43 @@ async def clustering(
         categoria_id=categoriaId,
         kmeans_model=model_loader.kmeans_model,
     )
+    _registrar_auditoria_ml(
+        request=request,
+        current_user=current_user,
+        accion="CLUSTERING_KMEANS",
+        documento_id=f"ml#clustering#{categoriaId or 'global'}",
+        activo_id="",
+        detalles={
+            "modelo": "KMeans_Clustering",
+            "entrada": {"categoriaId": categoriaId},
+            "resultado": resultado,
+        },
+    )
     return ClusteringResponse(**resultado)
+
+
+def _registrar_auditoria_ml(
+    request: Request,
+    current_user: dict,
+    accion: str,
+    documento_id: str,
+    activo_id: str,
+    detalles: dict,
+) -> None:
+    """Registra inferencias ML en DynamoDB sin bloquear la respuesta si falla AWS."""
+    try:
+        _, auditoria = _get_infraestructura()
+        if auditoria is None:
+            return
+        usuario = current_user.get("username", "desconocido")
+        ip = request.client.host if request.client else "0.0.0.0"
+        auditoria.registrar(
+            documento_id=documento_id,
+            activo_id=activo_id,
+            accion=accion,
+            usuario=usuario,
+            ip_origen=ip,
+            detalles=detalles,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("No se pudo registrar auditoría ML (%s): %s", accion, exc)

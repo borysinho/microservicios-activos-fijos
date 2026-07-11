@@ -6,7 +6,7 @@ class AuditoriaResponse(BaseModel):
     eventoId: str
     documentoId: str
     activoId: str
-    accion: str  # CREAR | VER | DESCARGAR | ACTUALIZAR | ELIMINAR
+    accion: str  # CREAR | LISTAR | VER | DESCARGAR | ACTUALIZAR | ELIMINAR | IA/ML
     usuario: str
     ipOrigen: str
     detalles: Optional[str] = None

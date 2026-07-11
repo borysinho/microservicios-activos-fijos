@@ -33,6 +33,15 @@ Microservicio FastAPI para gestion documental, auditoria, verificacion visual de
 
 Los endpoints protegidos requieren JWT compatible con MS1.
 
+## Cobertura funcional MS2
+
+- `DocumentoController`: carga, descarga presignada, versiones, soft delete, busqueda por activo/filtros y auditoria documental.
+- `IAController`: verificacion visual de evidencia con imagenes, S3, DynamoDB e historial por activo.
+- `AuditoriaController`: consulta de eventos para administradores y auditores.
+- `MLController`: prediccion de vida util/riesgo con Random Forest y agrupacion con K-Means.
+- `app/modelos/`: wrappers `CNN_EstadoActivo`, `RandomForest_VidaUtil` y `KMeans_Clustering` cargados por `ModelLoader`.
+- Auditoria DynamoDB: documentos, accesos/listados, versiones, verificaciones visuales y predicciones ML.
+
 ## IA de imagen: verificacion visual, no diagnostico absoluto
 
 MS2 ya no intenta determinar con precision el estado fisico de un activo usando
@@ -73,6 +82,16 @@ la similitud visual mediante hash perceptual simple. Si no existe referencia,
 solo valida calidad de captura y presencia visual. Si hay un CNN cargado desde
 S3 o `LOCAL_MODELS_PATH`, su salida se registra como `senalModelo`, pero no
 decide por si sola el resultado final.
+
+## ML y trazabilidad
+
+Los endpoints ML registran cada inferencia en DynamoDB mediante auditoria:
+
+- `PREDICCION_RANDOM_FOREST`: entrada de categoria/valor/edad y salida de vida util, riesgo, cluster y recomendacion.
+- `CLUSTERING_KMEANS`: entrada de categoria y grupos resultantes.
+
+Esto permite demostrar parametros de entrada, usuario, IP, timestamp y resultado
+sin reentrenar modelos en cada request.
 
 ## Variables principales
 

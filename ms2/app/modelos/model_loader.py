@@ -6,8 +6,11 @@ que simula respuestas para poder probar los endpoints sin GPU ni S3.
 """
 
 import logging
-import os
 from typing import Any, Optional
+
+from app.modelos.cnn_estado_activo import CNN_EstadoActivo
+from app.modelos.kmeans_clustering import KMeans_Clustering
+from app.modelos.random_forest_vida_util import RandomForest_VidaUtil
 
 logger = logging.getLogger(__name__)
 
@@ -65,13 +68,13 @@ class ModelLoader:
             km_path  = s3.download_to_tmp("models/kmeans_clustering.joblib")
 
         # CNN — formato nativo Keras 3 (.keras)
-        self.cnn_model = tf.keras.models.load_model(cnn_path)
+        self.cnn_model = CNN_EstadoActivo(tf.keras.models.load_model(cnn_path))
 
         # Random Forest (joblib)
-        self.rf_model = joblib.load(rf_path)
+        self.rf_model = RandomForest_VidaUtil(joblib.load(rf_path))
 
         # K-Means (joblib)
-        self.kmeans_model = joblib.load(km_path)
+        self.kmeans_model = KMeans_Clustering(joblib.load(km_path))
 
 
 # Instancia global — se usa desde los servicios IA/ML

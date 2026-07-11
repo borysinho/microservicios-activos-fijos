@@ -247,6 +247,15 @@ class TestCU3233ListarBuscar:
         assert len(facturas) == 1
         assert facturas[0]["tipo"] == "FACTURA"
 
+    def test_listar_registra_acceso_en_auditoria(self, aws_mock):
+        svc = _build_service()
+        doc = svc.cargar(ACTIVO_ID, "a.pdf", "FACTURA", FILE_DATA, CONTENT_TYPE, "admin", "127.0.0.1")
+        svc.listar_por_activo(ACTIVO_ID, usuario="auditor", ip_origen="10.0.0.5")
+
+        eventos = AuditoriaService(DynamoDBAdapter()).obtener_por_documento(doc["documentoId"])
+        acciones = [evento["accion"] for evento in eventos]
+        assert "LISTAR" in acciones
+
     def test_activo_sin_documentos_retorna_lista_vacia(self, aws_mock):
         svc = _build_service()
         docs = svc.listar_por_activo("activo-sin-docs")

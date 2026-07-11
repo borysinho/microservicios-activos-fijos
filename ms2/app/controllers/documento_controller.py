@@ -154,6 +154,7 @@ async def get_auditoria_documento(
 
 @router.get("")
 async def listar_documentos(
+    request: Request,
     activoId: str,
     tipo: Optional[str] = None,
     desde: Optional[str] = None,
@@ -162,4 +163,12 @@ async def listar_documentos(
     service: DocumentoService = Depends(_get_service),
 ):
     """CU-32/33 — Lista documentos de un activo con filtros opcionales."""
-    return service.listar_por_activo(activo_id=activoId, tipo=tipo, desde=desde, hasta=hasta)
+    ip = request.client.host if request.client else "0.0.0.0"
+    return service.listar_por_activo(
+        activo_id=activoId,
+        tipo=tipo,
+        desde=desde,
+        hasta=hasta,
+        usuario=current_user["username"],
+        ip_origen=ip,
+    )

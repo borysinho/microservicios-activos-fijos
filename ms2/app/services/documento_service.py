@@ -141,6 +141,8 @@ class DocumentoService:
         tipo: Optional[str] = None,
         desde: Optional[str] = None,
         hasta: Optional[str] = None,
+        usuario: Optional[str] = None,
+        ip_origen: Optional[str] = None,
     ) -> list[dict]:
         items = self._db.query_by_activo(activo_id)
 
@@ -150,5 +152,16 @@ class DocumentoService:
             items = [d for d in items if d.get("fechaCreacion", "") >= desde]
         if hasta:
             items = [d for d in items if d.get("fechaCreacion", "") <= hasta]
+
+        if usuario and ip_origen:
+            for doc in items:
+                self._auditoria.registrar(
+                    doc["documentoId"],
+                    doc["activoId"],
+                    "LISTAR",
+                    usuario,
+                    ip_origen,
+                    {"tipoFiltro": tipo, "desde": desde, "hasta": hasta},
+                )
 
         return items
