@@ -99,7 +99,7 @@ jobs:
             --timeout=60 \
             --cpu-throttling \
             --no-cpu-boost \
-            --set-env-vars "^@^NODE_ENV=production@MS3_DEV_TOOLS_ENABLED=false@MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL}@MS2_BASE_URL=${MS2_BASE_URL}@MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN}@SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}@N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}"
+            --set-env-vars "NODE_ENV=production,MS3_DEV_TOOLS_ENABLED=false,MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL},MS2_BASE_URL=${MS2_BASE_URL},MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN},SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL},N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}"
 
       - name: Show deployed URL
         id: service-url
