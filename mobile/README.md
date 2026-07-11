@@ -28,42 +28,99 @@
 
 ```bash
 npm install
-# Android
-npx react-native run-android
-# iOS
-cd ios && pod install && cd ..
-npx react-native run-ios
 ```
 
-## Ejecutar en emulador Android
+## Configuracion de servicios
 
-Con el emulador abierto, ejecuta estos dos comandos desde `mobile/`, en dos terminales:
+La app usa `react-native-config` y selecciona el archivo de variables con `ENVFILE`.
+
+| Modo | Archivo | Uso |
+| --- | --- | --- |
+| Debug LAN | `.env.development` | Dispositivo fisico o emulador apuntando a la IP LAN del servidor local |
+| Debug con USB/reverse | `.env.reverse` | Emulador/dispositivo conectado por USB con `adb reverse` |
+| Release produccion | `.env.production` | Build release apuntando a URLs publicas de MS1, MS2 y MS3 |
+
+### Desarrollo por IP LAN
+
+Edita `.env.development` con la IP LAN del equipo/servidor donde estan corriendo los microservicios:
+
+```dotenv
+MS1_BASE_URL=http://10.109.210.250:8081
+MS2_BASE_URL=http://10.109.210.250:8002/api
+MS3_BASE_URL=http://10.109.210.250:3000/api
+```
+
+MS1 debe exponer `8081`, MS2 `8002` y MS3 `3000` en esa maquina. El dispositivo movil debe estar en la misma red LAN y poder alcanzar esa IP.
+
+### Produccion
+
+Edita `.env.production` con las URLs publicas reales de cada microservicio:
+
+```dotenv
+MS1_BASE_URL=https://ms1-activos-fijos-031456.azurewebsites.net
+MS2_BASE_URL=https://<ms2-aws>/api
+MS3_BASE_URL=https://<ms3-gcp>/api
+```
+
+MS1 no lleva `/graphql` en la variable porque el servicio `ms1Service.ts` agrega ese path internamente. MS2 y MS3 si deben incluir `/api`.
+
+## Ejecutar en debug contra servicios LAN
+
+Con el emulador o dispositivo conectado, ejecuta desde `mobile/`:
 
 ```bash
-npm run start
+npm run start:debug
+npm run android:debug:lan
+```
+
+Atajos equivalentes:
+
+```bash
 npm run android
+npm run android:debug
 ```
 
-El primer comando levanta Metro en el puerto `8088`; el segundo instala y abre la app en el emulador.
-Para ahorrar espacio en el AVD, `npm run android` instala solo la arquitectura activa del emulador; las funcionalidades JS de la app se cargan completas desde Metro.
+Para iOS:
 
-## Variables de entorno
-
-La app queda configurada por defecto para consumir los servicios locales del repo desde Android vía USB. El script `npm run android` ejecuta primero `adb reverse` para que `127.0.0.1` dentro del dispositivo apunte al equipo local. Copia `.env.example` a `.env` si necesitas regenerarlo:
-
-```
-MS1_BASE_URL=http://127.0.0.1:8081
-MS2_BASE_URL=http://127.0.0.1:8002/api
-MS3_BASE_URL=http://127.0.0.1:3000/api
+```bash
+npm run ios:debug:lan
 ```
 
-Estos puertos corresponden a los `docker-compose.yml` locales:
+## Ejecutar debug con adb reverse
 
-- MS1 Spring Boot: host `8081` → contenedor `8080`
-- MS2 FastAPI: host `8002`
-- MS3 NestJS/N8N gateway: host `3000`
+Este modo es alternativo al LAN. Usa `127.0.0.1` dentro del dispositivo y reenvia puertos por USB:
 
-Si ejecutas los servicios directamente sin Docker, ajusta los puertos según tus procesos locales, por ejemplo `MS1_BASE_URL=http://127.0.0.1:8080` y `MS2_BASE_URL=http://127.0.0.1:8000/api`, y agrega esos puertos al script `android:reverse` si cambian. En emulador Android también puedes usar `10.0.2.2` en lugar de `127.0.0.1`; en simulador iOS puedes usar `localhost`.
+```bash
+npm run start:debug
+npm run android:debug:reverse
+```
+
+Puertos reenviados:
+
+- Metro: `8088`
+- MS1: `8081`
+- MS2: `8002`
+- MS3: `3000`
+
+## Ejecutar release contra produccion
+
+Para instalar y abrir un build release en Android apuntando a `.env.production`:
+
+```bash
+npm run android:release:prod
+```
+
+Para solo generar el APK release:
+
+```bash
+npm run android:build:release
+```
+
+Para iOS release:
+
+```bash
+npm run ios:release:prod
+```
 
 ## Flujo principal — Diagnóstico IA
 

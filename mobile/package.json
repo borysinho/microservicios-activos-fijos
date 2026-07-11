@@ -3,11 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "android": "npm run android:reverse && react-native run-android --port 8088 --no-packager --active-arch-only --verbose",
-    "android:full": "react-native run-android --port 8088 --verbose",
+    "android": "npm run android:debug:lan",
+    "android:debug": "npm run android:debug:lan",
+    "android:debug:lan": "ENVFILE=.env.development react-native run-android --mode debug --port 8088 --no-packager --active-arch-only --verbose",
+    "android:debug:reverse": "npm run android:reverse && ENVFILE=.env.reverse react-native run-android --mode debug --port 8088 --no-packager --active-arch-only --verbose",
+    "android:release": "npm run android:release:prod",
+    "android:release:prod": "ENVFILE=.env.production react-native run-android --mode release --port 8088 --no-packager --verbose",
+    "android:build:release": "cd android && ENVFILE=.env.production ./gradlew assembleRelease",
+    "android:full": "ENVFILE=.env.development react-native run-android --mode debug --port 8088 --verbose",
     "android:reverse": "adb reverse tcp:8088 tcp:8088 && adb reverse tcp:8081 tcp:8081 && adb reverse tcp:8002 tcp:8002 && adb reverse tcp:3000 tcp:3000",
-    "ios": "react-native run-ios --port 8088",
-    "start": "react-native start --port 8088",
+    "ios": "npm run ios:debug:lan",
+    "ios:debug:lan": "ENVFILE=.env.development react-native run-ios --port 8088",
+    "ios:release:prod": "ENVFILE=.env.production react-native run-ios --mode Release --port 8088",
+    "start": "npm run start:debug",
+    "start:debug": "ENVFILE=.env.development react-native start --port 8088",
+    "start:prod": "ENVFILE=.env.production react-native start --port 8088",
     "test": "jest",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
@@ -22,7 +32,7 @@
     "react-native-safe-area-context": "^4.11.0",
     "react-native-vision-camera": "^4.5.3",
     "react-native-geolocation-service": "^5.3.1",
-    "@react-native-async-storage/async-storage": "^2.1.0",
+    "@react-native-async-storage/async-storage": "^1.24.0",
     "@react-native-community/netinfo": "^11.4.1",
     "axios": "^1.7.7",
     "react-native-config": "^1.5.3",
@@ -30,6 +40,9 @@
     "react-native-vector-icons": "^10.2.0",
     "@react-native-firebase/app": "^21.0.0",
     "@react-native-firebase/messaging": "^21.0.0"
+  },
+  "overrides": {
+    "fast-xml-parser": "^5.7.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",

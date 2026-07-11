@@ -1,6 +1,17 @@
 # MS3 - Automatizacion y Orquestacion
 
-Microservicio NestJS + N8N para CU-67 a CU-74.
+Microservicio NestJS encargado de automatizar flujos entre WhatsApp, MS1, MS2, email y notificaciones. Expone webhooks para eventos de activos, garantia, mantenimiento y diagnosticos criticos. Incluye workflows N8N exportados para evidencia del flujo WhatsApp -> sistema -> email.
+
+## Stack
+
+- Node.js 20
+- NestJS
+- N8N
+- WhatsApp Business API o WAHA en desarrollo
+- SendGrid
+- Firebase Cloud Messaging opcional
+- Docker
+- Google Cloud Run en produccion
 
 ## Endpoints principales
 
@@ -10,35 +21,81 @@ Microservicio NestJS + N8N para CU-67 a CU-74.
 - `POST /webhooks/mantenimiento-programado`: alerta de mantenimiento desde MS1.
 - `POST /webhooks/diagnostico-critico`: alerta desde MS2 por diagnostico CNN critico.
 - `POST /webhook/activos`: compatibilidad con el cliente actual de MS1.
-- `GET /api/flujos`: estado de los 3 flujos para frontend.
+- `GET /api/flujos`: estado de los 3 flujos para Angular.
 - `POST /api/webhook/reportar-problema`: reporte desde mobile.
 
-Los endpoints tambien estan disponibles con prefijo `/api` cuando el frontend o la app movil lo usan.
+Los endpoints tambien estan disponibles con prefijo `/api` cuando frontend o mobile los consumen.
 
-## Ejecutar local
+## Variables principales
+
+Crear el archivo local:
 
 ```bash
+cd ms3
+cp .env.example .env
+```
+
+Variables clave:
+
+- `PORT`: puerto HTTP, por defecto `3000`.
+- `MS3_DEV_TOOLS_ENABLED`: habilita endpoints `/api/dev/**`.
+- `MS1_GRAPHQL_URL`: endpoint GraphQL de MS1.
+- `MS1_TICKETS_URL`: endpoint de tickets/solicitudes en MS1 si aplica.
+- `MS2_BASE_URL`: URL base REST de MS2 con prefijo `/api`.
+- `N8N_WEBHOOK_URL`: URL de N8N.
+- `WHATSAPP_PROVIDER`: `meta` o `waha`.
+- `WAHA_BASE_URL`, `WAHA_SESSION`, `WAHA_API_KEY`: WhatsApp local con WAHA.
+- `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`: email.
+- `FCM_PROJECT_ID`, `FCM_ACCESS_TOKEN`: notificaciones push opcionales.
+
+## Arranque en desarrollo con Docker
+
+Modo recomendado. Levanta MS3 y N8N.
+
+```bash
+cd ms3
+cp .env.example .env
+docker compose up --build
+```
+
+URLs locales:
+
+```text
+http://localhost:3000/api/flujos
+http://localhost:3000/api/dev/health
+http://localhost:5678
+```
+
+Detener:
+
+```bash
+docker compose down
+```
+
+Eliminar tambien datos de N8N:
+
+```bash
+docker compose down -v
+```
+
+## Arranque en desarrollo sin Docker
+
+```bash
+cd ms3
 npm install
+cp .env.example .env
 npm run start:dev
 ```
 
-En desarrollo, MS3 puede probar los flujos sin credenciales reales de Meta, SendGrid ni FCM. Si no configuras esas claves, los envios quedan en modo simulado y la respuesta indica el avance del flujo.
+Tambien puedes habilitar herramientas de desarrollo directamente:
 
 ```bash
 MS3_DEV_TOOLS_ENABLED=true npm run start:dev
 ```
 
-Si MS1 o MS2 no estan disponibles localmente, el modo desarrollo usa datos demo para los activos `ACT-2024-001`, `ACT-2024-002` y `ACT-2024-003`, y genera tickets simulados. Si MS1 esta protegido con JWT, configura `MS1_AUTH_TOKEN` para que MS3 envie `Authorization: Bearer <token>` en las llamadas GraphQL y de tickets.
+Si MS1 o MS2 no estan disponibles localmente, el modo desarrollo usa datos demo para activos como `ACT-2024-001`, `ACT-2024-002` y `ACT-2024-003`.
 
 ## WhatsApp local con WAHA
-
-El `docker-compose.yml` local levanta `devlikeapro/waha` junto a MS3 y N8N. WAHA queda publicado en `http://localhost:3001`, mientras que MS3 y N8N lo consumen dentro de Docker como `http://waha:3000`.
-
-```bash
-docker compose up --build
-```
-
-Abre `http://localhost:3001`, autoriza con usuario `admin` y clave `activos-local-admin`, e inicia/escanea la sesion `default`. Las llamadas HTTP usan `X-Api-Key: activos-local-waha-key`.
 
 Para ejecutar MS3 fuera de Docker contra WAHA local:
 
@@ -50,17 +107,78 @@ WAHA_API_KEY=activos-local-waha-key \
 npm run start:dev
 ```
 
-## Probar funcionalidades en modo desarrollo
+## Arranque en produccion con Docker
 
-### 1. Ver que MS3 esta listo
+Construir la imagen productiva:
+
+```bash
+cd ms3
+docker build -t ms3-automatizacion:prod .
+```
+
+Ejecutar con variables reales:
+
+```bash
+docker run -d \
+  --name ms3-automatizacion-prod \
+  --env-file .env.production \
+  -p 3000:3000 \
+  ms3-automatizacion:prod
+```
+
+Variables minimas de `.env.production`:
+
+```dotenv
+NODE_ENV=production
+PORT=3000
+MS3_DEV_TOOLS_ENABLED=false
+MS1_GRAPHQL_URL=https://<ms1-azure>/graphql
+MS2_BASE_URL=https://<ms2-aws>/api
+N8N_WEBHOOK_URL=https://<n8n-o-webhook>
+SENDGRID_API_KEY=<SENDGRID_API_KEY>
+SENDGRID_FROM_EMAIL=noreply@activos.empresa.com
+WHATSAPP_PROVIDER=meta
+WHATSAPP_PHONE_NUMBER_ID=<PHONE_NUMBER_ID>
+WHATSAPP_TOKEN=<WHATSAPP_TOKEN>
+WHATSAPP_VERIFY_TOKEN=<VERIFY_TOKEN>
+```
+
+## Despliegue en produccion con GitHub Actions
+
+Workflow:
+
+```text
+.github/workflows/ms3-gcp-cd.yml
+```
+
+El workflow se ejecuta al hacer `push` a `main` con cambios en `ms3/**`, o manualmente desde GitHub Actions. Ejecuta `npm ci`, tests, build y despliega a Google Cloud Run con `gcloud run deploy --source ms3`.
+
+Secreto requerido:
+
+- `GCP_SA_KEY`
+
+Variables requeridas:
+
+- `GCP_PROJECT_ID`
+- `MS1_GRAPHQL_URL`
+- `MS2_BASE_URL`
+
+Variables opcionales:
+
+- `GCP_REGION`
+- `MS3_CLOUD_RUN_SERVICE`
+- `SENDGRID_FROM_EMAIL`
+- `N8N_WEBHOOK_URL`
+
+## Probar funcionalidades en desarrollo
+
+Health:
 
 ```bash
 curl -sS http://localhost:3000/api/dev/health
 ```
 
-### 2. Probar flujo CU-67 a CU-72: WhatsApp -> MS1 -> MS2 -> email -> WhatsApp
-
-Endpoint directo de simulacion:
+Simular WhatsApp -> sistema -> email:
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/dev/simular/whatsapp \
@@ -68,29 +186,7 @@ curl -sS -X POST http://localhost:3000/api/dev/simular/whatsapp \
   -d '{"from":"59170000000","text":"Solicito revision de ACT-2024-001"}'
 ```
 
-Endpoint equivalente al webhook real de WhatsApp:
-
-```bash
-curl -sS -X POST http://localhost:3000/whatsapp/webhook \
-  -H "Content-Type: application/json" \
-  -d '{
-    "entry": [{
-      "changes": [{
-        "value": {
-          "messages": [{
-            "from": "59170000000",
-            "timestamp": "1710000000",
-            "text": { "body": "Solicito revision de ACT-2024-001" }
-          }]
-        }
-      }]
-    }]
-  }'
-```
-
-Si MS1 no esta levantado o no encuentra el codigo, el flujo responde `Activo no encontrado`. Eso tambien valida el camino alternativo. Para validar el camino completo con ticket y documentos, levanta MS1/MS2 o usa las pruebas automatizadas.
-
-### 3. Probar CU-73: alerta de vencimiento de garantia
+Alerta de garantia:
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/dev/simular/vencimiento-garantia \
@@ -98,23 +194,7 @@ curl -sS -X POST http://localhost:3000/api/dev/simular/vencimiento-garantia \
   -d '{}'
 ```
 
-Endpoint real desde MS1:
-
-```bash
-curl -sS -X POST http://localhost:3000/webhooks/vencimiento-garantia \
-  -H "Content-Type: application/json" \
-  -d '{
-    "activoId": "550e8400-e29b-41d4-a716-446655440000",
-    "codigo": "ACT-2024-001",
-    "nombre": "Laptop Dell",
-    "fechaVencimientoGarantia": "2026-07-15",
-    "responsableEmail": "responsable.area@activos.local",
-    "responsablePhone": "59170000000",
-    "responsableUsuarioId": "user-demo"
-  }'
-```
-
-### 4. Probar CU-74: alerta de mantenimiento programado
+Alerta de mantenimiento:
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/dev/simular/mantenimiento-programado \
@@ -122,23 +202,7 @@ curl -sS -X POST http://localhost:3000/api/dev/simular/mantenimiento-programado 
   -d '{}'
 ```
 
-Endpoint real desde MS1:
-
-```bash
-curl -sS -X POST http://localhost:3000/webhooks/mantenimiento-programado \
-  -H "Content-Type: application/json" \
-  -d '{
-    "activoId": "550e8400-e29b-41d4-a716-446655440001",
-    "codigo": "ACT-2024-002",
-    "nombre": "Impresora HP",
-    "fechaMantenimiento": "2026-06-20",
-    "responsableEmail": "responsable.area@activos.local",
-    "responsablePhone": "59170000000",
-    "responsableUsuarioId": "user-demo"
-  }'
-```
-
-### 5. Probar alerta desde MS2 por diagnostico critico
+Diagnostico critico desde MS2:
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/dev/simular/diagnostico-critico \
@@ -146,13 +210,13 @@ curl -sS -X POST http://localhost:3000/api/dev/simular/diagnostico-critico \
   -d '{}'
 ```
 
-### 6. Ver estados de flujos para Angular
+Estado de flujos para Angular:
 
 ```bash
 curl -sS http://localhost:3000/api/flujos
 ```
 
-### 7. Probar contrato usado por la app movil
+Contrato usado por mobile:
 
 ```bash
 curl -sS -X POST http://localhost:3000/api/webhook/reportar-problema \
@@ -164,11 +228,10 @@ curl -sS -X POST http://localhost:3000/api/webhook/reportar-problema \
   }'
 ```
 
-En emulador Android, la app movil usa `http://10.0.2.2:3000/api`, que apunta al `localhost` de tu maquina.
-
 ## Pruebas
 
 ```bash
+cd ms3
 npm test
 npm run build
 ```
@@ -180,9 +243,3 @@ Los workflows exportados estan en `n8n-workflows/`:
 - `flujo_01_solicitud_revision.json`
 - `flujo_02_alerta_garantia.json`
 - `flujo_03_alerta_mantenimiento.json`
-
-Para entorno local con N8N:
-
-```bash
-docker compose up --build
-```

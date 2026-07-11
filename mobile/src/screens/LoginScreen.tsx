@@ -19,20 +19,20 @@ import { pushNotificationService } from "../services/pushNotificationService";
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
 export default function LoginScreen({ navigation }: Props) {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [cargando, setCargando] = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Campos requeridos", "Ingresa tu email y contraseña.");
+    if (!username.trim() || !password.trim()) {
+      Alert.alert("Campos requeridos", "Ingresa tu usuario y contraseña.");
       return;
     }
 
     setCargando(true);
     try {
       const response = await ms1Service.login({
-        username: email.trim(),
+        username: username.trim(),
         password,
       });
       await offlineCache.saveSession(response.token, response.usuario);
@@ -60,14 +60,14 @@ export default function LoginScreen({ navigation }: Props) {
 
         <TextInput
           style={styles.input}
-          placeholder="Correo electrónico"
+          placeholder="Usuario"
           placeholderTextColor="#90A4AE"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
+          value={username}
+          onChangeText={setUsername}
+          keyboardType="default"
           autoCapitalize="none"
-          autoComplete="email"
-          textContentType="emailAddress"
+          autoComplete="username"
+          textContentType="username"
           editable={!cargando}
         />
 
