@@ -29,6 +29,7 @@ env:
   DYNAMODB_TABLE_DOCS: ${{ vars.DYNAMODB_TABLE_DOCS || 'activos-fijos-ms2-documentos' }}
   DYNAMODB_TABLE_AUDITORIA: ${{ vars.DYNAMODB_TABLE_AUDITORIA || 'activos-fijos-ms2-auditoria' }}
   ALLOWED_ORIGINS: ${{ vars.MS2_ALLOWED_ORIGINS || '*' }}
+  LOAD_AI_MODELS: ${{ vars.MS2_LOAD_AI_MODELS || 'true' }}
 
 jobs:
   test:
@@ -115,5 +116,6 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_ALGORITHM: ${{ vars.JWT_ALGORITHM || 'HS512' }}
           S3_BUCKET_NAME: ${{ vars.MS2_S3_BUCKET_NAME }}
+          LOAD_AI_MODELS: ${{ env.LOAD_AI_MODELS }}
           IMAGE_TAG: ${{ github.sha }}
         run: bash deploy/aws-ms2/deploy.sh

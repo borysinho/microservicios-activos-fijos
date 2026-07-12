@@ -24,7 +24,7 @@
 | R11 | ML Supervisado (Random Forest)  | MS2                 | Endpoint `/ml/prediccion-vida-util` funcional | [ ] |
 | R12 | ML No Supervisado (K-Means)     | MS2                 | Endpoint `/ml/clustering` funcional           | [ ] |
 | R13 | Blockchain                      | MS1                 | Hash verificable en Etherscan Sepolia         | [ ] |
-| R14 | N8N ≥ 3 pasos                   | MS3 + MS4           | Demo MS3 → MS4/N8N: WhatsApp → sistema → email | [ ] |
+| R14 | N8N ≥ 3 pasos                   | MS3 + MS4           | Demo productiva documentada: WhatsApp → MS3 → MS4/N8N → sistema → email | [ ] |
 | R15 | BD Relacional (PostgreSQL)      | MS1                 | MS1 conectado a Supabase PostgreSQL           | [ ] |
 | R16 | BD NoSQL (DynamoDB)             | MS2                 | MS2 conectado a DynamoDB en AWS               | [ ] |
 | R17 | Almacenamiento de archivos (S3) | MS2                 | Documentos almacenados y descargables         | [ ] |

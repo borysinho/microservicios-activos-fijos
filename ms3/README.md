@@ -189,6 +189,18 @@ El despliegue usa limites conservadores para presentacion y capa gratuita:
 `--cpu-throttling` y `--no-cpu-boost`. Tras desplegar, GitHub Actions ejecuta
 un smoke test contra `/health`.
 
+## Flujo de automatizacion en produccion
+
+El flujo que cubre el requisito del docente entra siempre por MS3:
+
+```text
+WhatsApp -> MS3 Cloud Run -> MS4/N8N Azure -> MS3 -> MS1/MS2 -> email/WhatsApp
+```
+
+MS3 recibe `POST /whatsapp/webhook`, valida y normaliza el mensaje, dispara MS4 con `MS4_N8N_WEBHOOK_URL` y conserva el estado visible en `GET /api/flujos`. N8N ejecuta el workflow `flujo_01_solicitud_revision.json` y vuelve a MS3 para crear la orden/ticket, enviar email y responder WhatsApp.
+
+La guia completa de revision productiva esta en `AUTOMATIZACION_MS3_MS4_PRODUCCION.md`.
+
 ## Probar funcionalidades en desarrollo
 
 Health:

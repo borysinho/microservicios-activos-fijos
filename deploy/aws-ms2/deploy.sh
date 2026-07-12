@@ -41,6 +41,7 @@ AUDIT_TABLE_NAME="${DYNAMODB_TABLE_AUDITORIA:-activos-fijos-ms2-auditoria}"
 JWT_SECRET="${JWT_SECRET:-saf-ms1-super-secret-key-2026-activos-fijos-bolivia-uagrm}"
 JWT_ALGORITHM="${JWT_ALGORITHM:-HS512}"
 ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-*}"
+LOAD_AI_MODELS="${LOAD_AI_MODELS:-true}"
 
 [[ -n "$AWS_CLI" && -x "$AWS_CLI" ]] || {
   echo "ERROR: aws CLI no esta instalado." >&2
@@ -121,7 +122,8 @@ docker push "$IMAGE_URI"
     AuditTableName="$AUDIT_TABLE_NAME" \
     JwtSecret="$JWT_SECRET" \
     JwtAlgorithm="$JWT_ALGORITHM" \
-    AllowedOrigins="$ALLOWED_ORIGINS"
+    AllowedOrigins="$ALLOWED_ORIGINS" \
+    LoadAiModels="$LOAD_AI_MODELS"
 
 "$AWS_CLI" "${AWS_PROFILE_ARG[@]}" cloudformation describe-stacks \
   --region "$AWS_REGION" \

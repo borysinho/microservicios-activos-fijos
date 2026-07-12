@@ -62,16 +62,34 @@ jobs:
           ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST || secrets.MS1_VM_HOST }}
-          MS4_VM_USER: ${{ secrets.MS4_VM_USER || secrets.MS1_VM_USER }}
-          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY || secrets.MS1_VM_SSH_KEY }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
+          N8N_HOST: ${{ vars.N8N_HOST }}
+          N8N_EDITOR_BASE_URL: ${{ vars.N8N_EDITOR_BASE_URL }}
+          WEBHOOK_URL: ${{ vars.WEBHOOK_URL }}
+          N8N_ENCRYPTION_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
+          N8N_BASIC_AUTH_USER: ${{ vars.N8N_BASIC_AUTH_USER }}
+          N8N_BASIC_AUTH_PASSWORD: ${{ secrets.N8N_BASIC_AUTH_PASSWORD }}
+          MS1_GRAPHQL_URL: ${{ vars.MS1_GRAPHQL_URL }}
+          MS2_BASE_URL: ${{ vars.MS2_BASE_URL }}
+          MS3_BASE_URL: ${{ vars.MS3_BASE_URL }}
         run: |
           test -n "$ACR_LOGIN_SERVER" || { echo "::error::ACR_LOGIN_SERVER secret is required"; exit 1; }
           test -n "$ACR_USERNAME" || { echo "::error::ACR_USERNAME secret is required"; exit 1; }
           test -n "$ACR_PASSWORD" || { echo "::error::ACR_PASSWORD secret is required"; exit 1; }
-          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST or MS1_VM_HOST secret is required"; exit 1; }
-          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER or MS1_VM_USER secret is required"; exit 1; }
-          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY or MS1_VM_SSH_KEY secret is required"; exit 1; }
+          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST secret is required; MS4 must run on its own Azure VM/host for the exam scope"; exit 1; }
+          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER secret is required"; exit 1; }
+          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY secret is required"; exit 1; }
+          test -n "$N8N_HOST" || { echo "::error::N8N_HOST variable is required"; exit 1; }
+          test -n "$N8N_EDITOR_BASE_URL" || { echo "::error::N8N_EDITOR_BASE_URL variable is required"; exit 1; }
+          test -n "$WEBHOOK_URL" || { echo "::error::WEBHOOK_URL variable is required"; exit 1; }
+          test -n "$N8N_ENCRYPTION_KEY" || { echo "::error::N8N_ENCRYPTION_KEY secret is required"; exit 1; }
+          test -n "$N8N_BASIC_AUTH_USER" || { echo "::error::N8N_BASIC_AUTH_USER variable is required"; exit 1; }
+          test -n "$N8N_BASIC_AUTH_PASSWORD" || { echo "::error::N8N_BASIC_AUTH_PASSWORD secret is required"; exit 1; }
+          test -n "$MS1_GRAPHQL_URL" || { echo "::error::MS1_GRAPHQL_URL variable is required"; exit 1; }
+          test -n "$MS2_BASE_URL" || { echo "::error::MS2_BASE_URL variable is required"; exit 1; }
+          test -n "$MS3_BASE_URL" || { echo "::error::MS3_BASE_URL variable is required"; exit 1; }
 
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
@@ -94,24 +112,50 @@ jobs:
           ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST || secrets.MS1_VM_HOST }}
-          MS4_VM_USER: ${{ secrets.MS4_VM_USER || secrets.MS1_VM_USER }}
-          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY || secrets.MS1_VM_SSH_KEY }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
           IMAGE_TAG: ${{ github.sha }}
+          N8N_HOST: ${{ vars.N8N_HOST }}
+          N8N_PORT: ${{ vars.N8N_PORT || '5678' }}
+          N8N_PROTOCOL: ${{ vars.N8N_PROTOCOL || 'https' }}
+          N8N_EDITOR_BASE_URL: ${{ vars.N8N_EDITOR_BASE_URL }}
+          WEBHOOK_URL: ${{ vars.WEBHOOK_URL }}
+          N8N_ENCRYPTION_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
+          N8N_BASIC_AUTH_ACTIVE: ${{ vars.N8N_BASIC_AUTH_ACTIVE || 'true' }}
+          N8N_BASIC_AUTH_USER: ${{ vars.N8N_BASIC_AUTH_USER }}
+          N8N_BASIC_AUTH_PASSWORD: ${{ secrets.N8N_BASIC_AUTH_PASSWORD }}
+          N8N_IMPORT_WORKFLOWS: ${{ vars.N8N_IMPORT_WORKFLOWS || 'true' }}
+          MS1_GRAPHQL_URL: ${{ vars.MS1_GRAPHQL_URL }}
+          MS2_BASE_URL: ${{ vars.MS2_BASE_URL }}
+          MS3_BASE_URL: ${{ vars.MS3_BASE_URL }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$MS4_VM_SSH_KEY" > ~/.ssh/ms4_vm_key
           chmod 600 ~/.ssh/ms4_vm_key
           ssh-keyscan -H "$MS4_VM_HOST" >> ~/.ssh/known_hosts
 
+          {
+            printf 'MS4_IMAGE=%s/%s:%s\n' "$ACR_LOGIN_SERVER" "$IMAGE_NAME" "$IMAGE_TAG"
+            printf 'N8N_HOST=%s\n' "$N8N_HOST"
+            printf 'N8N_PORT=%s\n' "$N8N_PORT"
+            printf 'N8N_PROTOCOL=%s\n' "$N8N_PROTOCOL"
+            printf 'N8N_EDITOR_BASE_URL=%s\n' "$N8N_EDITOR_BASE_URL"
+            printf 'WEBHOOK_URL=%s\n' "$WEBHOOK_URL"
+            printf 'N8N_ENCRYPTION_KEY=%s\n' "$N8N_ENCRYPTION_KEY"
+            printf 'N8N_BASIC_AUTH_ACTIVE=%s\n' "$N8N_BASIC_AUTH_ACTIVE"
+            printf 'N8N_BASIC_AUTH_USER=%s\n' "$N8N_BASIC_AUTH_USER"
+            printf 'N8N_BASIC_AUTH_PASSWORD=%s\n' "$N8N_BASIC_AUTH_PASSWORD"
+            printf 'N8N_IMPORT_WORKFLOWS=%s\n' "$N8N_IMPORT_WORKFLOWS"
+            printf 'MS1_GRAPHQL_URL=%s\n' "$MS1_GRAPHQL_URL"
+            printf 'MS2_BASE_URL=%s\n' "$MS2_BASE_URL"
+            printf 'MS3_BASE_URL=%s\n' "$MS3_BASE_URL"
+          } > .env.deploy
+
           ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
             'sudo install -d -m 775 -o "$USER" -g "$(id -gn)" /opt/ms4'
           scp -i ~/.ssh/ms4_vm_key ms4/docker-compose.prod.yml "$MS4_VM_USER@$MS4_VM_HOST:/opt/ms4/docker-compose.yml"
-
-          ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
-            "cd /opt/ms4 \
-            && touch .env \
-            && if grep -q '^MS4_IMAGE=' .env; then sed -i 's#^MS4_IMAGE=.*#MS4_IMAGE=$ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG#' .env; else echo 'MS4_IMAGE=$ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG' >> .env; fi"
+          scp -i ~/.ssh/ms4_vm_key .env.deploy "$MS4_VM_USER@$MS4_VM_HOST:/opt/ms4/.env"
 
           printf '%s\n' "$ACR_PASSWORD" | ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
             "docker login '$ACR_LOGIN_SERVER' --username '$ACR_USERNAME' --password-stdin"

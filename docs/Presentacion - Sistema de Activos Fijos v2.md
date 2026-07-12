@@ -558,11 +558,11 @@ W2 ..> W7 : <<include>>
 **Funciones principales:** _Recibir solicitud por WhatsApp, identificar activo, crear ticket de revisión, verificar documentación, enviar confirmación por email, enviar alertas automáticas._
 
 - CU-67: Recibir mensaje de WhatsApp del responsable de área
-- CU-68: Identificar activo por código en el mensaje (MS4/N8N + MS1)
-- CU-69: Crear ticket de revisión en MS1 (REST desde MS4/N8N)
+- CU-68: Identificar activo por código en el mensaje (MS3 + MS4/N8N + MS1)
+- CU-69: Crear ticket de revisión en MS1 mediante MS3 (workflow MS4/N8N)
 - CU-70: Verificar documentación del activo en MS2 (REST desde MS4/N8N)
-- CU-71: Enviar email de confirmación de solicitud (SendGrid)
-- CU-72: Responder por WhatsApp con estado de la solicitud
+- CU-71: Enviar email de confirmación de solicitud (MS3 + SendGrid)
+- CU-72: Responder por WhatsApp con estado de la solicitud (MS3 + WhatsApp API)
 - CU-73: Enviar alerta automática por vencimiento de garantía
 - CU-74: Enviar alerta de mantenimiento programado
 
@@ -671,12 +671,13 @@ end note
 
 |                     **Acción**                      | **Caso de Uso** |            **Herramienta**             |
 | :-------------------------------------------------: | :-------------: | :------------------------------------: |
-|   El responsable contacta al sistema por WhatsApp   |      CU-67      |      WhatsApp Business API + MS3       |
+|   El responsable contacta al sistema por WhatsApp   |      CU-67      |      WhatsApp Business API → MS3       |
+|        MS3 dispara el workflow productivo en MS4    |      CU-67      |        MS3 → MS4/N8N Webhook           |
 |  MS4/N8N identifica el activo por código en el mensaje |   CU-68      | MS4/N8N (regex / NLP básico) + MS1 GraphQL |
-|         MS4/N8N crea ticket de revisión en MS1      |      CU-69      |        MS4/N8N + MS1 REST / GraphQL    |
+|         MS4/N8N crea ticket de revisión vía MS3     |      CU-69      |        MS4/N8N + MS3 + MS1             |
 |    MS4/N8N verifica documentación del activo en MS2 |      CU-70      |             MS4/N8N + MS2 REST         |
-| El sistema envía confirmación por email (SendGrid)  |      CU-71      |           MS4/N8N + SendGrid API       |
-|     El sistema responde al WhatsApp con estado      |      CU-72      |      MS3 + WhatsApp Business API       |
+| El sistema envía confirmación por email (SendGrid)  |      CU-71      |           MS4/N8N + MS3 + SendGrid     |
+|     El sistema responde al WhatsApp con estado      |      CU-72      |      MS4/N8N + MS3 + WhatsApp API      |
 | MS4/N8N procesa vencimiento de garantía y genera alerta |  CU-73    |       MS4/N8N + SendGrid               |
 
 ### Diagrama de Actividad — Flujo N8N
@@ -691,12 +692,14 @@ start
 
 :WhatsApp Business API\nrecibe mensaje;
 
+:MS3 recibe webhook,\nvalida origen y dispara MS4/N8N;
+
 :N8N interpreta mensaje\n(regex / NLP básico);
 
 :N8N consulta MS1 (GraphQL):\n¿Existe activo COD-123?;
 
 if (¿Activo encontrado?) then (Sí)
-    :N8N crea ticket de\nrevisión en MS1;
+    :N8N solicita a MS3 crear ticket de\nrevisión en MS1;
 
     fork
         :N8N consulta a MS2\nsi documentación está completa;
@@ -709,8 +712,8 @@ if (¿Activo encontrado?) then (Sí)
         :Registrar evento\nen log de auditoría;
     end fork
 
-    :Enviar email de confirmación\nal administrador (SendGrid);
-    :Responder WhatsApp:\n"Solicitud registrada para COD-123.\nSe le notificará.";
+    :N8N solicita a MS3 enviar email de\nconfirmación (SendGrid);
+    :N8N solicita a MS3 responder WhatsApp:\n"Solicitud registrada para COD-123.\nSe le notificará.";
 else (No)
     :Responder WhatsApp:\n"Activo no encontrado.\nVerifique el código.";
 endif
@@ -794,7 +797,7 @@ stop
 | ML No Supervisado               | K-Means: agrupación de activos por patrones de uso                    |
 | Business Intelligence           | Dashboard Angular con KPIs, depreciación, tendencias                  |
 | Blockchain                      | Registro inmutable de cada transacción del ciclo de vida              |
-| Automatización N8N (≥ 3 pasos)  | MS3 dispara MS4/N8N: WhatsApp → identificar activo → ticket → docs → email |
+| Automatización N8N (≥ 3 pasos)  | WhatsApp → MS3 → MS4/N8N → ticket → docs → email/respuesta |
 | BD Relacional (PostgreSQL)      | MS1: activos, asignaciones, traslados, depreciación en Supabase       |
 | BD NoSQL (DynamoDB)             | MS2: metadatos de documentos y auditoría                              |
 | Almacenamiento de archivos (S3) | MS2: PDF, imágenes, contratos, actas                                  |

@@ -4,11 +4,11 @@ services:
     container_name: activos-ms4-n8n
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      - "${N8N_PORT:-5678}:5678"
     environment:
       NODE_ENV: production
       N8N_HOST: ${N8N_HOST}
-      N8N_PORT: 5678
+      N8N_PORT: ${N8N_PORT:-5678}
       N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
       N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL}
       WEBHOOK_URL: ${WEBHOOK_URL}

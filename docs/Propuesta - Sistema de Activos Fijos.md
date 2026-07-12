@@ -634,12 +634,13 @@ start
 :MS4/N8N consulta MS1:\n¿Existe activo COD-123?;
 
 if (¿Activo encontrado?) then (Sí)
-    :MS4/N8N crea ticket de\nrevisión en MS1 (REST);
+    :MS4/N8N solicita a MS3 crear ticket de\nrevisión en MS1;
+    :MS4/N8N consulta MS2:\n¿Documentación asociada?;
     :MS4/N8N solicita a MS3\nenviar confirmación por email;
-    :Enviar email:\n"Solicitud recibida para COD-123";
-    :Responder WhatsApp:\n"Solicitud registrada. Se le notificará.";
+    :MS3 envía email:\n"Solicitud recibida para COD-123";
+    :MS4/N8N solicita a MS3 responder WhatsApp:\n"Solicitud registrada. Se le notificará.";
 else (No)
-    :Responder WhatsApp:\n"Activo no encontrado. Verifique el código.";
+    :MS4/N8N solicita a MS3 responder WhatsApp:\n"Activo no encontrado. Verifique el código.";
 endif
 
 stop
@@ -941,7 +942,7 @@ DynamoDB almacena un registro por cada acción:
 | ML No Supervisado              | K-Means: agrupación por patrones de uso                       |
 | Business Intelligence          | Dashboard con KPIs, depreciación, tendencias                  |
 | Blockchain                     | Registro inmutable de transacciones de activos                |
-| Automatización N8N (≥ 3 pasos) | MS3 dispara MS4/N8N: evento → verificar docs → orden → email |
+| Automatización N8N (≥ 3 pasos) | WhatsApp → MS3 → MS4/N8N → orden/ticket → docs → email/respuesta |
 | PostgreSQL                     | MS1: datos principales de activos en Supabase PostgreSQL       |
 | DynamoDB                       | MS2: metadatos de documentos y auditoría                      |
 | Amazon S3                      | MS2: almacenamiento de archivos físicos                       |

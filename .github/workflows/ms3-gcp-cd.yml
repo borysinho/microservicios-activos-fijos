@@ -18,7 +18,9 @@ env:
   GCP_REGION: ${{ vars.GCP_REGION || 'us-central1' }}
   GCP_RUN_SERVICE: ${{ vars.MS3_CLOUD_RUN_SERVICE || 'ms3-activos-fijos' }}
   MS1_GRAPHQL_URL: ${{ vars.MS1_GRAPHQL_URL }}
+  MS1_TICKETS_URL: ${{ vars.MS1_TICKETS_URL }}
   MS2_BASE_URL: ${{ vars.MS2_BASE_URL }}
+  CORS_ORIGINS: ${{ vars.CORS_ORIGINS || '*' }}
   SENDGRID_FROM_EMAIL: ${{ vars.SENDGRID_FROM_EMAIL || 'noreply@activos.empresa.com' }}
   MS4_N8N_WEBHOOK_URL: ${{ vars.MS4_N8N_WEBHOOK_URL }}
   EMAIL_PROVIDER: ${{ vars.EMAIL_PROVIDER || 'smtp' }}
@@ -28,8 +30,14 @@ env:
   SMTP_USER: ${{ vars.SMTP_USER }}
   SMTP_FROM_EMAIL: ${{ vars.SMTP_FROM_EMAIL || vars.SMTP_USER }}
   WHATSAPP_PROVIDER: ${{ vars.WHATSAPP_PROVIDER || 'twilio' }}
+  WHATSAPP_API_URL: ${{ vars.WHATSAPP_API_URL || 'https://graph.facebook.com/v18.0' }}
+  WHATSAPP_PHONE_NUMBER_ID: ${{ vars.WHATSAPP_PHONE_NUMBER_ID }}
+  WHATSAPP_VERIFY_TOKEN: ${{ vars.WHATSAPP_VERIFY_TOKEN || 'activos-ms3-verify' }}
+  WAHA_BASE_URL: ${{ vars.WAHA_BASE_URL || 'http://localhost:3001' }}
+  WAHA_SESSION: ${{ vars.WAHA_SESSION || 'default' }}
   TWILIO_ACCOUNT_SID: ${{ vars.TWILIO_ACCOUNT_SID }}
   TWILIO_WHATSAPP_FROM: ${{ vars.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886' }}
+  FCM_PROJECT_ID: ${{ vars.FCM_PROJECT_ID }}
 
 jobs:
   test:
@@ -79,12 +87,37 @@ jobs:
           MS2_AUTH_TOKEN: ${{ secrets.MS2_AUTH_TOKEN }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          WHATSAPP_APP_SECRET: ${{ secrets.WHATSAPP_APP_SECRET }}
+          WAHA_API_KEY: ${{ secrets.WAHA_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          FCM_ACCESS_TOKEN: ${{ secrets.FCM_ACCESS_TOKEN }}
         run: |
           test -n "$GCP_SA_KEY" || { echo "::error::GCP_SA_KEY secret is required"; exit 1; }
+          test -n "$MS1_AUTH_TOKEN" || { echo "::error::MS1_AUTH_TOKEN secret is required"; exit 1; }
           test -n "$MS2_AUTH_TOKEN" || { echo "::error::MS2_AUTH_TOKEN secret is required"; exit 1; }
           test -n "$GCP_PROJECT_ID" || { echo "::error::GCP_PROJECT_ID variable is required"; exit 1; }
           test -n "$MS1_GRAPHQL_URL" || { echo "::error::MS1_GRAPHQL_URL variable is required"; exit 1; }
           test -n "$MS2_BASE_URL" || { echo "::error::MS2_BASE_URL variable is required"; exit 1; }
+          test -n "$MS4_N8N_WEBHOOK_URL" || { echo "::error::MS4_N8N_WEBHOOK_URL variable is required"; exit 1; }
+          if [ "$EMAIL_PROVIDER" = "smtp" ]; then
+            test -n "$SMTP_HOST" || { echo "::error::SMTP_HOST variable is required when EMAIL_PROVIDER=smtp"; exit 1; }
+            test -n "$SMTP_USER" || { echo "::error::SMTP_USER variable is required when EMAIL_PROVIDER=smtp"; exit 1; }
+            test -n "$SMTP_PASSWORD" || { echo "::error::SMTP_PASSWORD secret is required when EMAIL_PROVIDER=smtp"; exit 1; }
+          fi
+          if [ "$EMAIL_PROVIDER" = "sendgrid" ]; then
+            test -n "$SENDGRID_API_KEY" || { echo "::error::SENDGRID_API_KEY secret is required when EMAIL_PROVIDER=sendgrid"; exit 1; }
+          fi
+          if [ "$WHATSAPP_PROVIDER" = "twilio" ]; then
+            test -n "$TWILIO_ACCOUNT_SID" || { echo "::error::TWILIO_ACCOUNT_SID variable is required when WHATSAPP_PROVIDER=twilio"; exit 1; }
+            test -n "$TWILIO_AUTH_TOKEN" || { echo "::error::TWILIO_AUTH_TOKEN secret is required when WHATSAPP_PROVIDER=twilio"; exit 1; }
+            test -n "$TWILIO_WHATSAPP_FROM" || { echo "::error::TWILIO_WHATSAPP_FROM variable is required when WHATSAPP_PROVIDER=twilio"; exit 1; }
+          fi
+          if [ "$WHATSAPP_PROVIDER" = "meta" ]; then
+            test -n "$WHATSAPP_PHONE_NUMBER_ID" || { echo "::error::WHATSAPP_PHONE_NUMBER_ID variable is required when WHATSAPP_PROVIDER=meta"; exit 1; }
+            test -n "$WHATSAPP_TOKEN" || { echo "::error::WHATSAPP_TOKEN secret is required when WHATSAPP_PROVIDER=meta"; exit 1; }
+            test -n "$WHATSAPP_APP_SECRET" || { echo "::error::WHATSAPP_APP_SECRET secret is required when WHATSAPP_PROVIDER=meta"; exit 1; }
+          fi
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -100,6 +133,11 @@ jobs:
           MS1_AUTH_TOKEN: ${{ secrets.MS1_AUTH_TOKEN }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          WHATSAPP_APP_SECRET: ${{ secrets.WHATSAPP_APP_SECRET }}
+          WAHA_API_KEY: ${{ secrets.WAHA_API_KEY }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+          FCM_ACCESS_TOKEN: ${{ secrets.FCM_ACCESS_TOKEN }}
         run: |
           gcloud run deploy "$GCP_RUN_SERVICE" \
             --source ms3 \
@@ -114,7 +152,7 @@ jobs:
             --timeout=60 \
             --cpu-throttling \
             --no-cpu-boost \
-            --set-env-vars "NODE_ENV=production,MS3_DEV_TOOLS_ENABLED=false,MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL},MS1_AUTH_TOKEN=${MS1_AUTH_TOKEN},MS2_BASE_URL=${MS2_BASE_URL},MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN},MS4_N8N_WEBHOOK_URL=${MS4_N8N_WEBHOOK_URL},EMAIL_PROVIDER=${EMAIL_PROVIDER},SMTP_HOST=${SMTP_HOST},SMTP_PORT=${SMTP_PORT},SMTP_SECURE=${SMTP_SECURE},SMTP_USER=${SMTP_USER},SMTP_PASSWORD=${SMTP_PASSWORD},SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL},WHATSAPP_PROVIDER=${WHATSAPP_PROVIDER},TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID},TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN},TWILIO_WHATSAPP_FROM=${TWILIO_WHATSAPP_FROM},SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}"
+            --set-env-vars "^|^NODE_ENV=production|MS3_DEV_TOOLS_ENABLED=false|PORT=3000|CORS_ORIGINS=${CORS_ORIGINS}|MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL}|MS1_AUTH_TOKEN=${MS1_AUTH_TOKEN}|MS1_TICKETS_URL=${MS1_TICKETS_URL}|MS2_BASE_URL=${MS2_BASE_URL}|MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN}|MS4_N8N_WEBHOOK_URL=${MS4_N8N_WEBHOOK_URL}|EMAIL_PROVIDER=${EMAIL_PROVIDER}|SMTP_HOST=${SMTP_HOST}|SMTP_PORT=${SMTP_PORT}|SMTP_SECURE=${SMTP_SECURE}|SMTP_USER=${SMTP_USER}|SMTP_PASSWORD=${SMTP_PASSWORD}|SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL}|WHATSAPP_PROVIDER=${WHATSAPP_PROVIDER}|WHATSAPP_API_URL=${WHATSAPP_API_URL}|WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID}|WHATSAPP_TOKEN=${WHATSAPP_TOKEN}|WHATSAPP_APP_SECRET=${WHATSAPP_APP_SECRET}|WHATSAPP_VERIFY_TOKEN=${WHATSAPP_VERIFY_TOKEN}|WAHA_BASE_URL=${WAHA_BASE_URL}|WAHA_SESSION=${WAHA_SESSION}|WAHA_API_KEY=${WAHA_API_KEY}|TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}|TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}|TWILIO_WHATSAPP_FROM=${TWILIO_WHATSAPP_FROM}|SENDGRID_API_KEY=${SENDGRID_API_KEY}|SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}|FCM_PROJECT_ID=${FCM_PROJECT_ID}|FCM_ACCESS_TOKEN=${FCM_ACCESS_TOKEN}"
 
       - name: Show deployed URL
         id: service-url

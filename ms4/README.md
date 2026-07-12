@@ -49,6 +49,24 @@ Los exports estan en `n8n-workflows/`:
 
 La imagen importa estos workflows al iniciar cuando `N8N_IMPORT_WORKFLOWS=true`.
 
+### Flujo 01 - Solicitud de revision por WhatsApp
+
+Este workflow representa el ejemplo pedido por el docente:
+
+```text
+WhatsApp -> MS3 -> N8N -> sistema -> email -> WhatsApp
+```
+
+MS4 no recibe WhatsApp directamente. MS3 recibe el webhook publico de WhatsApp y dispara el endpoint interno de N8N:
+
+```text
+POST https://<host-ms4>/webhook/solicitud-revision
+```
+
+El workflow extrae el codigo del activo, consulta MS1, solicita a MS3 crear la orden de revision, verifica documentos en MS2, solicita a MS3 enviar el email de confirmacion y finalmente solicita a MS3 responder por WhatsApp.
+
+La revision completa desde produccion esta documentada en `AUTOMATIZACION_MS3_MS4_PRODUCCION.md`.
+
 ## Produccion en Azure
 
 El despliegue usa:
@@ -71,9 +89,10 @@ N8N_BASIC_AUTH_PASSWORD=<password>
 MS1_GRAPHQL_URL=https://<ms1-azure>/graphql
 MS2_BASE_URL=https://<ms2-aws>/api
 MS3_BASE_URL=https://<ms3-gcp>/api
+RESPONSABLE_DEFAULT_EMAIL=<correo-para-demo>
 ```
 
-El workflow usa `MS4_VM_HOST`, `MS4_VM_USER` y `MS4_VM_SSH_KEY`. Si no existen, usa como fallback `MS1_VM_HOST`, `MS1_VM_USER` y `MS1_VM_SSH_KEY`, permitiendo desplegar MS4 en la misma VM Azure usada por MS1.
+El workflow usa `MS4_VM_HOST`, `MS4_VM_USER` y `MS4_VM_SSH_KEY`. Para cubrir el alcance del examen, esos secretos deben apuntar a una VM/host Azure propio de MS4; no se debe desplegar MS4 en la misma instancia usada por MS1.
 
 Despues del despliegue de MS4, configurar MS3 con:
 
