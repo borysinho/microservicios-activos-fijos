@@ -140,11 +140,13 @@ export class WebhooksService {
       motivo: dto.descripcion,
     });
 
-    await this.flujosService.dispararN8n('solicitud-revision', {
-      ...dto,
-      ticketId: ticket.ticketId,
-      origen: 'mobile',
-    });
+    if (dto.origen !== 'n8n') {
+      await this.flujosService.dispararN8n('solicitud-revision', {
+        ...dto,
+        ticketId: ticket.ticketId,
+        origen: dto.origen ?? 'mobile',
+      });
+    }
 
     return {
       ticketId: ticket.ticketId,

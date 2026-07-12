@@ -115,6 +115,10 @@ export class ReportarProblemaDto {
   descripcion!: string;
 
   @IsOptional()
+  @IsString()
+  origen?: string;
+
+  @IsOptional()
   latitud?: number;
 
   @IsOptional()

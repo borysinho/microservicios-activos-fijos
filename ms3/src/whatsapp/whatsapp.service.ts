@@ -7,7 +7,7 @@ import { Ms2ClientService } from '../ms2-client/ms2-client.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { ResultadoSolicitudRevision, WhatsappMensajeEntrante } from './dto';
 
-const CODIGO_ACTIVO_REGEX = /ACT-\d{4}-\d+/i;
+const CODIGO_ACTIVO_REGEX = /[A-Z]{2,4}-\d{4}-\d+/i;
 
 @Injectable()
 export class WhatsappService {
@@ -102,7 +102,7 @@ export class WhatsappService {
     if (!mensaje.text) {
       await this.notificacionesService.enviarWhatsAppTexto(
         mensaje.from,
-        'Solo acepto texto con el codigo del activo, por ejemplo ACT-2024-001.',
+        'Solo acepto texto con el codigo del activo, por ejemplo EQ-2024-005 o ACT-2024-001.',
       );
       this.flujosService.marcar('solicitud-revision', 'ERROR', 'Mensaje vacio o no soportado');
       return { recibido: true, mensaje: 'Mensaje vacio o no soportado' };
@@ -112,7 +112,7 @@ export class WhatsappService {
     if (!codigoActivo) {
       await this.notificacionesService.enviarWhatsAppTexto(
         mensaje.from,
-        'No encontre un codigo de activo. Envia un codigo con formato ACT-2024-001.',
+        'No encontre un codigo de activo. Envia un codigo con formato EQ-2024-005 o ACT-2024-001.',
       );
       this.flujosService.marcar('solicitud-revision', 'ERROR', 'Codigo de activo no encontrado');
       return { recibido: true, mensaje: 'Codigo de activo no encontrado' };

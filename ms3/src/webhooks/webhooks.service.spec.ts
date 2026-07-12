@@ -115,9 +115,43 @@ describe('WebhooksService', () => {
       solicitadoPorWhatsApp: 'mobile-app',
       motivo: 'Ruido anormal',
     });
+    expect(flujosService.dispararN8n).toHaveBeenCalledWith(
+      'solicitud-revision',
+      expect.objectContaining({
+        activoCodigo: 'ACT-2024-004',
+        ticketId: 'TKT-MOB-1',
+        origen: 'mobile',
+      }),
+    );
     expect(result).toEqual({
       ticketId: 'TKT-MOB-1',
       mensaje: 'Reporte recibido para ACT-2024-004',
+    });
+  });
+
+  it('crea orden desde N8N sin volver a disparar N8N', async () => {
+    ms1Client.crearTicketRevision.mockResolvedValue({
+      ticketId: 'TKT-N8N-1',
+      activoId: '44444444-4444-4444-4444-444444444444',
+      estado: 'SIMULADO',
+    });
+
+    const result = await service.reportarProblema({
+      activoId: '44444444-4444-4444-4444-444444444444',
+      activoCodigo: 'EQ-2024-005',
+      descripcion: 'Solicitud recibida desde N8N',
+      origen: 'n8n',
+    });
+
+    expect(ms1Client.crearTicketRevision).toHaveBeenCalledWith({
+      activoId: '44444444-4444-4444-4444-444444444444',
+      solicitadoPorWhatsApp: 'mobile-app',
+      motivo: 'Solicitud recibida desde N8N',
+    });
+    expect(flujosService.dispararN8n).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ticketId: 'TKT-N8N-1',
+      mensaje: 'Reporte recibido para EQ-2024-005',
     });
   });
 });

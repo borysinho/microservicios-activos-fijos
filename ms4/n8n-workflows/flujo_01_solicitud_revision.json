@@ -16,7 +16,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const text = $json.text || ''; const match = text.match(/ACT-\\d{4}-\\d+/i); return [{ json: { ...$json, codigoActivo: match ? match[0].toUpperCase() : null } }];"
+        "jsCode": "const text = $json.text || ''; const match = text.match(/[A-Z]{2,4}-\\d{4}-\\d+/i); return [{ json: { ...$json, codigoActivo: match ? match[0].toUpperCase() : null } }];"
       },
       "id": "extraer-codigo",
       "name": "Extraer Codigo Activo",
@@ -30,7 +30,7 @@
         "url": "={{$env.MS1_GRAPHQL_URL}}",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"query\":\"query BuscarActivoPorCodigo($codigo: String!) { activoPorCodigo(codigo: $codigo) { id codigo nombre estado } }\",\"variables\":{\"codigo\":\"{{$json.codigoActivo}}\"}}"
+        "jsonBody": "={\"query\":\"query BuscarActivoPorCodigo($codigo: String!) { activos(filtro: { codigo: $codigo }) { id codigo nombre estado } }\",\"variables\":{\"codigo\":\"{{$json.codigoActivo}}\"}}"
       },
       "id": "consultar-ms1",
       "name": "Consultar Activo MS1",
@@ -41,20 +41,20 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS1_TICKETS_URL}}",
+        "url": "={{$env.MS3_BASE_URL}}/webhooks/reportar-problema",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"activoId\":\"{{$json.data.activoPorCodigo.id}}\",\"solicitadoPorWhatsApp\":\"{{$node['WhatsApp Trigger'].json.from}}\",\"motivo\":\"{{$node['WhatsApp Trigger'].json.text}}\"}"
+        "jsonBody": "={\"activoId\":\"{{$json.data.activos[0].id}}\",\"activoCodigo\":\"{{$json.data.activos[0].codigo}}\",\"descripcion\":\"{{$node['WhatsApp Trigger'].json.text}}\",\"origen\":\"n8n\"}"
       },
       "id": "crear-ticket",
-      "name": "Crear Ticket MS1",
+      "name": "Crear Orden via MS3",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [720, 0]
     },
     {
       "parameters": {
-        "url": "={{$env.MS2_BASE_URL}}/documentos?activoId={{$node['Consultar Activo MS1'].json.data.activoPorCodigo.id}}"
+        "url": "={{$env.MS2_BASE_URL}}/documentos?activoId={{$node['Consultar Activo MS1'].json.data.activos[0].id}}"
       },
       "id": "verificar-documentos",
       "name": "Verificar Documentos MS2",
@@ -68,7 +68,7 @@
         "url": "={{$env.MS3_BASE_URL}}/notificaciones/email",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"to\":\"{{$env.RESPONSABLE_DEFAULT_EMAIL}}\",\"subject\":\"Solicitud de revision {{$node['Extraer Codigo Activo'].json.codigoActivo}}\",\"text\":\"Solicitud recibida y documentos verificados en MS2.\"}"
+        "jsonBody": "={\"to\":\"{{$env.RESPONSABLE_DEFAULT_EMAIL}}\",\"subject\":\"Solicitud de revision {{$node['Extraer Codigo Activo'].json.codigoActivo}}\",\"text\":\"Solicitud recibida. Ticket: {{$node['Crear Orden via MS3'].json.ticketId}}. Documentos verificados en MS2.\"}"
       },
       "id": "sendgrid-email",
       "name": "Enviar Email via MS3",
@@ -99,9 +99,9 @@
       "main": [[{ "node": "Consultar Activo MS1", "type": "main", "index": 0 }]]
     },
     "Consultar Activo MS1": {
-      "main": [[{ "node": "Crear Ticket MS1", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Crear Orden via MS3", "type": "main", "index": 0 }]]
     },
-    "Crear Ticket MS1": {
+    "Crear Orden via MS3": {
       "main": [[{ "node": "Verificar Documentos MS2", "type": "main", "index": 0 }]]
     },
     "Verificar Documentos MS2": {

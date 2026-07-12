@@ -185,4 +185,34 @@ describe('WhatsappService', () => {
     );
     expect(result.mensaje).toBe('Codigo de activo no encontrado');
   });
+
+  it('acepta codigos de activos reales de MS1 con prefijo distinto a ACT', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '55555555-5555-5555-5555-555555555555',
+      codigo: 'EQ-2024-005',
+      nombre: 'MacBook Pro',
+      estado: 'ACTIVO',
+      responsableEmail: 'resp@empresa.com',
+    });
+    ms1Client.crearTicketRevision.mockResolvedValue({
+      ticketId: 'TKT-EQ-1',
+      activoId: '55555555-5555-5555-5555-555555555555',
+      estado: 'CREADO',
+    });
+    ms2Client.obtenerDocumentos.mockResolvedValue([]);
+
+    const result = await service.procesarSolicitudRevision({
+      from: 'whatsapp:+59177685777',
+      text: 'Solicito revision de EQ-2024-005',
+    });
+
+    expect(ms1Client.buscarActivoPorCodigo).toHaveBeenCalledWith('EQ-2024-005');
+    expect(result).toEqual({
+      recibido: true,
+      codigoActivo: 'EQ-2024-005',
+      ticketId: 'TKT-EQ-1',
+      documentosEncontrados: 0,
+      mensaje: 'Solicitud de revision procesada',
+    });
+  });
 });
