@@ -6,7 +6,6 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  TouchableOpacity,
 } from "react-native";
 import { ms3Service } from "../services/ms3Service";
 import { offlineCache } from "../services/offlineCache";

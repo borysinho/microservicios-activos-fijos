@@ -10,5 +10,6 @@
       "@navigation/*": ["src/navigation/*"],
       "@types/*": ["src/types/*"]
     }
-  }
+  },
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
 }

@@ -9,6 +9,7 @@ import com.activos.ms1.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,12 @@ public class DataInitializer implements CommandLineRunner {
     private final RegistroBlockchainRepository blockchainRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${spring.security.user.name:admin}")
+    private String adminUsername;
+
+    @Value("${spring.security.user.password:admin123}")
+    private String adminPassword;
+
     @Override
     @Transactional
     public void run(String... args) {
@@ -47,7 +54,7 @@ public class DataInitializer implements CommandLineRunner {
 
     // ─── Usuarios ─────────────────────────────────────────────────────────────
     private void seedUsuarios() {
-        crearUsuarioSiNoExiste("admin", "admin@saf.bo", "admin123", RolUsuario.ADMINISTRADOR);
+        crearOActualizarAdminConfigurado();
         crearUsuarioSiNoExiste("auditor", "auditor@saf.bo", "audit123", RolUsuario.AUDITOR);
         crearUsuarioSiNoExiste("responsable", "responsable@saf.bo", "resp123", RolUsuario.RESPONSABLE_AREA);
         crearUsuarioSiNoExiste("lector", "lector@saf.bo", "read123", RolUsuario.SOLO_LECTURA);
@@ -768,5 +775,24 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
             log.info("Usuario demo creado: {} ({})", username, rol);
         }
+    }
+
+    private void crearOActualizarAdminConfigurado() {
+        var email = adminUsername.contains("@") ? adminUsername : adminUsername + "@saf.bo";
+        var admin = usuarioRepository.findByUsername(adminUsername)
+                .orElseGet(() -> Usuario.builder()
+                .username(adminUsername)
+                .email(email)
+                .build());
+
+        admin.setEmail(email);
+        admin.setRol(RolUsuario.ADMINISTRADOR);
+        admin.setActivo(true);
+        if (admin.getPasswordHash() == null || !passwordEncoder.matches(adminPassword, admin.getPasswordHash())) {
+            admin.setPasswordHash(passwordEncoder.encode(adminPassword));
+        }
+
+        usuarioRepository.save(admin);
+        log.info("Usuario administrador configurado verificado: {}", adminUsername);
     }
 }

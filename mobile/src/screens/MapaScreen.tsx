@@ -31,7 +31,7 @@ async function guardarUbicacionPendiente(
  * CU-42: Geolocalizar activo y registrar coordenadas GPS
  * Muestra el mapa con la posición actual y la ubicación registrada del activo
  */
-export default function MapaScreen({ route, navigation }: Props) {
+export default function MapaScreen({ route, navigation: _navigation }: Props) {
   const {
     activoId,
     latitud: latitudInicial,
