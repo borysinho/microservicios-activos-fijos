@@ -104,7 +104,8 @@ jobs:
           chmod 600 ~/.ssh/ms4_vm_key
           ssh-keyscan -H "$MS4_VM_HOST" >> ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" 'mkdir -p /opt/ms4'
+          ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
+            'sudo install -d -m 775 -o "$USER" -g "$(id -gn)" /opt/ms4'
           scp -i ~/.ssh/ms4_vm_key ms4/docker-compose.prod.yml "$MS4_VM_USER@$MS4_VM_HOST:/opt/ms4/docker-compose.yml"
 
           ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
