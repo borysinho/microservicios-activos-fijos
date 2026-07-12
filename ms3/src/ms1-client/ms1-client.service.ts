@@ -10,7 +10,16 @@ export type ActivoMs1 = {
   estado?: string;
   responsableEmail?: string;
   responsablePhone?: string;
-  areaActual?: { nombre: string };
+  areaActual?: { nombre?: string };
+  asignaciones?: Array<{
+    activa: boolean;
+    responsable: {
+      nombre?: string;
+      email?: string;
+      telefono?: string;
+    };
+    area?: { nombre?: string };
+  }>;
 };
 
 export type TicketRevision = {
@@ -25,24 +34,51 @@ const ACTIVOS_DEMO: Record<string, ActivoMs1> = {
     codigo: 'ACT-2024-001',
     nombre: 'Laptop Dell Demo',
     estado: 'ACTIVO',
-    responsableEmail: 'responsable.area@activos.local',
-    responsablePhone: '59170000000',
+    responsableEmail: 'quirogaborys@gmail.com',
+    responsablePhone: '591-77685777',
+    asignaciones: [{
+      activa: true,
+      responsable: {
+        nombre: 'Borys Quiroga',
+        email: 'quirogaborys@gmail.com',
+        telefono: '591-77685777',
+      },
+      area: { nombre: 'Tecnologias de Informacion' },
+    }],
   },
   'ACT-2024-002': {
     id: '550e8400-e29b-41d4-a716-446655440001',
     codigo: 'ACT-2024-002',
     nombre: 'Impresora HP Demo',
     estado: 'EN_MANTENIMIENTO',
-    responsableEmail: 'responsable.area@activos.local',
-    responsablePhone: '59170000000',
+    responsableEmail: 'quirogaborys@gmail.com',
+    responsablePhone: '591-77685777',
+    asignaciones: [{
+      activa: true,
+      responsable: {
+        nombre: 'Borys Quiroga',
+        email: 'quirogaborys@gmail.com',
+        telefono: '591-77685777',
+      },
+      area: { nombre: 'Tecnologias de Informacion' },
+    }],
   },
   'ACT-2024-003': {
     id: '550e8400-e29b-41d4-a716-446655440002',
     codigo: 'ACT-2024-003',
     nombre: 'Router Cisco Demo',
     estado: 'ACTIVO',
-    responsableEmail: 'responsable.area@activos.local',
-    responsablePhone: '59170000000',
+    responsableEmail: 'quirogaborys@gmail.com',
+    responsablePhone: '591-77685777',
+    asignaciones: [{
+      activa: true,
+      responsable: {
+        nombre: 'Borys Quiroga',
+        email: 'quirogaborys@gmail.com',
+        telefono: '591-77685777',
+      },
+      area: { nombre: 'Tecnologias de Informacion' },
+    }],
   },
 };
 
@@ -63,6 +99,20 @@ export class Ms1ClientService {
           codigo
           nombre
           estado
+          areaActual {
+            nombre
+          }
+          asignaciones {
+            activa
+            area {
+              nombre
+            }
+            responsable {
+              nombre
+              email
+              telefono
+            }
+          }
         }
       }
     `;
@@ -74,7 +124,7 @@ export class Ms1ClientService {
           variables: { codigo },
         }, this.authOptions()),
       );
-      return data?.data?.activos?.[0] ?? this.activoDemo(codigo);
+      return this.conResponsableActivo(data?.data?.activos?.[0]) ?? this.activoDemo(codigo);
     } catch (error) {
       this.logger.warn(`MS1 no respondio al buscar activo ${codigo}: ${(error as Error).message}`);
       return this.activoDemo(codigo);
@@ -89,6 +139,20 @@ export class Ms1ClientService {
           codigo
           nombre
           estado
+          areaActual {
+            nombre
+          }
+          asignaciones {
+            activa
+            area {
+              nombre
+            }
+            responsable {
+              nombre
+              email
+              telefono
+            }
+          }
         }
       }
     `;
@@ -100,7 +164,7 @@ export class Ms1ClientService {
           variables: { id: activoId },
         }, this.authOptions()),
       );
-      return data?.data?.activo ?? this.activoDemoPorId(activoId);
+      return this.conResponsableActivo(data?.data?.activo) ?? this.activoDemoPorId(activoId);
     } catch (error) {
       this.logger.warn(`MS1 no respondio al obtener activo ${activoId}: ${(error as Error).message}`);
       return this.activoDemoPorId(activoId);
@@ -149,6 +213,51 @@ export class Ms1ClientService {
         Authorization: `Bearer ${this.config.ms1AuthToken}`,
       },
     };
+  }
+
+  telefonoTieneAccesoActivo(activo: ActivoMs1, telefonoWhatsapp: string): boolean {
+    const telefono = this.normalizarTelefono(telefonoWhatsapp);
+    if (!telefono) {
+      return false;
+    }
+
+    const telefonosAsignados = this.responsablesActivos(activo)
+      .map((asignacion) => this.normalizarTelefono(asignacion.responsable.telefono))
+      .filter(Boolean);
+
+    if (telefonosAsignados.length > 0) {
+      return telefonosAsignados.includes(telefono);
+    }
+
+    return this.normalizarTelefono(activo.responsablePhone) === telefono;
+  }
+
+  normalizarTelefono(value?: string): string {
+    return (value ?? '').replace(/\D/g, '');
+  }
+
+  private conResponsableActivo(activo?: ActivoMs1 | null): ActivoMs1 | null {
+    if (!activo) {
+      return null;
+    }
+
+    const asignacionActiva = this.responsablesActivos(activo)[0];
+    if (!asignacionActiva) {
+      return activo;
+    }
+
+    return {
+      ...activo,
+      responsableEmail: asignacionActiva.responsable.email ?? activo.responsableEmail,
+      responsablePhone: asignacionActiva.responsable.telefono ?? activo.responsablePhone,
+      areaActual: activo.areaActual ?? asignacionActiva.area,
+    };
+  }
+
+  private responsablesActivos(activo: ActivoMs1) {
+    return (activo.asignaciones ?? []).filter(
+      (asignacion) => asignacion.activa && asignacion.responsable,
+    );
   }
 
   private activoDemo(codigo: string): ActivoMs1 | null {

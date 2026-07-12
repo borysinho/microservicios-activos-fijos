@@ -164,9 +164,36 @@ export class WebhooksService {
       return {
         recibido: true,
         encontrado: false,
+        autorizado: false,
         codigoActivo: dto.codigoActivo,
         from: dto.from,
         mensaje: `Codigo de activo no encontrado: ${dto.codigoActivo}`,
+      };
+    }
+
+    if (!this.ms1Client.telefonoTieneAccesoActivo(activo, dto.from)) {
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'WhatsApp no autorizado para activo');
+      return {
+        recibido: true,
+        encontrado: true,
+        autorizado: false,
+        from: dto.from,
+        codigoActivo: activo.codigo,
+        activoId: activo.id,
+        mensaje: `El numero ${dto.from} no esta autorizado para el activo ${activo.codigo}`,
+      };
+    }
+
+    if (!activo.responsableEmail) {
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'Responsable sin email');
+      return {
+        recibido: true,
+        encontrado: true,
+        autorizado: false,
+        from: dto.from,
+        codigoActivo: activo.codigo,
+        activoId: activo.id,
+        mensaje: `El activo ${activo.codigo} no tiene correo de responsable registrado`,
       };
     }
 
@@ -181,12 +208,14 @@ export class WebhooksService {
     return {
       recibido: true,
       encontrado: true,
+      autorizado: true,
       from: dto.from,
       codigoActivo: activo.codigo,
       activoId: activo.id,
       activoNombre: activo.nombre,
       activoEstado: activo.estado ?? 'SIN_ESTADO',
-      responsableEmail: activo.responsableEmail ?? 'responsable.area@activos.local',
+      responsableEmail: activo.responsableEmail,
+      responsablePhone: activo.responsablePhone,
       ticketId: ticket.ticketId,
       documentosEncontrados: documentos.length,
       mensajeOriginal: dto.text,

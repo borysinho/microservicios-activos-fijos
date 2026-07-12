@@ -231,9 +231,29 @@ export class WhatsappService {
   ): Promise<ResultadoSolicitudRevision> {
     this.flujosService.marcar('solicitud-revision', 'EN_PROCESO', 'Mensaje WhatsApp recibido');
 
+    if (!codigoActivo) {
+      await this.notificacionesService.enviarWhatsAppTexto(
+        mensaje.from,
+        'No encontre un codigo de activo. Envia un codigo con formato EQ-2024-005 o ACT-2024-001.',
+      );
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'Codigo de activo no encontrado');
+      return { recibido: true, mensaje: 'Codigo de activo no encontrado' };
+    }
+
+    const activo = await this.ms1Client.buscarActivoPorCodigo(codigoActivo);
+    const autorizacion = await this.validarAccesoActivoPorWhatsapp(mensaje.from, codigoActivo, activo);
+    if (!autorizacion.autorizado) {
+      return autorizacion.resultado;
+    }
+
     const disparado = await this.flujosService.dispararN8n('solicitud-revision', {
       ...mensaje,
-      codigoActivo,
+      activoId: activo!.id,
+      activoNombre: activo!.nombre,
+      activoEstado: activo!.estado,
+      codigoActivo: activo!.codigo,
+      responsableEmail: activo!.responsableEmail,
+      responsablePhone: activo!.responsablePhone,
       intencion: 'SOLICITAR_REVISION',
       origen: 'whatsapp',
       proveedor: this.config.whatsappProvider || 'desconocido',
@@ -247,7 +267,7 @@ export class WhatsappService {
 
     return {
       recibido: true,
-      codigoActivo,
+      codigoActivo: activo!.codigo,
       intencion: 'SOLICITAR_REVISION',
       mensaje: 'Solicitud enviada a MS4/N8N',
     };
@@ -272,6 +292,11 @@ export class WhatsappService {
         codigoActivo,
         mensaje: 'Activo no encontrado',
       };
+    }
+
+    const autorizacion = await this.validarAccesoActivoPorWhatsapp(mensaje.from, codigoActivo, activo);
+    if (!autorizacion.autorizado) {
+      return autorizacion.resultado;
     }
 
     await this.notificacionesService.enviarWhatsAppTexto(
@@ -326,13 +351,26 @@ export class WhatsappService {
       return { recibido: true, codigoActivo, mensaje: 'Activo no encontrado' };
     }
 
+    const autorizacion = await this.validarAccesoActivoPorWhatsapp(mensaje.from, codigoActivo, activo);
+    if (!autorizacion.autorizado) {
+      return autorizacion.resultado;
+    }
+
     const ticket = await this.ms1Client.crearTicketRevision({
       activoId: activo.id,
       solicitadoPorWhatsApp: mensaje.from,
       motivo: mensaje.text,
     });
     const documentos = await this.ms2Client.obtenerDocumentos(activo.id);
-    const responsableEmail = activo.responsableEmail ?? 'responsable.area@activos.local';
+    const responsableEmail = activo.responsableEmail;
+    if (!responsableEmail) {
+      await this.notificacionesService.enviarWhatsAppTexto(
+        mensaje.from,
+        `El activo ${activo.codigo} no tiene correo de responsable registrado.`,
+      );
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'Responsable sin email');
+      return { recibido: true, codigoActivo: activo.codigo, mensaje: 'Responsable sin email' };
+    }
 
     await this.notificacionesService.enviarEmail({
       to: responsableEmail,
@@ -370,6 +408,53 @@ export class WhatsappService {
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim();
+  }
+
+  private async validarAccesoActivoPorWhatsapp(
+    telefonoOrigen: string,
+    codigoActivo: string,
+    activo: Awaited<ReturnType<Ms1ClientService['buscarActivoPorCodigo']>>,
+  ): Promise<
+    | { autorizado: true }
+    | { autorizado: false; resultado: ResultadoSolicitudRevision }
+  > {
+    if (!activo) {
+      await this.notificacionesService.enviarWhatsAppTexto(
+        telefonoOrigen,
+        `Codigo de activo no encontrado: ${codigoActivo}.`,
+      );
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'Activo no existe en MS1');
+      return {
+        autorizado: false,
+        resultado: {
+          recibido: true,
+          codigoActivo,
+          mensaje: 'Activo no encontrado',
+        },
+      };
+    }
+
+    if (this.ms1Client.telefonoTieneAccesoActivo(activo, telefonoOrigen)) {
+      return { autorizado: true };
+    }
+
+    await this.notificacionesService.enviarWhatsAppTexto(
+      telefonoOrigen,
+      [
+        'No puedo procesar la solicitud desde este numero.',
+        `El activo ${activo.codigo} solo puede consultarse o reportarse desde el WhatsApp del responsable asignado.`,
+      ].join('\n'),
+    );
+    this.flujosService.marcar('solicitud-revision', 'ERROR', 'WhatsApp no autorizado para activo');
+    return {
+      autorizado: false,
+      resultado: {
+        recibido: true,
+        codigoActivo: activo.codigo,
+        intencion: 'NO_AUTORIZADA',
+        mensaje: 'WhatsApp no autorizado para activo',
+      },
+    };
   }
 
   private mensajeAyuda(): string {

@@ -6,8 +6,10 @@ describe('WebhooksService', () => {
     marcar: jest.fn(),
   };
   const ms1Client = {
+    buscarActivoPorCodigo: jest.fn(),
     obtenerActivoPorId: jest.fn(),
     crearTicketRevision: jest.fn(),
+    telefonoTieneAccesoActivo: jest.fn().mockReturnValue(true),
   };
   const ms2Client = {
     obtenerDocumentos: jest.fn(),
@@ -23,6 +25,7 @@ describe('WebhooksService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    ms1Client.telefonoTieneAccesoActivo.mockReturnValue(true);
     service = new WebhooksService(
       flujosService as any,
       ms1Client as any,
@@ -162,12 +165,13 @@ describe('WebhooksService', () => {
 
   it('procesa solicitud de revision desde N8N usando MS3 como fachada del sistema', async () => {
     ms1Client.obtenerActivoPorId.mockReset();
-    (ms1Client as any).buscarActivoPorCodigo = jest.fn().mockResolvedValue({
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
       id: '550e8400-e29b-41d4-a716-446655440000',
       codigo: 'ACT-2024-001',
       nombre: 'Laptop Dell',
       estado: 'ACTIVO',
-      responsableEmail: 'resp@empresa.com',
+      responsableEmail: 'quirogaborys@gmail.com',
+      responsablePhone: '591-77685777',
     });
     ms1Client.crearTicketRevision.mockResolvedValue({
       ticketId: 'TKT-N8N-2',
@@ -182,7 +186,11 @@ describe('WebhooksService', () => {
       codigoActivo: 'ACT-2024-001',
     });
 
-    expect((ms1Client as any).buscarActivoPorCodigo).toHaveBeenCalledWith('ACT-2024-001');
+    expect(ms1Client.buscarActivoPorCodigo).toHaveBeenCalledWith('ACT-2024-001');
+    expect(ms1Client.telefonoTieneAccesoActivo).toHaveBeenCalledWith(
+      expect.objectContaining({ codigo: 'ACT-2024-001' }),
+      'whatsapp:+59177685777',
+    );
     expect(ms1Client.crearTicketRevision).toHaveBeenCalledWith({
       activoId: '550e8400-e29b-41d4-a716-446655440000',
       solicitadoPorWhatsApp: 'whatsapp:+59177685777',
@@ -196,10 +204,47 @@ describe('WebhooksService', () => {
     );
     expect(result).toMatchObject({
       encontrado: true,
+      autorizado: true,
       codigoActivo: 'ACT-2024-001',
-      responsableEmail: 'resp@empresa.com',
+      responsableEmail: 'quirogaborys@gmail.com',
+      responsablePhone: '591-77685777',
       ticketId: 'TKT-N8N-2',
       documentosEncontrados: 1,
+    });
+  });
+
+  it('rechaza solicitud N8N si el WhatsApp no corresponde al responsable asignado', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+      responsableEmail: 'quirogaborys@gmail.com',
+      responsablePhone: '591-77685777',
+    });
+    ms1Client.telefonoTieneAccesoActivo.mockReturnValue(false);
+
+    const result = await service.solicitudRevisionN8n({
+      from: 'whatsapp:+59170000000',
+      text: 'Solicito revision del activo ACT-2024-001',
+      codigoActivo: 'ACT-2024-001',
+    });
+
+    expect(ms1Client.crearTicketRevision).not.toHaveBeenCalled();
+    expect(ms2Client.obtenerDocumentos).not.toHaveBeenCalled();
+    expect(flujosService.marcar).toHaveBeenCalledWith(
+      'solicitud-revision',
+      'ERROR',
+      'WhatsApp no autorizado para activo',
+    );
+    expect(result).toEqual({
+      recibido: true,
+      encontrado: true,
+      autorizado: false,
+      from: 'whatsapp:+59170000000',
+      codigoActivo: 'ACT-2024-001',
+      activoId: '550e8400-e29b-41d4-a716-446655440000',
+      mensaje: 'El numero whatsapp:+59170000000 no esta autorizado para el activo ACT-2024-001',
     });
   });
 });

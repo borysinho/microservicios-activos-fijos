@@ -37,7 +37,7 @@ export class DevController {
   simularWhatsapp(@Body() dto: SimularWhatsappDto) {
     this.assertDevEnabled();
     return this.whatsappService.procesarSolicitudRevision({
-      from: dto.from ?? '59170000000',
+      from: dto.from ?? '591-77685777',
       text: dto.text ?? 'Solicito revision de ACT-2024-001',
       timestamp: String(Math.floor(Date.now() / 1000)),
     });
@@ -51,8 +51,8 @@ export class DevController {
       codigo: dto.codigo ?? 'ACT-2024-001',
       nombre: dto.nombre ?? 'Laptop Dell Demo',
       fechaVencimientoGarantia: dto.fechaVencimientoGarantia ?? '2026-07-15',
-      responsableEmail: dto.responsableEmail ?? 'responsable.area@activos.local',
-      responsablePhone: dto.responsablePhone ?? '59170000000',
+      responsableEmail: dto.responsableEmail ?? 'quirogaborys@gmail.com',
+      responsablePhone: dto.responsablePhone ?? '591-77685777',
       responsableUsuarioId: dto.responsableUsuarioId ?? 'user-demo',
     });
   }
@@ -65,8 +65,8 @@ export class DevController {
       codigo: dto.codigo ?? 'ACT-2024-002',
       nombre: dto.nombre ?? 'Impresora HP Demo',
       fechaMantenimiento: dto.fechaMantenimiento ?? '2026-06-20',
-      responsableEmail: dto.responsableEmail ?? 'responsable.area@activos.local',
-      responsablePhone: dto.responsablePhone ?? '59170000000',
+      responsableEmail: dto.responsableEmail ?? 'quirogaborys@gmail.com',
+      responsablePhone: dto.responsablePhone ?? '591-77685777',
       responsableUsuarioId: dto.responsableUsuarioId ?? 'user-demo',
     });
   }
@@ -79,7 +79,7 @@ export class DevController {
       codigo: dto.codigo ?? 'ACT-2024-003',
       estadoDiagnostico: dto.estadoDiagnostico ?? 'REQUIERE_MANTENIMIENTO',
       confianza: dto.confianza ?? '0.91',
-      responsableEmail: dto.responsableEmail ?? 'responsable.area@activos.local',
+      responsableEmail: dto.responsableEmail ?? 'quirogaborys@gmail.com',
     });
   }
 

@@ -41,6 +41,7 @@ describe('MS3 API (e2e)', () => {
           responsableEmail: 'resp@empresa.com',
         }),
         obtenerActivoPorId: jest.fn().mockResolvedValue({ id: 'id', estado: 'ACTIVO' }),
+        telefonoTieneAccesoActivo: jest.fn().mockReturnValue(true),
         crearTicketRevision: jest.fn().mockResolvedValue({
           ticketId: 'TKT-1',
           activoId: '550e8400-e29b-41d4-a716-446655440000',

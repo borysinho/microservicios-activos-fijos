@@ -23,6 +23,10 @@ import java.time.LocalDateTime;
 @Slf4j
 public class DataInitializer implements CommandLineRunner {
 
+    private static final String BORYS_USERNAME = "borys.quiroga";
+    private static final String BORYS_EMAIL = "quirogaborys@gmail.com";
+    private static final String BORYS_PHONE = "591-77685777";
+
     private final UsuarioRepository usuarioRepository;
     private final CategoriaActivoRepository categoriaRepository;
     private final AreaRepository areaRepository;
@@ -47,6 +51,7 @@ public class DataInitializer implements CommandLineRunner {
         seedCatalogos();
         seedResponsables();
         seedAsignaciones();
+        seedBorysDemo();
         seedTraslados();
         seedBajas();
         seedBlockchain();
@@ -64,6 +69,7 @@ public class DataInitializer implements CommandLineRunner {
         crearUsuarioSiNoExiste("juana.vargas", "juana.vargas@saf.bo", "vargas123", RolUsuario.AUDITOR);
         crearUsuarioSiNoExiste("pedro.morales", "pedro.morales@saf.bo", "morales123", RolUsuario.SOLO_LECTURA);
         crearUsuarioSiNoExiste("supervisor", "supervisor@saf.bo", "super123", RolUsuario.ADMINISTRADOR);
+        crearOActualizarUsuario(BORYS_USERNAME, BORYS_EMAIL, "borys123", RolUsuario.RESPONSABLE_AREA);
         log.info("DataInitializer: usuarios demo verificados");
     }
 
@@ -410,7 +416,8 @@ public class DataInitializer implements CommandLineRunner {
 
     // ─── Responsables ─────────────────────────────────────────────────────────
     private void seedResponsables() {
-        if (responsableRepository.count() > 0) {
+        crearOActualizarResponsableBorys();
+        if (responsableRepository.count() > 1) {
             log.info("DataInitializer: responsables ya existen, omitiendo seed");
             return;
         }
@@ -560,6 +567,52 @@ public class DataInitializer implements CommandLineRunner {
                         .activa(true).build()));
 
         log.info("DataInitializer: 11 asignaciones creadas (10 activas, 1 histórica)");
+    }
+
+    private void seedBorysDemo() {
+        var borys = crearOActualizarResponsableBorys();
+        var areaTI = areaRepository.findByCodigo("TI-001").orElseGet(()
+                -> areaRepository.save(Area.builder()
+                        .codigo("TI-001")
+                        .nombre("Tecnologías de Información")
+                        .descripcion("Área de sistemas y soporte tecnológico")
+                        .responsable(borys)
+                        .build()));
+        areaTI.setResponsable(borys);
+        areaRepository.save(areaTI);
+
+        var categoriaEquipos = categoriaRepository.findByNombre("Equipos de Cómputo")
+                .orElseGet(() -> categoriaRepository.save(CategoriaActivo.builder()
+                        .nombre("Equipos de Cómputo")
+                        .descripcion("Computadoras, laptops, servidores y periféricos")
+                        .metodoDepreciacion(MetodoDepreciacion.LINEAL)
+                        .tasaDepreciacion(0.25)
+                        .build()));
+
+        var laptop = crearActivoDemoBorysSiNoExiste(
+                "ACT-2024-001",
+                "Laptop Dell Latitude 7440",
+                "Equipo demo para validar solicitudes WhatsApp/N8N/email con usuario registrado",
+                categoriaEquipos,
+                areaTI,
+                "Oficina TI - Puesto Borys",
+                new BigDecimal("9800.00"),
+                LocalDate.of(2024, 7, 10));
+
+        var monitor = crearActivoDemoBorysSiNoExiste(
+                "ACT-2024-002",
+                "Monitor Dell UltraSharp 27",
+                "Monitor demo asignado a Borys para pruebas de acceso por WhatsApp",
+                categoriaEquipos,
+                areaTI,
+                "Oficina TI - Puesto Borys",
+                new BigDecimal("3100.00"),
+                LocalDate.of(2024, 7, 10));
+
+        asegurarAsignacionActivaBorys(laptop, borys, areaTI, LocalDate.of(2024, 7, 11));
+        asegurarAsignacionActivaBorys(monitor, borys, areaTI, LocalDate.of(2024, 7, 11));
+
+        log.info("DataInitializer: usuario/responsable Borys Quiroga y activos demo verificados");
     }
 
     // ─── Traslados ────────────────────────────────────────────────────────────
@@ -775,6 +828,93 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
             log.info("Usuario demo creado: {} ({})", username, rol);
         }
+    }
+
+    private Usuario crearOActualizarUsuario(String username, String email,
+            String password, RolUsuario rol) {
+        var usuario = usuarioRepository.findByUsername(username)
+                .or(() -> usuarioRepository.findByEmail(email))
+                .orElseGet(() -> Usuario.builder()
+                .username(username)
+                .email(email)
+                .build());
+
+        usuario.setUsername(username);
+        usuario.setEmail(email);
+        usuario.setRol(rol);
+        usuario.setActivo(true);
+        if (usuario.getPasswordHash() == null || !passwordEncoder.matches(password, usuario.getPasswordHash())) {
+            usuario.setPasswordHash(passwordEncoder.encode(password));
+        }
+
+        return usuarioRepository.save(usuario);
+    }
+
+    private Responsable crearOActualizarResponsableBorys() {
+        var responsable = responsableRepository.findByEmail(BORYS_EMAIL)
+                .orElseGet(() -> Responsable.builder()
+                .nombre("Borys Quiroga")
+                .cargo("Responsable de Área")
+                .email(BORYS_EMAIL)
+                .build());
+
+        responsable.setNombre("Borys Quiroga");
+        responsable.setCargo("Responsable de Área");
+        responsable.setEmail(BORYS_EMAIL);
+        responsable.setTelefono(BORYS_PHONE);
+        return responsableRepository.save(responsable);
+    }
+
+    private Activo crearActivoDemoBorysSiNoExiste(String codigo, String nombre, String descripcion,
+            CategoriaActivo categoria, Area area, String ubicacion, BigDecimal valor, LocalDate fechaAdquisicion) {
+        var activo = activoRepository.findByCodigo(codigo)
+                .orElseGet(() -> Activo.builder()
+                .codigo(codigo)
+                .nombre(nombre)
+                .descripcion(descripcion)
+                .fechaAdquisicion(fechaAdquisicion)
+                .valorAdquisicion(valor)
+                .vidaUtilAnios(4)
+                .estado(EstadoActivo.ACTIVO)
+                .categoria(categoria)
+                .areaActual(area)
+                .ubicacion(ubicacion)
+                .build());
+
+        activo.setNombre(nombre);
+        activo.setDescripcion(descripcion);
+        activo.setCategoria(categoria);
+        activo.setAreaActual(area);
+        activo.setUbicacion(ubicacion);
+        activo.setEstado(EstadoActivo.ACTIVO);
+        return activoRepository.save(activo);
+    }
+
+    private void asegurarAsignacionActivaBorys(Activo activo, Responsable borys, Area area, LocalDate fecha) {
+        var asignacionActiva = asignacionRepository.findByActivoIdAndActivaTrue(activo.getId());
+        if (asignacionActiva.isPresent()
+                && asignacionActiva.get().getResponsable().getId().equals(borys.getId())) {
+            var asignacion = asignacionActiva.get();
+            asignacion.setArea(area);
+            asignacion.setObservaciones("Asignación demo para validar WhatsApp/N8N/email con usuario registrado");
+            asignacionRepository.save(asignacion);
+            return;
+        }
+
+        asignacionActiva.ifPresent(asignacion -> {
+            asignacion.setActiva(false);
+            asignacion.setFechaDevolucion(fecha.minusDays(1));
+            asignacionRepository.save(asignacion);
+        });
+
+        asignacionRepository.save(Asignacion.builder()
+                .activo(activo)
+                .responsable(borys)
+                .area(area)
+                .fechaAsignacion(fecha)
+                .observaciones("Asignación demo para validar WhatsApp/N8N/email con usuario registrado")
+                .activa(true)
+                .build());
     }
 
     private void crearOActualizarAdminConfigurado() {

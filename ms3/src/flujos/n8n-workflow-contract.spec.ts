@@ -58,6 +58,12 @@ describe('Workflow MS4 solicitud revision', () => {
     expect(String(node('Crear Solicitud via MS3').parameters.url)).toContain(
       'codigoActivo',
     );
+    expect(String(node('Validar Solicitud Autorizada').parameters.jsCode)).toContain(
+      'data.autorizado === false',
+    );
+    expect(String(node('Validar Solicitud Autorizada').parameters.jsCode)).toContain(
+      '!data.responsableEmail',
+    );
     expect(String(node('Responder WhatsApp').parameters.url)).toContain(
       "$('Crear Solicitud via MS3').item.json.from",
     );

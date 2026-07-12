@@ -14,6 +14,7 @@ describe('WhatsappService', () => {
   const ms1Client = {
     buscarActivoPorCodigo: jest.fn(),
     crearTicketRevision: jest.fn(),
+    telefonoTieneAccesoActivo: jest.fn().mockReturnValue(true),
   };
   const ms2Client = {
     obtenerDocumentos: jest.fn(),
@@ -30,6 +31,7 @@ describe('WhatsappService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    ms1Client.telefonoTieneAccesoActivo.mockReturnValue(true);
     service = new WhatsappService(
       config,
       flujosService as any,
@@ -148,8 +150,21 @@ describe('WhatsappService', () => {
     });
   });
 
-  it('delegacion productiva Twilio -> MS3 -> MS4 sin ejecutar MS1/MS2 dentro del webhook', async () => {
+  it('delegacion productiva Twilio -> MS3 valida acceso y dispara MS4 sin crear ticket local', async () => {
     flujosService.dispararN8n.mockResolvedValueOnce(true);
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+      responsableEmail: 'quirogaborys@gmail.com',
+      responsablePhone: '591-77685777',
+      asignaciones: [{
+        activa: true,
+        responsable: { email: 'quirogaborys@gmail.com', telefono: '591-77685777' },
+      }],
+    });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
     const twilioConfig = {
       ...config,
       n8nWebhookUrl: 'https://ms4.azurewebsites.net/webhook',
@@ -182,14 +197,23 @@ describe('WhatsappService', () => {
         from: 'whatsapp:+59177685777',
         text: 'Solicito revision del activo ACT-2024-001. No enciende',
         timestamp: 'SM-TWILIO-001',
+        activoId: '550e8400-e29b-41d4-a716-446655440000',
+        activoNombre: 'Laptop Dell',
+        activoEstado: 'ACTIVO',
         codigoActivo: 'ACT-2024-001',
+        responsableEmail: 'quirogaborys@gmail.com',
+        responsablePhone: '591-77685777',
         intencion: 'SOLICITAR_REVISION',
         origen: 'whatsapp',
         proveedor: 'twilio',
         recibidoEn: expect.any(String),
       }),
     );
-    expect(ms1Client.buscarActivoPorCodigo).not.toHaveBeenCalled();
+    expect(ms1Client.buscarActivoPorCodigo).toHaveBeenCalledWith('ACT-2024-001');
+    expect(ms1Client.telefonoTieneAccesoActivo).toHaveBeenCalledWith(
+      expect.objectContaining({ codigo: 'ACT-2024-001' }),
+      'whatsapp:+59177685777',
+    );
     expect(ms1Client.crearTicketRevision).not.toHaveBeenCalled();
     expect(ms2Client.obtenerDocumentos).not.toHaveBeenCalled();
     expect(notificacionesService.enviarEmail).not.toHaveBeenCalled();
@@ -204,6 +228,19 @@ describe('WhatsappService', () => {
 
   it('marca error cuando MS4/N8N no recibe el webhook de Twilio', async () => {
     flujosService.dispararN8n.mockResolvedValueOnce(false);
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+      responsableEmail: 'quirogaborys@gmail.com',
+      responsablePhone: '591-77685777',
+      asignaciones: [{
+        activa: true,
+        responsable: { email: 'quirogaborys@gmail.com', telefono: '591-77685777' },
+      }],
+    });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
     const twilioConfig = {
       ...config,
       n8nWebhookUrl: 'https://ms4.azurewebsites.net/webhook',
@@ -242,7 +279,9 @@ describe('WhatsappService', () => {
       nombre: 'Laptop Dell',
       estado: 'ACTIVO',
       responsableEmail: 'resp@empresa.com',
+      responsablePhone: '59170000000',
     });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
     ms1Client.crearTicketRevision.mockResolvedValue({
       ticketId: 'TKT-1',
       activoId: '11111111-1111-1111-1111-111111111111',
@@ -305,7 +344,9 @@ describe('WhatsappService', () => {
       nombre: 'MacBook Pro',
       estado: 'ACTIVO',
       responsableEmail: 'resp@empresa.com',
+      responsablePhone: '59177685777',
     });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
     ms1Client.crearTicketRevision.mockResolvedValue({
       ticketId: 'TKT-EQ-1',
       activoId: '55555555-5555-5555-5555-555555555555',
@@ -326,6 +367,40 @@ describe('WhatsappService', () => {
       documentosEncontrados: 0,
       intencion: 'SOLICITAR_REVISION',
       mensaje: 'Solicitud de revision procesada',
+    });
+  });
+
+  it('bloquea solicitudes de revision desde WhatsApp no asignado al activo', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+      responsableEmail: 'quirogaborys@gmail.com',
+      responsablePhone: '591-77685777',
+      asignaciones: [{
+        activa: true,
+        responsable: { email: 'quirogaborys@gmail.com', telefono: '591-77685777' },
+      }],
+    });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(false);
+
+    const result = await service.procesarSolicitudRevision({
+      from: 'whatsapp:+59170000000',
+      text: 'Solicito revision de ACT-2024-001',
+    });
+
+    expect(ms1Client.crearTicketRevision).not.toHaveBeenCalled();
+    expect(notificacionesService.enviarEmail).not.toHaveBeenCalled();
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      'whatsapp:+59170000000',
+      expect.stringContaining('solo puede consultarse o reportarse'),
+    );
+    expect(result).toEqual({
+      recibido: true,
+      codigoActivo: 'ACT-2024-001',
+      intencion: 'NO_AUTORIZADA',
+      mensaje: 'WhatsApp no autorizado para activo',
     });
   });
 

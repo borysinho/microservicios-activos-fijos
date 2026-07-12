@@ -39,6 +39,16 @@
     },
     {
       "parameters": {
+        "jsCode": "const data = $json; if (!data.encontrado || data.autorizado === false || !data.responsableEmail) { return []; } return [{ json: data }];"
+      },
+      "id": "validar-solicitud-autorizada",
+      "name": "Validar Solicitud Autorizada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 0]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "={{ $env.MS4_MS3_BASE_URL + '/notificaciones/email?to=' + encodeURIComponent($json.responsableEmail) + '&subject=' + encodeURIComponent(`Solicitud de revision ${$json.codigoActivo}`) + '&text=' + encodeURIComponent(`Solicitud recibida por WhatsApp. Activo: ${$json.codigoActivo} - ${$json.activoNombre}. Estado: ${$json.activoEstado}. Ticket: ${$json.ticketId}. Documentos asociados: ${$json.documentosEncontrados}.`) }}"
       },
@@ -68,6 +78,9 @@
       "main": [[{ "node": "Crear Solicitud via MS3", "type": "main", "index": 0 }]]
     },
     "Crear Solicitud via MS3": {
+      "main": [[{ "node": "Validar Solicitud Autorizada", "type": "main", "index": 0 }]]
+    },
+    "Validar Solicitud Autorizada": {
       "main": [[{ "node": "Enviar Email via MS3", "type": "main", "index": 0 }]]
     },
     "Enviar Email via MS3": {
