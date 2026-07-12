@@ -62,9 +62,9 @@ jobs:
 
       - name: Validate deployment configuration
         env:
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          MS1_ACR_LOGIN_SERVER: ${{ secrets.MS1_ACR_LOGIN_SERVER }}
+          MS1_ACR_USERNAME: ${{ secrets.MS1_ACR_USERNAME }}
+          MS1_ACR_PASSWORD: ${{ secrets.MS1_ACR_PASSWORD }}
           MS1_VM_HOST: ${{ secrets.MS1_VM_HOST }}
           MS1_VM_USER: ${{ secrets.MS1_VM_USER }}
           MS1_VM_SSH_KEY: ${{ secrets.MS1_VM_SSH_KEY }}
@@ -78,9 +78,9 @@ jobs:
           MS1_BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.MS1_BLOCKCHAIN_PRIVATE_KEY }}
           MS1_MS3_WEBHOOK_URL: ${{ vars.MS1_MS3_WEBHOOK_URL }}
         run: |
-          test -n "$ACR_LOGIN_SERVER" || { echo "::error::ACR_LOGIN_SERVER secret is required"; exit 1; }
-          test -n "$ACR_USERNAME" || { echo "::error::ACR_USERNAME secret is required"; exit 1; }
-          test -n "$ACR_PASSWORD" || { echo "::error::ACR_PASSWORD secret is required"; exit 1; }
+          test -n "$MS1_ACR_LOGIN_SERVER" || { echo "::error::MS1_ACR_LOGIN_SERVER secret is required"; exit 1; }
+          test -n "$MS1_ACR_USERNAME" || { echo "::error::MS1_ACR_USERNAME secret is required"; exit 1; }
+          test -n "$MS1_ACR_PASSWORD" || { echo "::error::MS1_ACR_PASSWORD secret is required"; exit 1; }
           test -n "$MS1_VM_HOST" || { echo "::error::MS1_VM_HOST secret is required"; exit 1; }
           test -n "$MS1_VM_USER" || { echo "::error::MS1_VM_USER secret is required"; exit 1; }
           test -n "$MS1_VM_SSH_KEY" || { echo "::error::MS1_VM_SSH_KEY secret is required"; exit 1; }
@@ -97,9 +97,9 @@ jobs:
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          registry: ${{ secrets.MS1_ACR_LOGIN_SERVER }}
+          username: ${{ secrets.MS1_ACR_USERNAME }}
+          password: ${{ secrets.MS1_ACR_PASSWORD }}
 
       - name: Build and push MS1 image
         uses: docker/build-push-action@v6
@@ -108,14 +108,14 @@ jobs:
           target: runtime
           push: true
           tags: |
-            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.MS1_ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ secrets.MS1_ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Deploy container to Azure VM
         env:
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          MS1_ACR_LOGIN_SERVER: ${{ secrets.MS1_ACR_LOGIN_SERVER }}
+          MS1_ACR_USERNAME: ${{ secrets.MS1_ACR_USERNAME }}
+          MS1_ACR_PASSWORD: ${{ secrets.MS1_ACR_PASSWORD }}
           MS1_VM_HOST: ${{ secrets.MS1_VM_HOST }}
           MS1_VM_USER: ${{ secrets.MS1_VM_USER }}
           MS1_VM_SSH_KEY: ${{ secrets.MS1_VM_SSH_KEY }}
@@ -153,7 +153,7 @@ jobs:
           ssh-keyscan -H "$MS1_VM_HOST" >> ~/.ssh/known_hosts
 
           {
-            printf 'MS1_IMAGE=%s/%s:%s\n' "$ACR_LOGIN_SERVER" "$IMAGE_NAME" "$IMAGE_TAG"
+            printf 'MS1_IMAGE=%s/%s:%s\n' "$MS1_ACR_LOGIN_SERVER" "$IMAGE_NAME" "$IMAGE_TAG"
             printf 'MS1_POSTGRES_DB=%s\n' "$MS1_POSTGRES_DB"
             printf 'MS1_POSTGRES_USER=%s\n' "$MS1_POSTGRES_USER"
             printf 'MS1_POSTGRES_PASSWORD=%s\n' "$MS1_POSTGRES_PASSWORD"
@@ -186,8 +186,8 @@ jobs:
           scp -i ~/.ssh/ms1_vm_key ms1/docker-compose.prod.yml "$MS1_VM_USER@$MS1_VM_HOST:/opt/ms1/docker-compose.yml"
           scp -i ~/.ssh/ms1_vm_key .env.deploy "$MS1_VM_USER@$MS1_VM_HOST:/opt/ms1/.env"
 
-          printf '%s\n' "$ACR_PASSWORD" | ssh -i ~/.ssh/ms1_vm_key "$MS1_VM_USER@$MS1_VM_HOST" \
-            "docker login '$ACR_LOGIN_SERVER' --username '$ACR_USERNAME' --password-stdin"
+          printf '%s\n' "$MS1_ACR_PASSWORD" | ssh -i ~/.ssh/ms1_vm_key "$MS1_VM_USER@$MS1_VM_HOST" \
+            "docker login '$MS1_ACR_LOGIN_SERVER' --username '$MS1_ACR_USERNAME' --password-stdin"
 
           ssh -i ~/.ssh/ms1_vm_key "$MS1_VM_USER@$MS1_VM_HOST" \
             "cd /opt/ms1 \

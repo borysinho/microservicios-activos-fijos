@@ -59,12 +59,12 @@ jobs:
 
       - name: Validate deployment configuration
         env:
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST || secrets.MS1_VM_HOST }}
-          MS4_VM_USER: ${{ secrets.MS4_VM_USER || secrets.MS1_VM_USER }}
-          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY || secrets.MS1_VM_SSH_KEY }}
+          MS4_ACR_LOGIN_SERVER: ${{ secrets.MS4_ACR_LOGIN_SERVER }}
+          MS4_ACR_USERNAME: ${{ secrets.MS4_ACR_USERNAME }}
+          MS4_ACR_PASSWORD: ${{ secrets.MS4_ACR_PASSWORD }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
           MS4_N8N_HOST: ${{ vars.MS4_N8N_HOST }}
           MS4_N8N_EDITOR_BASE_URL: ${{ vars.MS4_N8N_EDITOR_BASE_URL }}
           MS4_WEBHOOK_URL: ${{ vars.MS4_WEBHOOK_URL }}
@@ -76,12 +76,12 @@ jobs:
           MS4_MS3_BASE_URL: ${{ vars.MS4_MS3_BASE_URL }}
           MS4_FCM_API_URL: ${{ vars.MS4_FCM_API_URL }}
         run: |
-          test -n "$ACR_LOGIN_SERVER" || { echo "::error::ACR_LOGIN_SERVER secret is required"; exit 1; }
-          test -n "$ACR_USERNAME" || { echo "::error::ACR_USERNAME secret is required"; exit 1; }
-          test -n "$ACR_PASSWORD" || { echo "::error::ACR_PASSWORD secret is required"; exit 1; }
-          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST or MS1_VM_HOST secret is required"; exit 1; }
-          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER or MS1_VM_USER secret is required"; exit 1; }
-          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY or MS1_VM_SSH_KEY secret is required"; exit 1; }
+          test -n "$MS4_ACR_LOGIN_SERVER" || { echo "::error::MS4_ACR_LOGIN_SERVER secret is required"; exit 1; }
+          test -n "$MS4_ACR_USERNAME" || { echo "::error::MS4_ACR_USERNAME secret is required"; exit 1; }
+          test -n "$MS4_ACR_PASSWORD" || { echo "::error::MS4_ACR_PASSWORD secret is required"; exit 1; }
+          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST secret is required"; exit 1; }
+          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER secret is required"; exit 1; }
+          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY secret is required"; exit 1; }
           test -n "$MS4_N8N_HOST" || { echo "::error::MS4_N8N_HOST variable is required"; exit 1; }
           test -n "$MS4_N8N_EDITOR_BASE_URL" || { echo "::error::MS4_N8N_EDITOR_BASE_URL variable is required"; exit 1; }
           test -n "$MS4_WEBHOOK_URL" || { echo "::error::MS4_WEBHOOK_URL variable is required"; exit 1; }
@@ -95,9 +95,9 @@ jobs:
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          registry: ${{ secrets.MS4_ACR_LOGIN_SERVER }}
+          username: ${{ secrets.MS4_ACR_USERNAME }}
+          password: ${{ secrets.MS4_ACR_PASSWORD }}
 
       - name: Build and push MS4 image
         uses: docker/build-push-action@v6
@@ -105,17 +105,17 @@ jobs:
           context: ./ms4
           push: true
           tags: |
-            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.MS4_ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ secrets.MS4_ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Deploy container to Azure VM
         env:
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
-          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST || secrets.MS1_VM_HOST }}
-          MS4_VM_USER: ${{ secrets.MS4_VM_USER || secrets.MS1_VM_USER }}
-          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY || secrets.MS1_VM_SSH_KEY }}
+          MS4_ACR_LOGIN_SERVER: ${{ secrets.MS4_ACR_LOGIN_SERVER }}
+          MS4_ACR_USERNAME: ${{ secrets.MS4_ACR_USERNAME }}
+          MS4_ACR_PASSWORD: ${{ secrets.MS4_ACR_PASSWORD }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
           IMAGE_TAG: ${{ github.sha }}
           MS4_N8N_HOST: ${{ vars.MS4_N8N_HOST }}
           MS4_N8N_PORT: ${{ vars.MS4_N8N_PORT || '5678' }}
@@ -142,7 +142,7 @@ jobs:
           ssh-keyscan -H "$MS4_VM_HOST" >> ~/.ssh/known_hosts
 
           {
-            printf 'MS4_IMAGE=%s/%s:%s\n' "$ACR_LOGIN_SERVER" "$IMAGE_NAME" "$IMAGE_TAG"
+            printf 'MS4_IMAGE=%s/%s:%s\n' "$MS4_ACR_LOGIN_SERVER" "$IMAGE_NAME" "$IMAGE_TAG"
             printf 'MS4_N8N_HOST=%s\n' "$MS4_N8N_HOST"
             printf 'MS4_N8N_PORT=%s\n' "$MS4_N8N_PORT"
             printf 'MS4_N8N_PROTOCOL=%s\n' "$MS4_N8N_PROTOCOL"
@@ -168,8 +168,8 @@ jobs:
           scp -i ~/.ssh/ms4_vm_key ms4/docker-compose.prod.yml "$MS4_VM_USER@$MS4_VM_HOST:/opt/ms4/docker-compose.yml"
           scp -i ~/.ssh/ms4_vm_key .env.deploy "$MS4_VM_USER@$MS4_VM_HOST:/opt/ms4/.env"
 
-          printf '%s\n' "$ACR_PASSWORD" | ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
-            "docker login '$ACR_LOGIN_SERVER' --username '$ACR_USERNAME' --password-stdin"
+          printf '%s\n' "$MS4_ACR_PASSWORD" | ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
+            "docker login '$MS4_ACR_LOGIN_SERVER' --username '$MS4_ACR_USERNAME' --password-stdin"
 
           ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
             "cd /opt/ms4 \

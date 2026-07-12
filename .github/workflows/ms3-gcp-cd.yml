@@ -16,7 +16,7 @@ permissions:
 env:
   MS3_GCP_PROJECT_ID: ${{ vars.MS3_GCP_PROJECT_ID }}
   MS3_GCP_REGION: ${{ vars.MS3_GCP_REGION || 'us-central1' }}
-  GCP_RUN_SERVICE: ${{ vars.MS3_CLOUD_RUN_SERVICE || 'ms3-activos-fijos' }}
+  MS3_CLOUD_RUN_SERVICE: ${{ vars.MS3_CLOUD_RUN_SERVICE || 'ms3-activos-fijos' }}
   MS3_MS1_GRAPHQL_URL: ${{ vars.MS3_MS1_GRAPHQL_URL }}
   MS3_MS1_TICKETS_URL: ${{ vars.MS3_MS1_TICKETS_URL }}
   MS3_MS2_BASE_URL: ${{ vars.MS3_MS2_BASE_URL }}
@@ -85,7 +85,7 @@ jobs:
 
       - name: Validate deployment configuration
         env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          MS3_GCP_SA_KEY: ${{ secrets.MS3_GCP_SA_KEY }}
           MS3_SMTP_PASSWORD: ${{ secrets.MS3_SMTP_PASSWORD }}
           MS3_TWILIO_AUTH_TOKEN: ${{ secrets.MS3_TWILIO_AUTH_TOKEN }}
           MS3_WHATSAPP_TOKEN: ${{ secrets.MS3_WHATSAPP_TOKEN }}
@@ -95,7 +95,7 @@ jobs:
           MS3_FCM_ACCESS_TOKEN: ${{ secrets.MS3_FCM_ACCESS_TOKEN }}
           MS3_AZURE_OPENAI_API_KEY: ${{ secrets.MS3_AZURE_OPENAI_API_KEY }}
         run: |
-          test -n "$GCP_SA_KEY" || { echo "::error::GCP_SA_KEY secret is required"; exit 1; }
+          test -n "$MS3_GCP_SA_KEY" || { echo "::error::MS3_GCP_SA_KEY secret is required"; exit 1; }
           test -n "$MS3_GCP_PROJECT_ID" || { echo "::error::MS3_GCP_PROJECT_ID variable is required"; exit 1; }
           test -n "$MS3_MS1_GRAPHQL_URL" || { echo "::error::MS3_MS1_GRAPHQL_URL variable is required"; exit 1; }
           test -n "$MS3_MS2_BASE_URL" || { echo "::error::MS3_MS2_BASE_URL variable is required"; exit 1; }
@@ -125,7 +125,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          credentials_json: ${{ secrets.MS3_GCP_SA_KEY }}
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -143,7 +143,7 @@ jobs:
           MS3_FCM_ACCESS_TOKEN: ${{ secrets.MS3_FCM_ACCESS_TOKEN }}
           MS3_AZURE_OPENAI_API_KEY: ${{ secrets.MS3_AZURE_OPENAI_API_KEY }}
         run: |
-          gcloud run deploy "$GCP_RUN_SERVICE" \
+          gcloud run deploy "$MS3_CLOUD_RUN_SERVICE" \
             --source ms3 \
             --project "$MS3_GCP_PROJECT_ID" \
             --region "$MS3_GCP_REGION" \
@@ -161,14 +161,14 @@ jobs:
       - name: Show deployed URL
         id: service-url
         run: |
-          gcloud run services describe "$GCP_RUN_SERVICE" \
+          gcloud run services describe "$MS3_CLOUD_RUN_SERVICE" \
             --project "$MS3_GCP_PROJECT_ID" \
             --region "$MS3_GCP_REGION" \
             --format='value(status.url)'
 
       - name: Smoke test deployed MS3
         run: |
-          SERVICE_URL="$(gcloud run services describe "$GCP_RUN_SERVICE" \
+          SERVICE_URL="$(gcloud run services describe "$MS3_CLOUD_RUN_SERVICE" \
             --project "$MS3_GCP_PROJECT_ID" \
             --region "$MS3_GCP_REGION" \
             --format='value(status.url)')"
