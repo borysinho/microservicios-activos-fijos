@@ -270,10 +270,10 @@
 - [x] `ms4/n8n-workflows/flujo_01_solicitud_revision.json` — Flujo 1 (7 nodos): WhatsApp → identificar activo → consultar MS1 → crear ticket → verificar docs → email → responder WhatsApp
 - [x] `ms4/n8n-workflows/flujo_02_alerta_garantia.json` — Flujo 2 (5 nodos): Webhook MS1 → datos activo → docs → email → push
 - [x] `ms4/n8n-workflows/flujo_03_alerta_mantenimiento.json` — Flujo 3 (4 nodos): Webhook MS1 → datos activo → email → WhatsApp
-- [x] Variables de N8N documentadas en `ms4/.env.example`/`ms4/docker-compose.yml`: `MS1_GRAPHQL_URL`, `MS2_BASE_URL`, `SENDGRID_FROM_EMAIL`
+- [x] Variables de N8N documentadas en `ms4/.env.example`/`ms4/docker-compose.yml`: `MS4_MS1_GRAPHQL_URL`, `MS4_MS2_BASE_URL`, `MS4_MS3_BASE_URL`
 - [x] CI/CD automático configurado: `.github/workflows/ms4-azure-cd.yml`
 - [ ] Host Azure con Docker Compose y volumen persistente para N8N
-- [ ] MS3 configurado con `MS4_N8N_WEBHOOK_URL`
+- [ ] MS3 configurado con `MS3_MS4_N8N_WEBHOOK_URL`
 
 ### Frontend — Angular
 
@@ -375,9 +375,9 @@
 - [ ] Supabase Transaction Pooler configurado para Azure App Service
 - [ ] Azure App Service (Java 21) configurado con las variables de entorno
 - [ ] Imagen Docker de MS1 en Azure Container Registry
-- [ ] Variables de entorno configuradas: `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `DB_PREPARE_THRESHOLD`, `JWT_SECRET`, `BLOCKCHAIN_PRIVATE_KEY`
+- [ ] Variables de entorno configuradas: `MS1_SPRING_DATASOURCE_URL`, `MS1_SPRING_DATASOURCE_USERNAME`, `MS1_SPRING_DATASOURCE_PASSWORD`, `MS1_DB_PREPARE_THRESHOLD`, `MS1_JWT_SECRET`, `MS1_BLOCKCHAIN_PRIVATE_KEY`
 - [x] CI/CD automático configurado: `.github/workflows/ms1-azure-cd.yml` (CU-82)
-- [ ] Secretos GitHub Actions configurados: `ACR_LOGIN_SERVER`, `ACR_USERNAME`, `ACR_PASSWORD`, `AZURE_WEBAPP_PUBLISH_PROFILE`
+- [ ] Secretos GitHub Actions configurados: `MS1_ACR_LOGIN_SERVER`, `MS1_ACR_USERNAME`, `MS1_ACR_PASSWORD`, `MS1_VM_HOST`, `MS1_VM_USER`, `MS1_VM_SSH_KEY`
 
 ### MS2 — Amazon AWS
 
@@ -386,18 +386,18 @@
 - [ ] AWS ECR con imagen Docker Lambda de MS2
 - [ ] AWS Lambda + API Gateway publicados mediante CloudFormation
 - [ ] IAM Role con permisos de S3 y DynamoDB para Lambda
-- [ ] Variables de entorno: `AWS_REGION`, `S3_BUCKET`, `DYNAMODB_*`, `JWT_SECRET`
+- [ ] Variables de entorno: `MS2_AWS_REGION`, `MS2_S3_BUCKET_NAME`, `MS2_DYNAMODB_*`, `MS2_JWT_SECRET`
 - [x] CI/CD automático configurado: `.github/workflows/ms2-aws-cd.yml` (CU-83)
-- [ ] Secretos GitHub Actions configurados: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `JWT_SECRET`
+- [ ] Secretos GitHub Actions configurados: `MS2_AWS_ACCESS_KEY_ID`, `MS2_AWS_SECRET_ACCESS_KEY`, `MS2_JWT_SECRET`
 
 ### MS3 — Google Cloud Platform
 
 - [ ] Google Cloud Run con imagen Docker de MS3 (NestJS)
-- [x] Variables de entorno documentadas para despliegue: `MS1_GRAPHQL_URL`, `MS2_BASE_URL`, `MS4_N8N_WEBHOOK_URL`, `SMTP_*`, `TWILIO_*`, `FCM_*`
+- [x] Variables de entorno documentadas para despliegue: `MS3_MS1_GRAPHQL_URL`, `MS3_MS2_BASE_URL`, `MS3_MS4_N8N_WEBHOOK_URL`, `MS3_SMTP_*`, `MS3_TWILIO_*`, `MS3_FCM_*`
 - [ ] Firebase proyecto creado para FCM
 - [x] CI/CD automático configurado: `.github/workflows/ms3-gcp-cd.yml` (CU-84)
-- [ ] Secretos GitHub Actions configurados: `GCP_SA_KEY`
-- [ ] Variables GitHub Actions configuradas: `GCP_PROJECT_ID`, `MS1_GRAPHQL_URL`, `MS2_BASE_URL`
+- [ ] Secretos GitHub Actions configurados: `MS3_GCP_SA_KEY`
+- [ ] Variables GitHub Actions configuradas: `MS3_GCP_PROJECT_ID`, `MS3_MS1_GRAPHQL_URL`, `MS3_MS2_BASE_URL`
 
 ### Frontend — Angular
 

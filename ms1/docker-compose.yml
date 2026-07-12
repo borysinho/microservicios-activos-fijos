@@ -40,7 +40,7 @@ services:
       MS1_BLOCKCHAIN_RPC_URL: ${MS1_BLOCKCHAIN_RPC_URL:-https://rpc.ankr.com/eth_sepolia}
       MS1_BLOCKCHAIN_PRIVATE_KEY: ${MS1_BLOCKCHAIN_PRIVATE_KEY:-0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce7c46f30d7d21715b23b2d}
       MS1_MS3_WEBHOOK_URL: ${MS1_MS3_WEBHOOK_URL:-http://host.docker.internal:3000/webhook/activos}
-      MS1_CORS_ALLOWED_ORIGIN_PATTERNS: ${MS1_CORS_ALLOWED_ORIGIN_PATTERNS:-*}
+      MS1_CORS_ALLOWED_ORIGIN_PATTERNS: "${MS1_CORS_ALLOWED_ORIGIN_PATTERNS:-*},http://localhost:4200,http://127.0.0.1:4200"
     ports:
       - "${MS1_PORT:-8081}:8080"
     volumes:

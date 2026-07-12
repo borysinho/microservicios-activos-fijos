@@ -191,9 +191,9 @@ El workflow requiere estos secretos:
 
 | Secreto | Valor |
 | --- | --- |
-| `ACR_LOGIN_SERVER` | Resultado de `$LOGIN_SERVER`, ejemplo `acracfijos123.azurecr.io` |
-| `ACR_USERNAME` | Resultado de `$ACR_USER` |
-| `ACR_PASSWORD` | Resultado de `$ACR_PASS` |
+| `MS1_ACR_LOGIN_SERVER` | Resultado de `$LOGIN_SERVER`, ejemplo `acracfijos123.azurecr.io` |
+| `MS1_ACR_USERNAME` | Resultado de `$ACR_USER` |
+| `MS1_ACR_PASSWORD` | Resultado de `$ACR_PASS` |
 | `MS1_VM_HOST` | IP publica de la VM |
 | `MS1_VM_USER` | Usuario SSH, por defecto `azureuser` |
 | `MS1_VM_SSH_KEY` | Contenido de la llave privada `/tmp/ms1_vm_key` |
@@ -201,9 +201,9 @@ El workflow requiere estos secretos:
 Con GitHub CLI:
 
 ```bash
-gh secret set ACR_LOGIN_SERVER --body "$LOGIN_SERVER"
-gh secret set ACR_USERNAME --body "$ACR_USER"
-gh secret set ACR_PASSWORD --body "$ACR_PASS"
+gh secret set MS1_ACR_LOGIN_SERVER --body "$LOGIN_SERVER"
+gh secret set MS1_ACR_USERNAME --body "$ACR_USER"
+gh secret set MS1_ACR_PASSWORD --body "$ACR_PASS"
 gh secret set MS1_VM_HOST --body "<IP_PUBLICA>"
 gh secret set MS1_VM_USER --body "$VM_USER"
 gh secret set MS1_VM_SSH_KEY < /tmp/ms1_vm_key
@@ -254,7 +254,7 @@ Errores comunes:
 
 | Sintoma | Revision |
 | --- | --- |
-| `401` al hacer pull de imagen | Confirmar `ACR_USERNAME`, `ACR_PASSWORD` y `docker login` en la VM. |
+| `401` al hacer pull de imagen | Confirmar `MS1_ACR_USERNAME`, `MS1_ACR_PASSWORD` y `docker login` en la VM. |
 | App no arranca | Revisar `JWT_SECRET`, `ADMIN_PASSWORD`, `SPRING_DATASOURCE_*` y logs de `ms1`. |
 | Falla conexion a PostgreSQL | Confirmar que `postgres` esta healthy y que `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/activos_db`. |
 | GitHub Action no dispara | Confirmar que el cambio toque `ms1/**` o ejecutar `workflow_dispatch`. |

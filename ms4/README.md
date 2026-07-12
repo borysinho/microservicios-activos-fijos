@@ -47,7 +47,9 @@ Los exports estan en `n8n-workflows/`:
 - `flujo_02_alerta_garantia.json`
 - `flujo_03_alerta_mantenimiento.json`
 
-La imagen importa estos workflows al iniciar cuando `MS4_N8N_IMPORT_WORKFLOWS=true`.
+La imagen importa estos workflows al iniciar cuando `MS4_N8N_IMPORT_WORKFLOWS=true`. El import es idempotente por volumen: despues del primer seed crea el marcador `/home/node/.n8n/.ms4-workflows-imported` y los siguientes reinicios no vuelven a importar los mismos JSON, evitando duplicados en N8N. Si el volumen ya tenia estos workflows antes de crear el marcador, el arranque los detecta por nombre, marca el seed como completado e importa solo los faltantes.
+
+Los duplicados ya existentes en una instancia previa deben eliminarse desde la UI de N8N o recreando el volumen si no se necesita conservar historial/credenciales. `MS4_N8N_FORCE_IMPORT_WORKFLOWS=true` fuerza el import aunque exista el marcador, por lo que debe usarse solo con una base de datos limpia o despues de eliminar las copias anteriores.
 
 ### Flujo 01 - Solicitud de revision por WhatsApp
 
@@ -87,6 +89,7 @@ MS4_N8N_ENCRYPTION_KEY=<clave-fija-larga>
 MS4_N8N_SECURE_COOKIE=true
 MS4_N8N_BASIC_AUTH_USER=admin
 MS4_N8N_BASIC_AUTH_PASSWORD=<password>
+MS4_N8N_FORCE_IMPORT_WORKFLOWS=false
 MS4_N8N_DIAGNOSTICS_ENABLED=false
 MS4_N8N_VERSION_NOTIFICATIONS_ENABLED=false
 MS4_N8N_TEMPLATES_ENABLED=false

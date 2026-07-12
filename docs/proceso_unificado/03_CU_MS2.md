@@ -464,15 +464,15 @@ def verificar_token(credentials: HTTPAuthorizationCredentials = Security(securit
 ### Variables de entorno `.env`
 
 ```env
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-AWS_REGION=us-east-1
-S3_BUCKET=activos-fijos-docs
-DYNAMODB_TABLE_DOCUMENTOS=documentos
-DYNAMODB_TABLE_AUDITORIA=auditoria
-DYNAMODB_TABLE_DIAGNOSTICOS=diagnosticos_ia
-JWT_SECRET=<mismo-secreto-que-MS1>
-MS3_WEBHOOK_URL=http://ms3-service/webhooks/diagnostico-critico
+MS2_AWS_ACCESS_KEY_ID=...
+MS2_AWS_SECRET_ACCESS_KEY=...
+MS2_AWS_REGION=us-east-1
+MS2_S3_BUCKET_NAME=activos-fijos-docs
+MS2_DYNAMODB_TABLE_DOCS=documentos
+MS2_DYNAMODB_TABLE_AUDITORIA=auditoria
+MS2_DYNAMODB_TABLE_DIAGNOSTICOS=diagnosticos_ia
+MS2_JWT_SECRET=<mismo-secreto-que-MS1>
+MS2_MS3_WEBHOOK_URL=http://ms3-service/webhooks/diagnostico-critico
 ```
 
 ---
@@ -508,6 +508,6 @@ MS3_WEBHOOK_URL=http://ms3-service/webhooks/diagnostico-critico
 - Trigger: `push` a `main` con cambios en `ms2/**`, `deploy/aws-ms2/**` o `workflow_dispatch`
 - Script de despliegue: `deploy/aws-ms2/deploy.sh`
 - Infraestructura como código: `deploy/aws-ms2/cloudformation.yml`
-- Secretos requeridos: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `JWT_SECRET`
-- Secretos opcionales: `AWS_SESSION_TOKEN`
-- Variables opcionales: `AWS_REGION`, `MS2_PROJECT_NAME`, `MS2_STACK_NAME`, `MS2_ECR_REPO`, `MS2_S3_BUCKET_NAME`, `DYNAMODB_TABLE_DOCS`, `DYNAMODB_TABLE_AUDITORIA`, `MS2_ALLOWED_ORIGINS`, `JWT_ALGORITHM`
+- Secretos requeridos: `MS2_AWS_ACCESS_KEY_ID`, `MS2_AWS_SECRET_ACCESS_KEY`, `MS2_JWT_SECRET`
+- Secretos opcionales: `MS2_AWS_SESSION_TOKEN`
+- Variables opcionales: `MS2_AWS_REGION`, `MS2_PROJECT_NAME`, `MS2_STACK_NAME`, `MS2_ECR_REPO`, `MS2_S3_BUCKET_NAME`, `MS2_DYNAMODB_TABLE_DOCS`, `MS2_DYNAMODB_TABLE_AUDITORIA`, `MS2_ALLOWED_ORIGINS`, `MS2_JWT_ALGORITHM`

@@ -62,7 +62,7 @@
 
     &--admin {
       background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-      border-color: var(--accent); color: #000;
+      border-color: var(--accent); color: var(--accent-contrast);
     }
     &--auditor {
       background: linear-gradient(135deg, var(--info), #2563eb);

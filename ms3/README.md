@@ -204,7 +204,7 @@ El workflow se ejecuta al hacer `push` a `main` con cambios en `ms3/**`, o manua
 
 Secreto requerido:
 
-- `GCP_SA_KEY`
+- `MS3_GCP_SA_KEY`
 - `MS3_MS2_AUTH_TOKEN`
 
 Variables requeridas:

@@ -148,14 +148,15 @@ El workflow se ejecuta al hacer `push` a `main` con cambios en `ms1/**` o manual
 
 Secretos requeridos:
 
-- `ACR_LOGIN_SERVER`
-- `ACR_USERNAME`
-- `ACR_PASSWORD`
-- `AZURE_WEBAPP_PUBLISH_PROFILE`
+- `MS1_ACR_LOGIN_SERVER`
+- `MS1_ACR_USERNAME`
+- `MS1_ACR_PASSWORD`
+- `MS1_VM_HOST`
+- `MS1_VM_USER`
+- `MS1_VM_SSH_KEY`
 
 Variables opcionales:
 
-- `AZURE_WEBAPP_NAME`
 - `MS1_IMAGE_NAME`
 
 Las variables de runtime de MS1 se configuran en Azure App Service, incluyendo `WEBSITES_PORT=8080` y las credenciales Supabase.

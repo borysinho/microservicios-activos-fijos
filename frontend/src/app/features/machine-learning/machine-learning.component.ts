@@ -9,6 +9,17 @@ import { Subscription } from 'rxjs';
 
 Chart.register(...registerables);
 
+type ChartTheme = {
+  accent: string;
+  cyan: string;
+  success: string;
+  danger: string;
+  warning: string;
+  purple: string;
+  grid: string;
+  text: string;
+};
+
 @Component({
   selector: 'app-machine-learning',
   standalone: true,
@@ -23,6 +34,13 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
   private gql = inject(ActivosGqlService);
   private subs: Subscription[] = [];
   private clusterChart?: Chart;
+  private colorSchemeQuery?: MediaQueryList;
+  private readonly colorSchemeListener = () => {
+    const currentResult = this.clusterResult();
+    if (currentResult) {
+      setTimeout(() => this.renderCluster(currentResult), 0);
+    }
+  };
 
   tab = signal<'vida' | 'cluster'>('vida');
   activos = signal<Activo[]>([]);
@@ -40,6 +58,10 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
   clusterLoading = signal(false);
 
   ngOnInit(): void {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      this.colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      this.colorSchemeQuery.addEventListener('change', this.colorSchemeListener);
+    }
     this.cargandoCatalogos.set(true);
     const activosSub = this.gql.getActivos().subscribe({
       next: (data) => {
@@ -96,11 +118,12 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
   private renderCluster(r: any): void {
     if (!this.clusterRef) return;
     this.clusterChart?.destroy();
-    const colors = ['#0f766e', '#2563eb', '#22c55e', '#ef4444', '#a855f7', '#f59e0b'];
+    const theme = this.getChartTheme();
+    const colors = [theme.accent, theme.cyan, theme.success, theme.danger, theme.purple, theme.warning];
     const datasets = (r.clusters ?? []).map((cl: any, i: number) => ({
       label: `Cluster ${i + 1}`,
       data: cl.puntos ?? [],
-      backgroundColor: colors[i % colors.length] + 'aa',
+      backgroundColor: this.hexToRgba(colors[i % colors.length], 0.68),
       pointRadius: 6,
     }));
     this.clusterChart = new Chart(this.clusterRef.nativeElement, {
@@ -112,15 +135,42 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
         plugins: {
           legend: {
             position: 'bottom',
-            labels: { color: '#536276', font: { family: 'Inter' } },
+            labels: { color: theme.text, font: { family: 'Inter' } },
           },
         },
         scales: {
-          x: { grid: { color: '#d9e2ec' }, ticks: { color: '#536276' } },
-          y: { grid: { color: '#d9e2ec' }, ticks: { color: '#536276' } },
+          x: { grid: { color: theme.grid }, ticks: { color: theme.text } },
+          y: { grid: { color: theme.grid }, ticks: { color: theme.text } },
         },
       },
     });
+  }
+
+  private getChartTheme(): ChartTheme {
+    const styles = getComputedStyle(document.documentElement);
+    const cssVar = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+    return {
+      accent: cssVar('--accent', '#0f766e'),
+      cyan: cssVar('--cyan', '#2563eb'),
+      success: cssVar('--success', '#22c55e'),
+      danger: cssVar('--danger', '#ef4444'),
+      warning: cssVar('--warning', '#f59e0b'),
+      purple: '#a855f7',
+      grid: cssVar('--border', '#d9e2ec'),
+      text: cssVar('--text-secondary', '#536276'),
+    };
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const normalized = hex.replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+      return hex;
+    }
+    const value = Number.parseInt(normalized, 16);
+    const r = (value >> 16) & 255;
+    const g = (value >> 8) & 255;
+    const b = value & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   clusterBadge(cluster: number): string {
@@ -134,6 +184,7 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subs.forEach((s) => s.unsubscribe());
+    this.colorSchemeQuery?.removeEventListener('change', this.colorSchemeListener);
     this.clusterChart?.destroy();
   }
 }

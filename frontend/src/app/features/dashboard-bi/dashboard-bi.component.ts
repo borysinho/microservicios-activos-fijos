@@ -12,6 +12,19 @@ import { Subscription } from 'rxjs';
 
 Chart.register(...registerables);
 
+type ChartTheme = {
+  accent: string;
+  cyan: string;
+  success: string;
+  danger: string;
+  warning: string;
+  info: string;
+  purple: string;
+  grid: string;
+  text: string;
+  chartBorder: string;
+};
+
 @Component({
   selector: 'app-dashboard-bi',
   standalone: true,
@@ -32,6 +45,13 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
   private sub?: Subscription;
   private subClustering?: Subscription;
   private charts: Chart[] = [];
+  private colorSchemeQuery?: MediaQueryList;
+  private readonly colorSchemeListener = () => {
+    const currentData = this.data();
+    if (currentData) {
+      setTimeout(() => this.renderCharts(currentData), 0);
+    }
+  };
 
   data = signal<DashboardMetricasDTO | null>(null);
   // CU-59: Proyección de vida útil de activos críticos
@@ -42,6 +62,10 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
   refreshing = signal(false);
 
   ngOnInit(): void {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      this.colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      this.colorSchemeQuery.addEventListener('change', this.colorSchemeListener);
+    }
     this.load();
     this.loadClustering();
   }
@@ -131,6 +155,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
     this.subClustering?.unsubscribe();
+    this.colorSchemeQuery?.removeEventListener('change', this.colorSchemeListener);
     this.charts.forEach((c) => c.destroy());
   }
 
@@ -138,9 +163,15 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
     this.charts.forEach((c) => c.destroy());
     this.charts = [];
 
-    const palette = ['#0f766e', '#2563eb', '#22c55e', '#ef4444', '#f59e0b', '#a855f7'];
-    const gridColor = '#d9e2ec';
-    const textColor = '#536276';
+    const theme = this.getChartTheme();
+    const palette = [
+      theme.accent,
+      theme.cyan,
+      theme.success,
+      theme.danger,
+      theme.warning,
+      theme.purple,
+    ];
 
     // Donut: activos por estado
     this.charts.push(
@@ -156,8 +187,8 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
                 d.activosTransferidos,
                 d.activosDadoDeBaja,
               ],
-              backgroundColor: ['#22c55e', '#f59e0b', '#3b82f6', '#ef4444'],
-              borderColor: '#ffffff',
+              backgroundColor: [theme.success, theme.warning, theme.info, theme.danger],
+              borderColor: theme.chartBorder,
               borderWidth: 3,
             },
           ],
@@ -170,7 +201,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
             legend: {
               position: 'bottom',
               labels: {
-                color: textColor,
+                color: theme.text,
                 padding: 14,
                 font: { family: 'Inter', size: 12 },
               },
@@ -202,12 +233,12 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
           plugins: { legend: { display: false } },
           scales: {
             x: {
-              grid: { color: gridColor },
-              ticks: { color: textColor, font: { family: 'Inter' } },
+              grid: { color: theme.grid },
+              ticks: { color: theme.text, font: { family: 'Inter' } },
             },
             y: {
-              grid: { color: gridColor },
-              ticks: { color: textColor, font: { family: 'Inter' } },
+              grid: { color: theme.grid },
+              ticks: { color: theme.text, font: { family: 'Inter' } },
               beginAtZero: true,
             },
           },
@@ -225,7 +256,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
             {
               label: 'Activos',
               data: d.activosPorArea.map((a) => a.cantidad),
-              backgroundColor: '#2563eb',
+              backgroundColor: theme.cyan,
               borderRadius: 4,
             },
           ],
@@ -237,13 +268,13 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
           plugins: { legend: { display: false } },
           scales: {
             x: {
-              grid: { color: gridColor },
-              ticks: { color: textColor, font: { family: 'Inter' } },
+              grid: { color: theme.grid },
+              ticks: { color: theme.text, font: { family: 'Inter' } },
               beginAtZero: true,
             },
             y: {
               grid: { color: 'transparent' },
-              ticks: { color: textColor, font: { family: 'Inter' } },
+              ticks: { color: theme.text, font: { family: 'Inter' } },
             },
           },
         },
@@ -261,10 +292,10 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
               {
                 label: 'Adquisiciones',
                 data: d.adquisicionesPorAnio.map((p) => p.cantidad),
-                borderColor: '#0f766e',
-                backgroundColor: '#0f766e22',
+                borderColor: theme.accent,
+                backgroundColor: this.hexToRgba(theme.accent, 0.14),
                 borderWidth: 2,
-                pointBackgroundColor: '#0f766e',
+                pointBackgroundColor: theme.accent,
                 pointRadius: 4,
                 fill: true,
                 tension: 0.4,
@@ -277,12 +308,12 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
             plugins: { legend: { display: false } },
             scales: {
               x: {
-                grid: { color: gridColor },
-                ticks: { color: textColor, font: { family: 'Inter' } },
+                grid: { color: theme.grid },
+                ticks: { color: theme.text, font: { family: 'Inter' } },
               },
               y: {
-                grid: { color: gridColor },
-                ticks: { color: textColor, font: { family: 'Inter' }, stepSize: 1 },
+                grid: { color: theme.grid },
+                ticks: { color: theme.text, font: { family: 'Inter' }, stepSize: 1 },
                 beginAtZero: true,
               },
             },
@@ -290,6 +321,35 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
         }),
       );
     }
+  }
+
+  private getChartTheme(): ChartTheme {
+    const styles = getComputedStyle(document.documentElement);
+    const cssVar = (name: string, fallback: string) => styles.getPropertyValue(name).trim() || fallback;
+    return {
+      accent: cssVar('--accent', '#0f766e'),
+      cyan: cssVar('--cyan', '#2563eb'),
+      success: cssVar('--success', '#22c55e'),
+      danger: cssVar('--danger', '#ef4444'),
+      warning: cssVar('--warning', '#f59e0b'),
+      info: cssVar('--info', '#3b82f6'),
+      purple: '#a855f7',
+      grid: cssVar('--border', '#d9e2ec'),
+      text: cssVar('--text-secondary', '#536276'),
+      chartBorder: cssVar('--chart-border', '#ffffff'),
+    };
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const normalized = hex.replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+      return hex;
+    }
+    const value = Number.parseInt(normalized, 16);
+    const r = (value >> 16) & 255;
+    const g = (value >> 8) & 255;
+    const b = value & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
   // CU-60: Exportar reporte BI en PDF usando window.print()

@@ -21,17 +21,17 @@ La ruta prioriza cuenta gratuita y demos de bajo trafico: no deja EC2/App Runner
 Desde `ms2/.env` o desde la shell:
 
 ```bash
-export AWS_REGION=us-east-1
+export MS2_AWS_REGION=us-east-1
 # Si usas AWS Academy o credenciales temporales, tambien define:
-# export AWS_SESSION_TOKEN='token-temporal'
-export S3_BUCKET_NAME=activos-fijos-ms2-<id-cuenta>-us-east-1
-export DYNAMODB_TABLE_DOCS=activos-fijos-ms2-documentos
-export DYNAMODB_TABLE_AUDITORIA=activos-fijos-ms2-auditoria
-export JWT_SECRET='mismo-secret-que-MS1'
-export ALLOWED_ORIGINS='https://tu-frontend.vercel.app,http://localhost:4200'
+# export MS2_AWS_SESSION_TOKEN='token-temporal'
+export MS2_S3_BUCKET_NAME=activos-fijos-ms2-<id-cuenta>-us-east-1
+export MS2_DYNAMODB_TABLE_DOCS=activos-fijos-ms2-documentos
+export MS2_DYNAMODB_TABLE_AUDITORIA=activos-fijos-ms2-auditoria
+export MS2_JWT_SECRET='mismo-secret-que-MS1'
+export MS2_ALLOWED_ORIGINS='https://tu-frontend.vercel.app,http://localhost:4200'
 ```
 
-No definas `AWS_ENDPOINT_URL` en produccion; ese valor es solo para LocalStack.
+No definas `MS2_AWS_ENDPOINT_URL` en produccion; ese valor es solo para LocalStack.
 El script ignora automaticamente valores locales como `localhost`, `127.0.0.1` o `localstack`.
 
 ## Desplegar
@@ -80,34 +80,34 @@ Secretos requeridos en GitHub Actions:
 
 | Secreto | Uso |
 | --- | --- |
-| `JWT_SECRET` | Secreto compartido con MS1 para validar JWT |
+| `MS2_JWT_SECRET` | Secreto compartido con MS1 para validar JWT |
 
 Secretos alternativos si no usas OIDC:
 
 | Secreto | Uso |
 | --- | --- |
-| `AWS_ACCESS_KEY_ID` | Credencial del usuario o rol con permisos de despliegue |
-| `AWS_SECRET_ACCESS_KEY` | Credencial del usuario o rol con permisos de despliegue |
+| `MS2_AWS_ACCESS_KEY_ID` | Credencial del usuario o rol con permisos de despliegue |
+| `MS2_AWS_SECRET_ACCESS_KEY` | Credencial del usuario o rol con permisos de despliegue |
 
 Secretos opcionales:
 
 | Secreto | Uso |
 | --- | --- |
-| `AWS_SESSION_TOKEN` | Token temporal para AWS Academy o credenciales STS |
+| `MS2_AWS_SESSION_TOKEN` | Token temporal para AWS Academy o credenciales STS |
 
 Variables opcionales:
 
 | Variable | Valor por defecto |
 | --- | --- |
-| `AWS_REGION` | `us-east-1` |
+| `MS2_AWS_REGION` | `us-east-1` |
 | `MS2_PROJECT_NAME` | `activos-fijos-ms2` |
 | `MS2_STACK_NAME` | `activos-fijos-ms2` |
 | `MS2_ECR_REPO` | `activos-fijos-ms2` |
 | `MS2_S3_BUCKET_NAME` | generado por el script si está vacío |
-| `DYNAMODB_TABLE_DOCS` | `activos-fijos-ms2-documentos` |
-| `DYNAMODB_TABLE_AUDITORIA` | `activos-fijos-ms2-auditoria` |
+| `MS2_DYNAMODB_TABLE_DOCS` | `activos-fijos-ms2-documentos` |
+| `MS2_DYNAMODB_TABLE_AUDITORIA` | `activos-fijos-ms2-auditoria` |
 | `MS2_ALLOWED_ORIGINS` | `*` |
-| `JWT_ALGORITHM` | `HS512` |
+| `MS2_JWT_ALGORITHM` | `HS512` |
 
 ## Verificar
 
