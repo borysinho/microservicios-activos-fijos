@@ -1,67 +1,109 @@
 .login {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  background: var(--bg-base); position: relative; overflow: hidden;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  position: relative;
+  overflow: hidden;
 
   &__bg {
-    position: absolute; inset: 0; pointer-events: none;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
   &__grid {
-    position: absolute; inset: 0;
+    position: absolute;
+    inset: 0;
     background-image:
       linear-gradient(var(--border) 1px, transparent 1px),
       linear-gradient(90deg, var(--border) 1px, transparent 1px);
     background-size: 48px 48px;
-    opacity: .4;
+    opacity: 0.4;
     mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent);
   }
 
   &__card {
-    position: relative; z-index: 1;
+    position: relative;
+    z-index: 1;
     width: min(420px, 95vw);
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
     padding: 2.5rem;
-    box-shadow: var(--shadow-lg), 0 0 80px rgba(240,165,0,.05);
+    box-shadow:
+      var(--shadow-lg),
+      0 0 80px rgba(240, 165, 0, 0.05);
   }
 
   &__brand {
-    display: flex; align-items: center; gap: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     margin-bottom: 2.5rem;
   }
 
   &__brand-mark {
-    width: 44px; height: 44px; flex-shrink: 0;
-    background: var(--accent); border-radius: var(--radius-md);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 15px; color: #000; letter-spacing: .5px;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    background: var(--accent);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    color: #000;
+    letter-spacing: 0.5px;
   }
 
-  &__brand-name { font-size: 18px; font-weight: 700; color: var(--text-primary); }
-  &__brand-sub  { font-size: 12px; color: var(--text-muted); }
+  &__brand-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  &__brand-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
 
-  &__title    { font-size: 20px; font-weight: 700; margin-bottom: .35rem; }
-  &__subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.75rem; }
+  &__title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+  &__subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 1.75rem;
+  }
 
   &__error {
-    display: flex; align-items: center; gap: .5rem;
-    background: var(--danger-dim); border: 1px solid rgba(239,68,68,.2);
-    border-radius: var(--radius-md); color: var(--danger);
-    font-size: 13px; padding: .7rem 1rem; margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--danger-dim);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: var(--radius-md);
+    color: var(--danger);
+    font-size: 13px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.25rem;
   }
 
-  &__form { display: flex; flex-direction: column; gap: 1rem; }
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
-  &__submit { width: 100%; justify-content: center; padding: .7rem; font-size: 14px; margin-top: .5rem; }
-
-  &__demo {
-    margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--border);
-    p { font-size: 11px; color: var(--text-muted); margin-bottom: .5rem;
-      text-transform: uppercase; letter-spacing: .8px; }
-    code {
-      display: block; font-family: var(--font-mono); font-size: 11px;
-      color: var(--cyan); margin-bottom: .2rem;
-    }
+  &__submit {
+    width: 100%;
+    justify-content: center;
+    padding: 0.7rem;
+    font-size: 14px;
+    margin-top: 0.5rem;
   }
 }

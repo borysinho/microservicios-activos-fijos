@@ -1,10 +1,17 @@
 <div class="page-header">
   <div>
     <h1>Categorías de Activos</h1>
-    <p>Gestión de categorías con métodos y tasas de depreciación</p>
+    <p>Defina familias de activos y sus reglas contables de depreciación.</p>
   </div>
   <button class="btn btn--primary" (click)="openNew()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      width="16"
+      height="16"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
@@ -12,77 +19,101 @@
   </button>
 </div>
 
-@if (success()) { <div class="alert alert--success">{{ success() }}</div> }
-@if (error()) { <div class="alert alert--error">{{ error() }}</div> }
+@if (success()) {
+  <div class="alert alert--success">{{ success() }}</div>
+}
+@if (error()) {
+  <div class="alert alert--error">{{ error() }}</div>
+}
 
 <div class="filter-bar card">
-  <input class="form-control" type="text" [(ngModel)]="searchTerm" placeholder="Buscar categoría...">
+  <input
+    class="form-control"
+    type="text"
+    [(ngModel)]="searchTerm"
+    placeholder="Buscar categoría..."
+  />
   <button class="btn btn--secondary" (click)="cargar()">Actualizar</button>
 </div>
 
-@if (loading()) { <div class="loading">Cargando categorías...</div> }
-@else if (categoriasFiltradas.length === 0) {
-<div class="empty-state">
-  <div class="empty-icon">🏷️</div>
-  <p>No hay categorías registradas.</p>
-</div>
-}
-@else {
-<div class="categorias-grid">
-  @for (cat of categoriasFiltradas; track cat.id) {
-  <div class="cat-card card">
-    <div class="cat-card__header">
-      <span class="cat-card__nombre">{{ cat.nombre }}</span>
-      <span [class]="'badge badge--' + (cat.metodoDepreciacion === 'LINEAL' ? 'info' : 'warning')">
-        {{ metodoLabel(cat.metodoDepreciacion) }}
-      </span>
-    </div>
-    @if (cat.descripcion) { <p class="cat-card__desc">{{ cat.descripcion }}</p> }
-    <div class="cat-card__tasa">
-      <span>Tasa:</span> <strong>{{ cat.tasaDepreciacion }}%</strong> anual
-    </div>
-    <div class="cat-card__actions">
-      <button class="btn btn--sm btn--secondary" (click)="openEdit(cat)">Editar</button>
-    </div>
+@if (loading()) {
+  <div class="loading">Cargando categorías...</div>
+} @else if (categoriasFiltradas.length === 0) {
+  <div class="empty-state">
+    <div class="empty-icon">🏷️</div>
+    <p>No hay categorías registradas.</p>
   </div>
-  }
-</div>
+} @else {
+  <div class="categorias-grid">
+    @for (cat of categoriasFiltradas; track cat.id) {
+      <div class="cat-card card">
+        <div class="cat-card__header">
+          <span class="cat-card__nombre">{{ cat.nombre }}</span>
+          <span
+            [class]="'badge badge--' + (cat.metodoDepreciacion === 'LINEAL' ? 'info' : 'warning')"
+          >
+            {{ metodoLabel(cat.metodoDepreciacion) }}
+          </span>
+        </div>
+        @if (cat.descripcion) {
+          <p class="cat-card__desc">{{ cat.descripcion }}</p>
+        }
+        <div class="cat-card__tasa">
+          <span>Tasa:</span>
+          <strong>{{ cat.tasaDepreciacion * 100 | number: '1.0-2' }}%</strong> anual
+        </div>
+        <div class="cat-card__actions">
+          <button class="btn btn--sm btn--secondary" (click)="openEdit(cat)">Editar</button>
+        </div>
+      </div>
+    }
+  </div>
 }
 
 @if (showModal()) {
-<div class="modal-overlay" (click)="showModal.set(false)"></div>
-<div class="modal">
-  <div class="modal__header">
-    <h3>{{ editando() ? 'Editar' : 'Nueva' }} Categoría</h3>
-    <button class="modal__close" (click)="showModal.set(false)">✕</button>
-  </div>
-  <div class="modal__body">
-    <div class="form-group">
-      <label>Nombre *</label>
-      <input class="form-control" type="text" [(ngModel)]="form.nombre" required>
+  <div class="modal-overlay" (click)="showModal.set(false)"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>{{ editando() ? 'Editar' : 'Nueva' }} Categoría</h3>
+      <button class="modal__close" (click)="showModal.set(false)">✕</button>
     </div>
-    <div class="form-group">
-      <label>Descripción</label>
-      <textarea class="form-control" [(ngModel)]="form.descripcion" rows="2"></textarea>
-    </div>
-    <div class="form-row">
+    <div class="modal__body">
       <div class="form-group">
-        <label>Método de Depreciación *</label>
-        <select class="form-control" [(ngModel)]="form.metodoDepreciacion" required>
-          @for (m of metodos; track m) { <option [value]="m">{{ metodoLabel(m) }}</option> }
-        </select>
+        <label>Nombre *</label>
+        <input class="form-control" type="text" [(ngModel)]="form.nombre" required />
       </div>
       <div class="form-group">
-        <label>Tasa Anual (0-1) *</label>
-        <input class="form-control" type="number" min="0.01" max="1" step="0.01" [(ngModel)]="form.tasaDepreciacion" required>
+        <label>Descripción</label>
+        <textarea class="form-control" [(ngModel)]="form.descripcion" rows="2"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Método de Depreciación *</label>
+          <select class="form-control" [(ngModel)]="form.metodoDepreciacion" required>
+            @for (m of metodos; track m) {
+              <option [value]="m">{{ metodoLabel(m) }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tasa anual (ej. 0.25 = 25%) *</label>
+          <input
+            class="form-control"
+            type="number"
+            min="0.01"
+            max="1"
+            step="0.01"
+            [(ngModel)]="form.tasaDepreciacion"
+            required
+          />
+        </div>
       </div>
     </div>
+    <div class="modal__footer">
+      <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
+      <button class="btn btn--primary" (click)="guardar()" [disabled]="saving()">
+        {{ saving() ? 'Guardando...' : editando() ? 'Actualizar' : 'Crear' }}
+      </button>
+    </div>
   </div>
-  <div class="modal__footer">
-    <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
-    <button class="btn btn--primary" (click)="guardar()" [disabled]="saving()">
-      {{ saving() ? 'Guardando...' : (editando() ? 'Actualizar' : 'Crear') }}
-    </button>
-  </div>
-</div>
 }

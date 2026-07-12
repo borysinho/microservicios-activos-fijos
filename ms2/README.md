@@ -80,7 +80,7 @@ La respuesta conserva los campos compatibles con mobile/frontend:
 Si existe una imagen historica en S3 para el activo, MS2 la descarga y compara
 la similitud visual mediante hash perceptual simple. Si no existe referencia,
 solo valida calidad de captura y presencia visual. Si hay un CNN cargado desde
-S3 o `LOCAL_MODELS_PATH`, su salida se registra como `senalModelo`, pero no
+S3 o `MS2_LOCAL_MODELS_PATH`, su salida se registra como `senalModelo`, pero no
 decide por si sola el resultado final.
 
 ## ML y trazabilidad
@@ -104,15 +104,15 @@ cp .env.example .env
 
 Variables clave:
 
-- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`: credenciales AWS o fake para LocalStack.
-- `AWS_REGION`: region AWS.
-- `AWS_ENDPOINT_URL`: `http://localhost:4566` para LocalStack; vacio en produccion.
-- `S3_BUCKET_NAME`: bucket de documentos e imagenes.
-- `DYNAMODB_TABLE_DOCS`: tabla de metadatos documentales.
-- `DYNAMODB_TABLE_AUDITORIA`: tabla de auditoria.
-- `JWT_SECRET`: debe coincidir con MS1.
-- `ALLOWED_ORIGINS`: origenes CORS.
-- `LOCAL_MODELS_PATH`: ruta local de modelos IA opcional para desarrollo.
+- `MS2_AWS_ACCESS_KEY_ID`, `MS2_AWS_SECRET_ACCESS_KEY`, `MS2_AWS_SESSION_TOKEN`: credenciales AWS o fake para LocalStack.
+- `MS2_AWS_REGION`: region AWS.
+- `MS2_AWS_ENDPOINT_URL`: `http://localhost:4566` para LocalStack; vacio en produccion.
+- `MS2_S3_BUCKET_NAME`: bucket de documentos e imagenes.
+- `MS2_DYNAMODB_TABLE_DOCS`: tabla de metadatos documentales.
+- `MS2_DYNAMODB_TABLE_AUDITORIA`: tabla de auditoria.
+- `MS2_JWT_SECRET`: debe coincidir con MS1.
+- `MS2_ALLOWED_ORIGINS`: origenes CORS.
+- `MS2_LOCAL_MODELS_PATH`: ruta local de modelos IA opcional para desarrollo.
 
 ## Arranque en desarrollo con Docker
 
@@ -165,7 +165,7 @@ python scripts/train_models.py
 
 ## Arranque en produccion con Docker
 
-Construir y ejecutar la imagen con variables AWS reales. No usar `AWS_ENDPOINT_URL` en produccion.
+Construir y ejecutar la imagen con variables AWS reales. No usar `MS2_AWS_ENDPOINT_URL` en produccion.
 
 ```bash
 cd ms2
@@ -180,15 +180,15 @@ docker run -d \
 Variables minimas de `.env.production`:
 
 ```dotenv
-AWS_ACCESS_KEY_ID=<ACCESS_KEY>
-AWS_SECRET_ACCESS_KEY=<SECRET_KEY>
-AWS_SESSION_TOKEN=<SESSION_TOKEN_OPCIONAL>
-AWS_REGION=us-east-1
-S3_BUCKET_NAME=<BUCKET>
-DYNAMODB_TABLE_DOCS=activos-fijos-ms2-documentos
-DYNAMODB_TABLE_AUDITORIA=activos-fijos-ms2-auditoria
-JWT_SECRET=<MISMO_SECRET_DE_MS1>
-ALLOWED_ORIGINS=https://<frontend-angular>
+MS2_AWS_ACCESS_KEY_ID=<ACCESS_KEY>
+MS2_AWS_SECRET_ACCESS_KEY=<SECRET_KEY>
+MS2_AWS_SESSION_TOKEN=<SESSION_TOKEN_OPCIONAL>
+MS2_AWS_REGION=us-east-1
+MS2_S3_BUCKET_NAME=<BUCKET>
+MS2_DYNAMODB_TABLE_DOCS=activos-fijos-ms2-documentos
+MS2_DYNAMODB_TABLE_AUDITORIA=activos-fijos-ms2-auditoria
+MS2_JWT_SECRET=<MISMO_SECRET_DE_MS1>
+MS2_ALLOWED_ORIGINS=https://<frontend-angular>
 ```
 
 ## Despliegue en produccion con GitHub Actions
@@ -203,27 +203,27 @@ El workflow se ejecuta al hacer `pull_request` hacia `main`, al hacer `push` a `
 
 Secretos requeridos:
 
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `JWT_SECRET`
+- `MS2_AWS_ACCESS_KEY_ID`
+- `MS2_AWS_SECRET_ACCESS_KEY`
+- `MS2_JWT_SECRET`
 
 Sin credenciales AWS, el workflow ejecuta tests y omite el despliegue con warning. Al configurar los secretos AWS, el siguiente `push` o `workflow_dispatch` despliega MS2.
 
 Secreto opcional:
 
-- `AWS_SESSION_TOKEN`
+- `MS2_AWS_SESSION_TOKEN`
 
 Variables opcionales:
 
-- `AWS_REGION`
+- `MS2_AWS_REGION`
 - `MS2_PROJECT_NAME`
 - `MS2_STACK_NAME`
 - `MS2_ECR_REPO`
 - `MS2_S3_BUCKET_NAME`
-- `DYNAMODB_TABLE_DOCS`
-- `DYNAMODB_TABLE_AUDITORIA`
+- `MS2_DYNAMODB_TABLE_DOCS`
+- `MS2_DYNAMODB_TABLE_AUDITORIA`
 - `MS2_ALLOWED_ORIGINS`
-- `JWT_ALGORITHM`
+- `MS2_JWT_ALGORITHM`
 
 ## Pruebas
 

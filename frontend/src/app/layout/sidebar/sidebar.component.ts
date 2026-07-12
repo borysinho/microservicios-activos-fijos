@@ -20,23 +20,28 @@ export class SidebarComponent {
   auth = inject(AuthService);
 
   nav: NavItem[] = [
-    { label: 'Dashboard', route: '/dashboard', icon: 'dashboard' },
-    { label: 'Activos', route: '/activos', icon: 'activos' },
-    { label: 'Asignaciones', route: '/asignaciones', icon: 'asignaciones' },
-    { label: 'Traslados', route: '/traslados', icon: 'traslados' },
-    { label: 'Bajas', route: '/bajas', icon: 'bajas', roles: ['ADMINISTRADOR', 'AUDITOR'] },
+    { label: 'Inicio', route: '/dashboard', icon: 'dashboard' },
+    { label: 'Inventario', route: '/activos', icon: 'activos' },
+    { label: 'Responsables', route: '/asignaciones', icon: 'asignaciones' },
+    { label: 'Movimientos', route: '/traslados', icon: 'traslados' },
     {
-      label: 'Depreciación',
+      label: 'Retiro de activos',
+      route: '/bajas',
+      icon: 'bajas',
+      roles: ['ADMINISTRADOR', 'AUDITOR'],
+    },
+    {
+      label: 'Valor contable',
       route: '/depreciacion',
       icon: 'depreciacion',
       roles: ['ADMINISTRADOR', 'AUDITOR'],
     },
-    { label: 'Documentos', route: '/documentos', icon: 'documentos' },
+    { label: 'Expedientes', route: '/documentos', icon: 'documentos' },
     { label: 'Auditoría', route: '/auditoria', icon: 'auditoria' },
-    { label: 'Machine Learning', route: '/machine-learning', icon: 'ml' },
-    { label: 'Blockchain', route: '/blockchain', icon: 'blockchain' },
-    { label: 'Categorías', route: '/categorias', icon: 'categorias', roles: ['ADMINISTRADOR'] },
-    { label: 'Áreas', route: '/areas', icon: 'areas', roles: ['ADMINISTRADOR'] },
+    { label: 'Predicción', route: '/machine-learning', icon: 'ml' },
+    { label: 'Trazabilidad', route: '/blockchain', icon: 'blockchain' },
+    { label: 'Catálogos', route: '/categorias', icon: 'categorias', roles: ['ADMINISTRADOR'] },
+    { label: 'Organización', route: '/areas', icon: 'areas', roles: ['ADMINISTRADOR'] },
     { label: 'Usuarios', route: '/usuarios', icon: 'usuarios', roles: ['ADMINISTRADOR'] },
   ];
 

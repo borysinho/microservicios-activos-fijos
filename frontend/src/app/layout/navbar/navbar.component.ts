@@ -2,26 +2,33 @@ import { Component, inject } from '@angular/core';
 import { AuthService } from '../../core/services/auth.service';
 
 const ROUTE_TITLES: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/activos': 'Gestión de Activos',
-  '/documentos': 'Gestión Documental',
-  '/auditoria': 'Auditoría y Blockchain',
-  '/machine-learning': 'Machine Learning',
-  '/usuarios': 'Usuarios y Configuración',
+  '/dashboard': 'Resumen ejecutivo',
+  '/activos': 'Inventario de activos',
+  '/asignaciones': 'Responsables asignados',
+  '/traslados': 'Movimientos de activos',
+  '/bajas': 'Retiro de activos',
+  '/depreciacion': 'Valor contable',
+  '/documentos': 'Expedientes digitales',
+  '/auditoria': 'Auditoría',
+  '/machine-learning': 'Predicción de mantenimiento',
+  '/blockchain': 'Trazabilidad',
+  '/categorias': 'Catálogos de activos',
+  '/areas': 'Organización',
+  '/usuarios': 'Usuarios y permisos',
 };
 
 const ROL_BADGE_CLASS: Record<string, string> = {
-  'ADMINISTRADOR':    'navbar__role-badge navbar__role-badge--admin',
-  'AUDITOR':          'navbar__role-badge navbar__role-badge--auditor',
-  'RESPONSABLE_AREA': 'navbar__role-badge navbar__role-badge--responsable',
-  'SOLO_LECTURA':     'navbar__role-badge navbar__role-badge--lector',
+  ADMINISTRADOR: 'navbar__role-badge navbar__role-badge--admin',
+  AUDITOR: 'navbar__role-badge navbar__role-badge--auditor',
+  RESPONSABLE_AREA: 'navbar__role-badge navbar__role-badge--responsable',
+  SOLO_LECTURA: 'navbar__role-badge navbar__role-badge--lector',
 };
 
 const AVATAR_CLASS: Record<string, string> = {
-  'ADMINISTRADOR':    'navbar__avatar navbar__avatar--admin',
-  'AUDITOR':          'navbar__avatar navbar__avatar--auditor',
-  'RESPONSABLE_AREA': 'navbar__avatar navbar__avatar--responsable',
-  'SOLO_LECTURA':     'navbar__avatar',
+  ADMINISTRADOR: 'navbar__avatar navbar__avatar--admin',
+  AUDITOR: 'navbar__avatar navbar__avatar--auditor',
+  RESPONSABLE_AREA: 'navbar__avatar navbar__avatar--responsable',
+  SOLO_LECTURA: 'navbar__avatar',
 };
 
 @Component({
@@ -40,7 +47,10 @@ export class NavbarComponent {
 
   get today(): string {
     return new Date().toLocaleDateString('es-BO', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
   }
 

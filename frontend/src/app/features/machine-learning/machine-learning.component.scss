@@ -9,6 +9,10 @@
     margin-bottom: 0.35rem;
     font-size: 15px;
   }
+
+  .form-grid {
+    margin-bottom: 1rem;
+  }
 }
 
 .ml-desc {
@@ -77,4 +81,10 @@
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 1rem;
+}
+
+@media (max-width: 980px) {
+  .ml-layout {
+    grid-template-columns: 1fr;
+  }
 }

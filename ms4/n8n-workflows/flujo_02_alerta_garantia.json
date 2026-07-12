@@ -1,6 +1,6 @@
 {
   "name": "Flujo 02 - Alerta de Vencimiento de Garantia",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
@@ -12,12 +12,13 @@
       "name": "Webhook MS1 Garantia",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0]
+      "position": [0, 0],
+      "webhookId": "ms4"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS1_GRAPHQL_URL}}",
+        "url": "={{$env.MS4_MS1_GRAPHQL_URL}}",
         "sendBody": true,
         "contentType": "json",
         "jsonBody": "={\"query\":\"query Activo($id: ID!) { activo(id: $id) { id codigo nombre estado } }\",\"variables\":{\"id\":\"{{$json.activoId}}\"}}"
@@ -30,7 +31,7 @@
     },
     {
       "parameters": {
-        "url": "={{$env.MS2_BASE_URL}}/documentos?activoId={{$node['Webhook MS1 Garantia'].json.activoId}}"
+        "url": "={{$env.MS4_MS2_BASE_URL}}/documentos?activoId={{$node['Webhook MS1 Garantia'].json.activoId}}"
       },
       "id": "docs-ms2",
       "name": "Verificar Poliza MS2",
@@ -41,7 +42,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS3_BASE_URL}}/notificaciones/email",
+        "url": "={{$env.MS4_MS3_BASE_URL}}/notificaciones/email",
         "sendBody": true,
         "contentType": "json",
         "jsonBody": "={\"to\":\"{{$node['Webhook MS1 Garantia'].json.responsableEmail}}\",\"subject\":\"Garantia por vencer {{$node['Webhook MS1 Garantia'].json.codigo}}\",\"text\":\"Revise la garantia y documentos asociados.\"}"
@@ -55,7 +56,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.FCM_API_URL}}",
+        "url": "={{$env.MS4_FCM_API_URL}}",
         "sendBody": true,
         "contentType": "json",
         "jsonBody": "={\"message\":{\"topic\":\"garantias\",\"notification\":{\"title\":\"Garantia por vencer\",\"body\":\"{{$node['Webhook MS1 Garantia'].json.codigo}} vence pronto\"}}}"
@@ -80,5 +81,9 @@
     "Email Responsable via MS3": {
       "main": [[{ "node": "Push FCM", "type": "main", "index": 0 }]]
     }
-  }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
 }

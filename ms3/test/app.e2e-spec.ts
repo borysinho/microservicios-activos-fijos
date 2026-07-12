@@ -119,7 +119,7 @@ describe('MS3 API (e2e)', () => {
           },
         ],
       })
-      .expect(201)
+      .expect(200)
       .expect((response) => {
         expect(response.body).toMatchObject({
           recibido: true,
@@ -139,12 +139,32 @@ describe('MS3 API (e2e)', () => {
         Body: 'Solicito revision del activo ACT-2024-001. No enciende y necesito mantenimiento',
         MessageSid: 'SM-TWILIO-001',
       })
-      .expect(201)
+      .expect(200)
       .expect((response) => {
         expect(response.body).toMatchObject({
           recibido: true,
           codigoActivo: 'ACT-2024-001',
           ticketId: 'TKT-1',
+        });
+      });
+  });
+
+  it('POST /whatsapp/webhook rechaza operaciones que requieren web o movil', async () => {
+    await request(app.getHttpServer())
+      .post('/whatsapp/webhook')
+      .type('form')
+      .send({
+        From: 'whatsapp:+59177685777',
+        Body: 'Dar de baja ACT-2024-001',
+        MessageSid: 'SM-TWILIO-BAJA',
+      })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toMatchObject({
+          recibido: true,
+          intencion: 'NO_PERMITIDA',
+          codigoActivo: 'ACT-2024-001',
+          mensaje: 'Operacion no permitida por chat',
         });
       });
   });
@@ -171,6 +191,27 @@ describe('MS3 API (e2e)', () => {
         expect(response.body).toEqual({
           ticketId: 'TKT-1',
           mensaje: 'Reporte recibido para ACT-2024-001',
+        });
+      });
+  });
+
+  it('POST /api/webhooks/solicitud-revision normaliza body enviado por N8N', async () => {
+    await request(app.getHttpServer())
+      .post('/api/webhooks/solicitud-revision')
+      .send({
+        '': JSON.stringify({
+          from: 'whatsapp:+59177685777',
+          text: 'Solicito revision del activo ACT-2024-001',
+          codigoActivo: 'ACT-2024-001',
+        }),
+      })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body).toMatchObject({
+          recibido: true,
+          encontrado: true,
+          codigoActivo: 'ACT-2024-001',
+          ticketId: 'TKT-1',
         });
       });
   });

@@ -1,104 +1,145 @@
 <div class="page-header">
   <div>
-    <h1>Auditoría y Blockchain</h1>
-    <p>Trazabilidad inmutable de transacciones y registro de accesos</p>
+    <h1>Auditoría</h1>
+    <p>Revise movimientos de activos y accesos a documentos con trazabilidad verificable.</p>
   </div>
 </div>
 
 <div class="tab-nav">
   <button [class.active]="tab() === 'blockchain'" (click)="tab.set('blockchain')">
-    🔗 Historial Blockchain
+    Historial de activos
   </button>
-  <button [class.active]="tab() === 'logs'" (click)="tab.set('logs')">
-    📋 Registro de Accesos
-  </button>
+  <button [class.active]="tab() === 'logs'" (click)="tab.set('logs')">Accesos a documentos</button>
 </div>
 
 @if (tab() === 'blockchain') {
-<div class="card search-card">
-  <div class="search-row">
-    <input class="form-control" [(ngModel)]="activoId" placeholder="UUID del activo para ver historial blockchain..."
-      (keyup.enter)="buscarBlockchain()">
-    <button class="btn btn--primary btn--sm" (click)="buscarBlockchain()">Consultar</button>
-  </div>
-</div>
-
-@if (loading()) {
-<div class="loading">Consultando blockchain...</div>
-} @else if (historial().length === 0) {
-<div class="empty-state">
-  <div class="empty-icon">🔗</div>
-  <p>Ingrese un UUID de activo para ver su historial en blockchain.</p>
-</div>
-} @else {
-<div class="timeline">
-  @for (r of historial(); track r.id; let last = $last) {
-  <div class="timeline__item" [class.timeline__item--last]="last">
-    <div class="timeline__dot"></div>
-    <div class="timeline__content card">
-      <div class="timeline__header">
-        <span [class]="tipoColor(r.tipoTransaccion)">{{ r.tipoTransaccion }}</span>
-        <span class="timeline__date">{{ r.timestamp | date:'dd/MM/yyyy HH:mm:ss' }}</span>
-      </div>
-      <div class="timeline__hash">
-        <span class="timeline__hash-label">Hash</span>
-        <code class="mono">{{ r.hash }}</code>
-      </div>
-      @if (r.payload) {
-      <p class="timeline__desc">{{ r.payload }}</p>
-      }
+  <div class="card search-card">
+    <div class="search-row">
+      <select class="form-control" [(ngModel)]="activoId" [disabled]="loadingActivos()">
+        <option value="">
+          {{ loadingActivos() ? 'Cargando inventario...' : 'Seleccionar activo' }}
+        </option>
+        @for (a of activos(); track a.id) {
+          <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+        }
+      </select>
+      <button
+        class="btn btn--primary btn--sm"
+        (click)="buscarBlockchain()"
+        [disabled]="!activoId() || loading()"
+      >
+        Consultar historial
+      </button>
     </div>
   </div>
+
+  @if (loading()) {
+    <div class="loading">Consultando blockchain...</div>
+  } @else if (historial().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">🔗</div>
+      <p>Seleccione un activo para ver sus movimientos registrados.</p>
+    </div>
+  } @else {
+    <div class="timeline">
+      @for (r of historial(); track r.id; let last = $last) {
+        <div class="timeline__item" [class.timeline__item--last]="last">
+          <div class="timeline__dot"></div>
+          <div class="timeline__content card">
+            <div class="timeline__header">
+              <span [class]="tipoColor(r.tipoTransaccion)">{{ r.tipoTransaccion }}</span>
+              <span class="timeline__date">{{ r.timestamp | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+            </div>
+            <div class="timeline__hash">
+              <span class="timeline__hash-label">Firma</span>
+              <code class="mono">{{ r.hash }}</code>
+            </div>
+            @if (r.payload) {
+              <p class="timeline__desc">{{ r.payload }}</p>
+            }
+          </div>
+        </div>
+      }
+    </div>
   }
-</div>
-}
 }
 
 @if (tab() === 'logs') {
-<div class="card search-card">
-  <div class="search-row">
-    <input class="form-control" [(ngModel)]="docIdAudit" placeholder="ID del documento para ver log de auditoría..."
-      (keyup.enter)="buscarAuditoria()">
-    <button class="btn btn--primary btn--sm" (click)="buscarAuditoria()">Consultar</button>
+  <div class="card search-card">
+    <div class="search-row">
+      <select
+        class="form-control"
+        [(ngModel)]="activoDocumentosId"
+        (ngModelChange)="cargarDocumentos()"
+        [disabled]="loadingActivos()"
+      >
+        <option value="">
+          {{ loadingActivos() ? 'Cargando inventario...' : 'Seleccionar activo' }}
+        </option>
+        @for (a of activos(); track a.id) {
+          <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+        }
+      </select>
+      <select
+        class="form-control"
+        [(ngModel)]="docIdAudit"
+        [disabled]="!activoDocumentosId() || loadingDocumentos()"
+      >
+        <option value="">
+          {{ loadingDocumentos() ? 'Cargando documentos...' : 'Seleccionar documento' }}
+        </option>
+        @for (doc of documentos(); track doc.documentoId) {
+          <option [value]="doc.documentoId">{{ doc.nombre }} · v{{ doc.version }}</option>
+        }
+      </select>
+      <button
+        class="btn btn--primary btn--sm"
+        (click)="buscarAuditoria()"
+        [disabled]="!docIdAudit() || loading()"
+      >
+        Consultar accesos
+      </button>
+    </div>
   </div>
-</div>
 
-@if (loading()) {
-<div class="loading">Cargando registros de auditoría...</div>
-} @else if (!docIdAudit()) {
-<div class="empty-state">
-  <div class="empty-icon">📋</div>
-  <p>Ingrese el ID de un documento para ver su log de auditoría.</p>
-</div>
-} @else if (auditLogs().length === 0) {
-<div class="empty-state">
-  <div class="empty-icon">📋</div>
-  <p>No hay registros de auditoría para este documento.</p>
-</div>
-} @else {
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Usuario</th>
-        <th>Acción</th>
-        <th>Documento</th>
-        <th>IP Origen</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (log of auditLogs(); track log.eventoId) {
-      <tr>
-        <td class="mono">{{ log.timestamp | date:'dd/MM/yyyy HH:mm' }}</td>
-        <td>{{ log.usuario }}</td>
-        <td><span class="badge badge--info">{{ log.accion }}</span></td>
-        <td>{{ log.documentoId }}</td>
-        <td class="mono">{{ log.ipOrigen }}</td>
-      </tr>
-      }
-    </tbody>
-  </table>
-</div>
-}
+  @if (loading()) {
+    <div class="loading">Cargando registros de auditoría...</div>
+  } @else if (!docIdAudit()) {
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>Seleccione un activo y un documento para revisar accesos, descargas y cambios.</p>
+    </div>
+  } @else if (auditLogs().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>No hay registros de auditoría para este documento.</p>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Documento</th>
+            <th>IP Origen</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of auditLogs(); track log.eventoId) {
+            <tr>
+              <td class="mono">{{ log.timestamp | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ log.usuario }}</td>
+              <td>
+                <span class="badge badge--info">{{ log.accion }}</span>
+              </td>
+              <td>{{ log.documentoId }}</td>
+              <td class="mono">{{ log.ipOrigen }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 }

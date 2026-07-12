@@ -8,6 +8,7 @@ import {
   EventoActivoDto,
   MantenimientoProgramadoDto,
   ReportarProblemaDto,
+  SolicitudRevisionN8nDto,
   VencimientoGarantiaDto,
 } from './dto';
 
@@ -140,7 +141,9 @@ export class WebhooksService {
       motivo: dto.descripcion,
     });
 
-    if (dto.origen !== 'n8n') {
+    if (dto.origen === 'n8n') {
+      this.flujosService.marcar('solicitud-revision', 'COMPLETADO', `Ticket ${ticket.ticketId}`);
+    } else {
       await this.flujosService.dispararN8n('solicitud-revision', {
         ...dto,
         ticketId: ticket.ticketId,
@@ -151,6 +154,42 @@ export class WebhooksService {
     return {
       ticketId: ticket.ticketId,
       mensaje: `Reporte recibido para ${dto.activoCodigo}`,
+    };
+  }
+
+  async solicitudRevisionN8n(dto: SolicitudRevisionN8nDto) {
+    const activo = await this.ms1Client.buscarActivoPorCodigo(dto.codigoActivo);
+    if (!activo) {
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'Activo no existe en MS1');
+      return {
+        recibido: true,
+        encontrado: false,
+        codigoActivo: dto.codigoActivo,
+        from: dto.from,
+        mensaje: `Codigo de activo no encontrado: ${dto.codigoActivo}`,
+      };
+    }
+
+    const ticket = await this.ms1Client.crearTicketRevision({
+      activoId: activo.id,
+      solicitadoPorWhatsApp: dto.from,
+      motivo: dto.text,
+    });
+    const documentos = await this.ms2Client.obtenerDocumentos(activo.id);
+
+    this.flujosService.marcar('solicitud-revision', 'COMPLETADO', `Ticket ${ticket.ticketId}`);
+    return {
+      recibido: true,
+      encontrado: true,
+      from: dto.from,
+      codigoActivo: activo.codigo,
+      activoId: activo.id,
+      activoNombre: activo.nombre,
+      activoEstado: activo.estado ?? 'SIN_ESTADO',
+      responsableEmail: activo.responsableEmail ?? 'responsable.area@activos.local',
+      ticketId: ticket.ticketId,
+      documentosEncontrados: documentos.length,
+      mensajeOriginal: dto.text,
     };
   }
 }

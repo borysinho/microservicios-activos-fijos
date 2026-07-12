@@ -138,9 +138,9 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
     this.charts.forEach((c) => c.destroy());
     this.charts = [];
 
-    const palette = ['#f0a500', '#00cfd8', '#22c55e', '#ef4444', '#3b82f6', '#a855f7'];
-    const gridColor = '#1e3356';
-    const textColor = '#8da3c0';
+    const palette = ['#0f766e', '#2563eb', '#22c55e', '#ef4444', '#f59e0b', '#a855f7'];
+    const gridColor = '#d9e2ec';
+    const textColor = '#536276';
 
     // Donut: activos por estado
     this.charts.push(
@@ -157,7 +157,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
                 d.activosDadoDeBaja,
               ],
               backgroundColor: ['#22c55e', '#f59e0b', '#3b82f6', '#ef4444'],
-              borderColor: '#0d1526',
+              borderColor: '#ffffff',
               borderWidth: 3,
             },
           ],
@@ -172,7 +172,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
               labels: {
                 color: textColor,
                 padding: 14,
-                font: { family: 'Space Grotesk', size: 12 },
+                font: { family: 'Inter', size: 12 },
               },
             },
           },
@@ -203,11 +203,11 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
           scales: {
             x: {
               grid: { color: gridColor },
-              ticks: { color: textColor, font: { family: 'Space Grotesk' } },
+              ticks: { color: textColor, font: { family: 'Inter' } },
             },
             y: {
               grid: { color: gridColor },
-              ticks: { color: textColor, font: { family: 'Space Grotesk' } },
+              ticks: { color: textColor, font: { family: 'Inter' } },
               beginAtZero: true,
             },
           },
@@ -225,7 +225,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
             {
               label: 'Activos',
               data: d.activosPorArea.map((a) => a.cantidad),
-              backgroundColor: '#00cfd8',
+              backgroundColor: '#2563eb',
               borderRadius: 4,
             },
           ],
@@ -238,12 +238,12 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
           scales: {
             x: {
               grid: { color: gridColor },
-              ticks: { color: textColor, font: { family: 'Space Grotesk' } },
+              ticks: { color: textColor, font: { family: 'Inter' } },
               beginAtZero: true,
             },
             y: {
               grid: { color: 'transparent' },
-              ticks: { color: textColor, font: { family: 'Space Grotesk' } },
+              ticks: { color: textColor, font: { family: 'Inter' } },
             },
           },
         },
@@ -261,10 +261,10 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
               {
                 label: 'Adquisiciones',
                 data: d.adquisicionesPorAnio.map((p) => p.cantidad),
-                borderColor: '#f0a500',
-                backgroundColor: '#f0a50022',
+                borderColor: '#0f766e',
+                backgroundColor: '#0f766e22',
                 borderWidth: 2,
-                pointBackgroundColor: '#f0a500',
+                pointBackgroundColor: '#0f766e',
                 pointRadius: 4,
                 fill: true,
                 tension: 0.4,
@@ -278,11 +278,11 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
             scales: {
               x: {
                 grid: { color: gridColor },
-                ticks: { color: textColor, font: { family: 'Space Grotesk' } },
+                ticks: { color: textColor, font: { family: 'Inter' } },
               },
               y: {
                 grid: { color: gridColor },
-                ticks: { color: textColor, font: { family: 'Space Grotesk' }, stepSize: 1 },
+                ticks: { color: textColor, font: { family: 'Inter' }, stepSize: 1 },
                 beginAtZero: true,
               },
             },
@@ -295,5 +295,10 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
   // CU-60: Exportar reporte BI en PDF usando window.print()
   exportarPDF(): void {
     window.print();
+  }
+
+  porcentaje(valor: number, total: number): number {
+    if (!total) return 0;
+    return Math.round((valor / total) * 100);
   }
 }

@@ -31,12 +31,13 @@ cp .env.example .env
 
 Variables clave:
 
-- `MS1_PORT`: puerto publicado en el host para Docker Compose.
+- `MS1_PORT`: puerto publicado en el host para Docker Compose; por defecto `8081`.
+- `MS1_SERVER_PORT`: puerto usado por Spring Boot al ejecutar sin Docker; en desarrollo debe ser `8081` para coincidir con Angular.
 - `MS1_DB_PORT`: puerto PostgreSQL publicado en el host; por defecto `15432`.
-- `ADMIN_USER`, `ADMIN_PASSWORD`: credenciales administrativas.
-- `JWT_SECRET`: secreto JWT compartido con MS2.
-- `BLOCKCHAIN_RPC_URL`, `BLOCKCHAIN_PRIVATE_KEY`: wallet Sepolia/testnet.
-- `MS3_WEBHOOK_URL`: webhook publico o local de MS3.
+- `MS1_ADMIN_USER`, `MS1_ADMIN_PASSWORD`: credenciales administrativas.
+- `MS1_JWT_SECRET`: secreto JWT compartido con MS2.
+- `MS1_BLOCKCHAIN_RPC_URL`, `MS1_BLOCKCHAIN_PRIVATE_KEY`: wallet Sepolia/testnet.
+- `MS1_MS3_WEBHOOK_URL`: webhook publico o local de MS3.
 
 En produccion se usa Supabase PostgreSQL:
 
@@ -46,14 +47,14 @@ cp .env.production.example .env.production
 
 Variables productivas obligatorias:
 
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `ADMIN_PASSWORD`
-- `JWT_SECRET`
-- `BLOCKCHAIN_RPC_URL`
-- `BLOCKCHAIN_PRIVATE_KEY`
-- `MS3_WEBHOOK_URL`
+- `MS1_SPRING_DATASOURCE_URL`
+- `MS1_SPRING_DATASOURCE_USERNAME`
+- `MS1_SPRING_DATASOURCE_PASSWORD`
+- `MS1_ADMIN_PASSWORD`
+- `MS1_JWT_SECRET`
+- `MS1_BLOCKCHAIN_RPC_URL`
+- `MS1_BLOCKCHAIN_PRIVATE_KEY`
+- `MS1_MS3_WEBHOOK_URL`
 
 ## Arranque en desarrollo con Docker
 
@@ -106,7 +107,7 @@ set +a
 URL local sin Docker:
 
 ```text
-http://localhost:8080
+http://localhost:8081
 ```
 
 ## Arranque en produccion con Docker

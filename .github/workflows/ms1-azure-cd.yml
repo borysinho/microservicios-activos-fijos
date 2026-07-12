@@ -68,15 +68,15 @@ jobs:
           MS1_VM_HOST: ${{ secrets.MS1_VM_HOST }}
           MS1_VM_USER: ${{ secrets.MS1_VM_USER }}
           MS1_VM_SSH_KEY: ${{ secrets.MS1_VM_SSH_KEY }}
-          SPRING_DATASOURCE_URL: ${{ vars.SPRING_DATASOURCE_URL }}
-          SPRING_DATASOURCE_USERNAME: ${{ vars.SPRING_DATASOURCE_USERNAME }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          BLOCKCHAIN_RPC_URL: ${{ vars.BLOCKCHAIN_RPC_URL }}
-          BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
-          MS3_WEBHOOK_URL: ${{ vars.MS3_WEBHOOK_URL }}
+          MS1_SPRING_DATASOURCE_URL: ${{ vars.MS1_SPRING_DATASOURCE_URL }}
+          MS1_SPRING_DATASOURCE_USERNAME: ${{ vars.MS1_SPRING_DATASOURCE_USERNAME }}
+          MS1_SPRING_DATASOURCE_PASSWORD: ${{ secrets.MS1_SPRING_DATASOURCE_PASSWORD }}
+          MS1_POSTGRES_PASSWORD: ${{ secrets.MS1_POSTGRES_PASSWORD }}
+          MS1_ADMIN_PASSWORD: ${{ secrets.MS1_ADMIN_PASSWORD }}
+          MS1_JWT_SECRET: ${{ secrets.MS1_JWT_SECRET }}
+          MS1_BLOCKCHAIN_RPC_URL: ${{ vars.MS1_BLOCKCHAIN_RPC_URL }}
+          MS1_BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.MS1_BLOCKCHAIN_PRIVATE_KEY }}
+          MS1_MS3_WEBHOOK_URL: ${{ vars.MS1_MS3_WEBHOOK_URL }}
         run: |
           test -n "$ACR_LOGIN_SERVER" || { echo "::error::ACR_LOGIN_SERVER secret is required"; exit 1; }
           test -n "$ACR_USERNAME" || { echo "::error::ACR_USERNAME secret is required"; exit 1; }
@@ -84,15 +84,15 @@ jobs:
           test -n "$MS1_VM_HOST" || { echo "::error::MS1_VM_HOST secret is required"; exit 1; }
           test -n "$MS1_VM_USER" || { echo "::error::MS1_VM_USER secret is required"; exit 1; }
           test -n "$MS1_VM_SSH_KEY" || { echo "::error::MS1_VM_SSH_KEY secret is required"; exit 1; }
-          test -n "$SPRING_DATASOURCE_URL" || { echo "::error::SPRING_DATASOURCE_URL variable is required"; exit 1; }
-          test -n "$SPRING_DATASOURCE_USERNAME" || { echo "::error::SPRING_DATASOURCE_USERNAME variable is required"; exit 1; }
-          test -n "$SPRING_DATASOURCE_PASSWORD" || { echo "::error::SPRING_DATASOURCE_PASSWORD secret is required"; exit 1; }
-          test -n "$POSTGRES_PASSWORD" || { echo "::error::POSTGRES_PASSWORD secret is required"; exit 1; }
-          test -n "$ADMIN_PASSWORD" || { echo "::error::ADMIN_PASSWORD secret is required"; exit 1; }
-          test -n "$JWT_SECRET" || { echo "::error::JWT_SECRET secret is required"; exit 1; }
-          test -n "$BLOCKCHAIN_RPC_URL" || { echo "::error::BLOCKCHAIN_RPC_URL variable is required"; exit 1; }
-          test -n "$BLOCKCHAIN_PRIVATE_KEY" || { echo "::error::BLOCKCHAIN_PRIVATE_KEY secret is required"; exit 1; }
-          test -n "$MS3_WEBHOOK_URL" || { echo "::error::MS3_WEBHOOK_URL variable is required"; exit 1; }
+          test -n "$MS1_SPRING_DATASOURCE_URL" || { echo "::error::MS1_SPRING_DATASOURCE_URL variable is required"; exit 1; }
+          test -n "$MS1_SPRING_DATASOURCE_USERNAME" || { echo "::error::MS1_SPRING_DATASOURCE_USERNAME variable is required"; exit 1; }
+          test -n "$MS1_SPRING_DATASOURCE_PASSWORD" || { echo "::error::MS1_SPRING_DATASOURCE_PASSWORD secret is required"; exit 1; }
+          test -n "$MS1_POSTGRES_PASSWORD" || { echo "::error::MS1_POSTGRES_PASSWORD secret is required"; exit 1; }
+          test -n "$MS1_ADMIN_PASSWORD" || { echo "::error::MS1_ADMIN_PASSWORD secret is required"; exit 1; }
+          test -n "$MS1_JWT_SECRET" || { echo "::error::MS1_JWT_SECRET secret is required"; exit 1; }
+          test -n "$MS1_BLOCKCHAIN_RPC_URL" || { echo "::error::MS1_BLOCKCHAIN_RPC_URL variable is required"; exit 1; }
+          test -n "$MS1_BLOCKCHAIN_PRIVATE_KEY" || { echo "::error::MS1_BLOCKCHAIN_PRIVATE_KEY secret is required"; exit 1; }
+          test -n "$MS1_MS3_WEBHOOK_URL" || { echo "::error::MS1_MS3_WEBHOOK_URL variable is required"; exit 1; }
 
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
@@ -120,29 +120,29 @@ jobs:
           MS1_VM_USER: ${{ secrets.MS1_VM_USER }}
           MS1_VM_SSH_KEY: ${{ secrets.MS1_VM_SSH_KEY }}
           IMAGE_TAG: ${{ github.sha }}
-          POSTGRES_DB: ${{ vars.POSTGRES_DB || 'activos_db' }}
-          POSTGRES_USER: ${{ vars.POSTGRES_USER || 'activos_user' }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          SPRING_DATASOURCE_URL: ${{ vars.SPRING_DATASOURCE_URL }}
-          SPRING_DATASOURCE_USERNAME: ${{ vars.SPRING_DATASOURCE_USERNAME }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.SPRING_DATASOURCE_PASSWORD }}
-          DB_SCHEMA: ${{ vars.DB_SCHEMA || 'public' }}
-          DB_PREPARE_THRESHOLD: ${{ vars.DB_PREPARE_THRESHOLD || '0' }}
-          DB_POOL_MAX_SIZE: ${{ vars.DB_POOL_MAX_SIZE || '10' }}
-          DB_POOL_MIN_IDLE: ${{ vars.DB_POOL_MIN_IDLE || '2' }}
-          DB_POOL_CONNECTION_TIMEOUT_MS: ${{ vars.DB_POOL_CONNECTION_TIMEOUT_MS || '30000' }}
-          DB_POOL_IDLE_TIMEOUT_MS: ${{ vars.DB_POOL_IDLE_TIMEOUT_MS || '300000' }}
-          DB_POOL_MAX_LIFETIME_MS: ${{ vars.DB_POOL_MAX_LIFETIME_MS || '600000' }}
-          FLYWAY_CONNECT_RETRIES: ${{ vars.FLYWAY_CONNECT_RETRIES || '10' }}
-          FLYWAY_CONNECT_RETRIES_INTERVAL: ${{ vars.FLYWAY_CONNECT_RETRIES_INTERVAL || '5s' }}
-          SPRING_JPA_HIBERNATE_DDL_AUTO: ${{ vars.SPRING_JPA_HIBERNATE_DDL_AUTO || 'validate' }}
-          ADMIN_USER: ${{ vars.ADMIN_USER || 'admin' }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          BLOCKCHAIN_RPC_URL: ${{ vars.BLOCKCHAIN_RPC_URL }}
-          BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.BLOCKCHAIN_PRIVATE_KEY }}
-          MS3_WEBHOOK_URL: ${{ vars.MS3_WEBHOOK_URL }}
-          CORS_ALLOWED_ORIGIN_PATTERNS: ${{ vars.CORS_ALLOWED_ORIGIN_PATTERNS || '*' }}
+          MS1_POSTGRES_DB: ${{ vars.MS1_POSTGRES_DB || 'activos_db' }}
+          MS1_POSTGRES_USER: ${{ vars.MS1_POSTGRES_USER || 'activos_user' }}
+          MS1_POSTGRES_PASSWORD: ${{ secrets.MS1_POSTGRES_PASSWORD }}
+          MS1_SPRING_DATASOURCE_URL: ${{ vars.MS1_SPRING_DATASOURCE_URL }}
+          MS1_SPRING_DATASOURCE_USERNAME: ${{ vars.MS1_SPRING_DATASOURCE_USERNAME }}
+          MS1_SPRING_DATASOURCE_PASSWORD: ${{ secrets.MS1_SPRING_DATASOURCE_PASSWORD }}
+          MS1_DB_SCHEMA: ${{ vars.MS1_DB_SCHEMA || 'public' }}
+          MS1_DB_PREPARE_THRESHOLD: ${{ vars.MS1_DB_PREPARE_THRESHOLD || '0' }}
+          MS1_DB_POOL_MAX_SIZE: ${{ vars.MS1_DB_POOL_MAX_SIZE || '10' }}
+          MS1_DB_POOL_MIN_IDLE: ${{ vars.MS1_DB_POOL_MIN_IDLE || '2' }}
+          MS1_DB_POOL_CONNECTION_TIMEOUT_MS: ${{ vars.MS1_DB_POOL_CONNECTION_TIMEOUT_MS || '30000' }}
+          MS1_DB_POOL_IDLE_TIMEOUT_MS: ${{ vars.MS1_DB_POOL_IDLE_TIMEOUT_MS || '300000' }}
+          MS1_DB_POOL_MAX_LIFETIME_MS: ${{ vars.MS1_DB_POOL_MAX_LIFETIME_MS || '600000' }}
+          MS1_FLYWAY_CONNECT_RETRIES: ${{ vars.MS1_FLYWAY_CONNECT_RETRIES || '10' }}
+          MS1_FLYWAY_CONNECT_RETRIES_INTERVAL: ${{ vars.MS1_FLYWAY_CONNECT_RETRIES_INTERVAL || '5s' }}
+          MS1_SPRING_JPA_HIBERNATE_DDL_AUTO: ${{ vars.MS1_SPRING_JPA_HIBERNATE_DDL_AUTO || 'validate' }}
+          MS1_ADMIN_USER: ${{ vars.MS1_ADMIN_USER || 'admin' }}
+          MS1_ADMIN_PASSWORD: ${{ secrets.MS1_ADMIN_PASSWORD }}
+          MS1_JWT_SECRET: ${{ secrets.MS1_JWT_SECRET }}
+          MS1_BLOCKCHAIN_RPC_URL: ${{ vars.MS1_BLOCKCHAIN_RPC_URL }}
+          MS1_BLOCKCHAIN_PRIVATE_KEY: ${{ secrets.MS1_BLOCKCHAIN_PRIVATE_KEY }}
+          MS1_MS3_WEBHOOK_URL: ${{ vars.MS1_MS3_WEBHOOK_URL }}
+          MS1_CORS_ALLOWED_ORIGIN_PATTERNS: ${{ vars.MS1_CORS_ALLOWED_ORIGIN_PATTERNS || '*' }}
           MS1_DOMAIN: ${{ vars.MS1_DOMAIN }}
           MS1_HTTP_PORT: ${{ vars.MS1_HTTP_PORT || '80' }}
           MS1_HTTPS_PORT: ${{ vars.MS1_HTTPS_PORT || '443' }}
@@ -154,29 +154,29 @@ jobs:
 
           {
             printf 'MS1_IMAGE=%s/%s:%s\n' "$ACR_LOGIN_SERVER" "$IMAGE_NAME" "$IMAGE_TAG"
-            printf 'POSTGRES_DB=%s\n' "$POSTGRES_DB"
-            printf 'POSTGRES_USER=%s\n' "$POSTGRES_USER"
-            printf 'POSTGRES_PASSWORD=%s\n' "$POSTGRES_PASSWORD"
-            printf 'SPRING_DATASOURCE_URL=%s\n' "$SPRING_DATASOURCE_URL"
-            printf 'SPRING_DATASOURCE_USERNAME=%s\n' "$SPRING_DATASOURCE_USERNAME"
-            printf 'SPRING_DATASOURCE_PASSWORD=%s\n' "$SPRING_DATASOURCE_PASSWORD"
-            printf 'DB_SCHEMA=%s\n' "$DB_SCHEMA"
-            printf 'DB_PREPARE_THRESHOLD=%s\n' "$DB_PREPARE_THRESHOLD"
-            printf 'DB_POOL_MAX_SIZE=%s\n' "$DB_POOL_MAX_SIZE"
-            printf 'DB_POOL_MIN_IDLE=%s\n' "$DB_POOL_MIN_IDLE"
-            printf 'DB_POOL_CONNECTION_TIMEOUT_MS=%s\n' "$DB_POOL_CONNECTION_TIMEOUT_MS"
-            printf 'DB_POOL_IDLE_TIMEOUT_MS=%s\n' "$DB_POOL_IDLE_TIMEOUT_MS"
-            printf 'DB_POOL_MAX_LIFETIME_MS=%s\n' "$DB_POOL_MAX_LIFETIME_MS"
-            printf 'FLYWAY_CONNECT_RETRIES=%s\n' "$FLYWAY_CONNECT_RETRIES"
-            printf 'FLYWAY_CONNECT_RETRIES_INTERVAL=%s\n' "$FLYWAY_CONNECT_RETRIES_INTERVAL"
-            printf 'SPRING_JPA_HIBERNATE_DDL_AUTO=%s\n' "$SPRING_JPA_HIBERNATE_DDL_AUTO"
-            printf 'ADMIN_USER=%s\n' "$ADMIN_USER"
-            printf 'ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD"
-            printf 'JWT_SECRET=%s\n' "$JWT_SECRET"
-            printf 'BLOCKCHAIN_RPC_URL=%s\n' "$BLOCKCHAIN_RPC_URL"
-            printf 'BLOCKCHAIN_PRIVATE_KEY=%s\n' "$BLOCKCHAIN_PRIVATE_KEY"
-            printf 'MS3_WEBHOOK_URL=%s\n' "$MS3_WEBHOOK_URL"
-            printf 'CORS_ALLOWED_ORIGIN_PATTERNS=%s\n' "$CORS_ALLOWED_ORIGIN_PATTERNS"
+            printf 'MS1_POSTGRES_DB=%s\n' "$MS1_POSTGRES_DB"
+            printf 'MS1_POSTGRES_USER=%s\n' "$MS1_POSTGRES_USER"
+            printf 'MS1_POSTGRES_PASSWORD=%s\n' "$MS1_POSTGRES_PASSWORD"
+            printf 'MS1_SPRING_DATASOURCE_URL=%s\n' "$MS1_SPRING_DATASOURCE_URL"
+            printf 'MS1_SPRING_DATASOURCE_USERNAME=%s\n' "$MS1_SPRING_DATASOURCE_USERNAME"
+            printf 'MS1_SPRING_DATASOURCE_PASSWORD=%s\n' "$MS1_SPRING_DATASOURCE_PASSWORD"
+            printf 'MS1_DB_SCHEMA=%s\n' "$MS1_DB_SCHEMA"
+            printf 'MS1_DB_PREPARE_THRESHOLD=%s\n' "$MS1_DB_PREPARE_THRESHOLD"
+            printf 'MS1_DB_POOL_MAX_SIZE=%s\n' "$MS1_DB_POOL_MAX_SIZE"
+            printf 'MS1_DB_POOL_MIN_IDLE=%s\n' "$MS1_DB_POOL_MIN_IDLE"
+            printf 'MS1_DB_POOL_CONNECTION_TIMEOUT_MS=%s\n' "$MS1_DB_POOL_CONNECTION_TIMEOUT_MS"
+            printf 'MS1_DB_POOL_IDLE_TIMEOUT_MS=%s\n' "$MS1_DB_POOL_IDLE_TIMEOUT_MS"
+            printf 'MS1_DB_POOL_MAX_LIFETIME_MS=%s\n' "$MS1_DB_POOL_MAX_LIFETIME_MS"
+            printf 'MS1_FLYWAY_CONNECT_RETRIES=%s\n' "$MS1_FLYWAY_CONNECT_RETRIES"
+            printf 'MS1_FLYWAY_CONNECT_RETRIES_INTERVAL=%s\n' "$MS1_FLYWAY_CONNECT_RETRIES_INTERVAL"
+            printf 'MS1_SPRING_JPA_HIBERNATE_DDL_AUTO=%s\n' "$MS1_SPRING_JPA_HIBERNATE_DDL_AUTO"
+            printf 'MS1_ADMIN_USER=%s\n' "$MS1_ADMIN_USER"
+            printf 'MS1_ADMIN_PASSWORD=%s\n' "$MS1_ADMIN_PASSWORD"
+            printf 'MS1_JWT_SECRET=%s\n' "$MS1_JWT_SECRET"
+            printf 'MS1_BLOCKCHAIN_RPC_URL=%s\n' "$MS1_BLOCKCHAIN_RPC_URL"
+            printf 'MS1_BLOCKCHAIN_PRIVATE_KEY=%s\n' "$MS1_BLOCKCHAIN_PRIVATE_KEY"
+            printf 'MS1_MS3_WEBHOOK_URL=%s\n' "$MS1_MS3_WEBHOOK_URL"
+            printf 'MS1_CORS_ALLOWED_ORIGIN_PATTERNS=%s\n' "$MS1_CORS_ALLOWED_ORIGIN_PATTERNS"
             printf 'MS1_DOMAIN=%s\n' "$MS1_DOMAIN"
             printf 'MS1_HTTP_PORT=%s\n' "$MS1_HTTP_PORT"
             printf 'MS1_HTTPS_PORT=%s\n' "$MS1_HTTPS_PORT"

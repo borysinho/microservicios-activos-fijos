@@ -1,10 +1,17 @@
 <div class="page-header">
   <div>
     <h1>Gestión de Activos</h1>
-    <p>Inventario completo de activos fijos registrados</p>
+    <p>Consulte, registre y mantenga actualizado el inventario institucional.</p>
   </div>
   <button class="btn btn--primary" (click)="openModal()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      width="16"
+      height="16"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
@@ -14,22 +21,34 @@
 
 <!-- Filtros -->
 <div class="filter-bar card">
-  <input class="form-control filter-bar__search" type="text" [(ngModel)]="searchTerm"
-    (keyup.enter)="cargar()" placeholder="Buscar por código, nombre o categoría...">
+  <input
+    class="form-control filter-bar__search"
+    type="text"
+    [(ngModel)]="searchTerm"
+    (keyup.enter)="cargar()"
+    placeholder="Buscar por código, nombre o categoría..."
+  />
   <select class="form-control" [(ngModel)]="filtro.estado" (change)="cargar()">
     <option [ngValue]="undefined">Todos los estados</option>
     @for (e of estadoOpts; track e) {
-    <option [value]="e">{{ estadoLabel(e) }}</option>
+      <option [value]="e">{{ estadoLabel(e) }}</option>
     }
   </select>
   <select class="form-control" [(ngModel)]="filtro.categoriaId" (change)="cargar()">
     <option [ngValue]="undefined">Todas las categorías</option>
     @for (c of categorias(); track c.id) {
-    <option [value]="c.id">{{ c.nombre }}</option>
+      <option [value]="c.id">{{ c.nombre }}</option>
     }
   </select>
   <button class="btn btn--secondary" (click)="cargar()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      width="15"
+      height="15"
+    >
       <polyline points="1 4 1 10 7 10" />
       <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
     </svg>
@@ -39,490 +58,634 @@
 
 <!-- Tabla -->
 @if (loading()) {
-<div class="loading">Cargando activos...</div>
+  <div class="loading">Cargando activos...</div>
 } @else if (error()) {
-<div class="empty-state">
-  <div class="empty-icon">⚠</div>
-  <p>{{ error() }}</p>
-</div>
+  <div class="empty-state">
+    <div class="empty-icon">⚠</div>
+    <p>{{ error() }}</p>
+  </div>
 } @else if (activosFiltrados.length === 0) {
-<div class="empty-state">
-  <div class="empty-icon">📦</div>
-  <p>No hay activos registrados.</p>
-</div>
+  <div class="empty-state">
+    <div class="empty-icon">📦</div>
+    <p>No hay activos registrados.</p>
+  </div>
 } @else {
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Código</th>
-        <th>Nombre</th>
-        <th>Estado</th>
-        <th>Categoría</th>
-        <th>Área</th>
-        <th>Valor Adquisición</th>
-        <th>F. Adquisición</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (a of activosFiltrados; track a.id) {
-      <tr>
-        <td><span class="mono">{{ a.codigo }}</span></td>
-        <td>{{ a.nombre }}</td>
-        <td>
-          <select class="form-control form-control--xs" [ngModel]="a.estado"
-            (ngModelChange)="cambiarEstado(a, $event)" [disabled]="a.estado === 'DADO_DE_BAJA'">
-            @for (e of estadoCambioOpts; track e) {
-            <option [value]="e">{{ estadoLabel(e) }}</option>
-            }
-            @if (a.estado === 'DADO_DE_BAJA') {
-            <option value="DADO_DE_BAJA">Dado de baja</option>
-            }
-          </select>
-        </td>
-        <td>{{ a.categoria.nombre }}</td>
-        <td>{{ a.areaActual?.nombre ?? '—' }}</td>
-        <td class="mono">{{ a.valorAdquisicion | currency:'BOB':'symbol':'1.2-2' }}</td>
-        <td>{{ a.fechaAdquisicion | date:'dd/MM/yyyy' }}</td>
-        <td>
-          <div class="action-btns">
-            <button class="btn btn--ghost btn--sm" title="Ver detalle" (click)="verDetalle(a)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
-            <button class="btn btn--ghost btn--sm" title="Editar activo" (click)="openModal(a)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
-            @if (canAsignar(a)) {
-            <button class="btn btn--ghost btn--sm" title="Asignar responsable" (click)="openAsignar(a)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </button>
-            }
-            @if (canTrasladar(a)) {
-            <button class="btn btn--ghost btn--sm" title="Trasladar" (click)="openTrasladar(a)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                <line x1="5" y1="12" x2="19" y2="12" />
-                <polyline points="12 5 19 12 12 19" />
-              </svg>
-            </button>
-            }
-            @if (canBaja(a)) {
-            <button class="btn btn--ghost btn--sm btn--danger-ghost" title="Dar de baja" (click)="openBaja(a)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14H6L5 6" />
-                <path d="M10 11v6M14 11v6" />
-                <path d="M9 6V4h6v2" />
-              </svg>
-            </button>
-            }
-          </div>
-        </td>
-      </tr>
-      }
-    </tbody>
-  </table>
-</div>
-<div class="table-footer">
-  <span>{{ activosFiltrados.length }} activo{{ activosFiltrados.length !== 1 ? 's' : '' }} encontrados</span>
-</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre</th>
+          <th>Estado</th>
+          <th>Categoría</th>
+          <th>Área</th>
+          <th>Valor de adquisición</th>
+          <th>Fecha de adquisición</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of activosFiltrados; track a.id) {
+          <tr>
+            <td>
+              <span class="mono">{{ a.codigo }}</span>
+            </td>
+            <td>{{ a.nombre }}</td>
+            <td>
+              <select
+                class="form-control form-control--xs"
+                [ngModel]="a.estado"
+                (ngModelChange)="cambiarEstado(a, $event)"
+                [disabled]="a.estado === 'DADO_DE_BAJA'"
+              >
+                @for (e of estadoCambioOpts; track e) {
+                  <option [value]="e">{{ estadoLabel(e) }}</option>
+                }
+                @if (a.estado === 'DADO_DE_BAJA') {
+                  <option value="DADO_DE_BAJA">Dado de baja</option>
+                }
+              </select>
+            </td>
+            <td>{{ a.categoria.nombre }}</td>
+            <td>{{ a.areaActual?.nombre ?? '—' }}</td>
+            <td class="mono">{{ a.valorAdquisicion | currency: 'BOB' : 'symbol' : '1.2-2' }}</td>
+            <td>{{ a.fechaAdquisicion | date: 'dd/MM/yyyy' }}</td>
+            <td>
+              <div class="action-btns">
+                <button class="btn btn--ghost btn--sm" title="Ver detalle" (click)="verDetalle(a)">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    width="14"
+                    height="14"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+                <button class="btn btn--ghost btn--sm" title="Editar activo" (click)="openModal(a)">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    width="14"
+                    height="14"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+                @if (canAsignar(a)) {
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    title="Asignar responsable"
+                    (click)="openAsignar(a)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </button>
+                }
+                @if (canTrasladar(a)) {
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    title="Trasladar"
+                    (click)="openTrasladar(a)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </button>
+                }
+                @if (canBaja(a)) {
+                  <button
+                    class="btn btn--ghost btn--sm btn--danger-ghost"
+                    title="Dar de baja"
+                    (click)="openBaja(a)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14H6L5 6" />
+                      <path d="M10 11v6M14 11v6" />
+                      <path d="M9 6V4h6v2" />
+                    </svg>
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="table-footer">
+    <span
+      >{{ activosFiltrados.length }} activo{{
+        activosFiltrados.length !== 1 ? 's' : ''
+      }}
+      encontrados</span
+    >
+  </div>
 }
 
 <!-- Modal crear activo -->
 @if (showModal()) {
-<div class="overlay" (click)="showModal.set(false)">
-  <div class="modal" (click)="$event.stopPropagation()">
-    <div class="modal__header">
-      <h3>{{ editingActivoId() ? 'Editar activo' : 'Registrar nuevo activo' }}</h3>
-      <button class="btn btn--ghost btn--icon" (click)="showModal.set(false)">✕</button>
-    </div>
-    <div class="modal__body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Código de Inventario *</label>
-          <input class="form-control" [(ngModel)]="form.codigo" placeholder="AF-2024-001">
-        </div>
-        <div class="form-group">
-          <label>Nombre del Activo *</label>
-          <input class="form-control" [(ngModel)]="form.nombre" placeholder="Laptop Dell XPS 15">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Descripción</label>
-          <input class="form-control" [(ngModel)]="form.descripcion" placeholder="Descripción detallada">
-        </div>
-        <div class="form-group">
-          <label>Fecha de Adquisición *</label>
-          <input class="form-control" type="date" [(ngModel)]="form.fechaAdquisicion">
-        </div>
-        <div class="form-group">
-          <label>Valor de Adquisición (BOB) *</label>
-          <input class="form-control" type="number" [(ngModel)]="form.valorAdquisicion" placeholder="15000.00">
-        </div>
-        <div class="form-group">
-          <label>Vida Útil (años) *</label>
-          <input class="form-control" type="number" [(ngModel)]="form.vidaUtilAnios" min="1">
-        </div>
-        <div class="form-group">
-          <label>Categoría *</label>
-          <select class="form-control" [(ngModel)]="form.categoriaId">
-            <option value="">— Seleccionar —</option>
-            @for (c of categorias(); track c.id) {
-            <option [value]="c.id">{{ c.nombre }}</option>
-            }
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Área Actual</label>
-          <select class="form-control" [(ngModel)]="form.areaActualId">
-            <option value="">— Sin área —</option>
-            @for (a of areas(); track a.id) {
-            <option [value]="a.id">{{ a.nombre }}</option>
-            }
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Ubicación</label>
-          <input class="form-control" [(ngModel)]="form.ubicacion" placeholder="Ej: Piso 3 Sala B">
+  <div class="overlay" (click)="showModal.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3>{{ editingActivoId() ? 'Editar activo' : 'Registrar nuevo activo' }}</h3>
+        <button class="btn btn--ghost btn--icon" (click)="showModal.set(false)">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Código de Inventario *</label>
+            <input class="form-control" [(ngModel)]="form.codigo" placeholder="AF-2024-001" />
+          </div>
+          <div class="form-group">
+            <label>Nombre del Activo *</label>
+            <input
+              class="form-control"
+              [(ngModel)]="form.nombre"
+              placeholder="Laptop Dell XPS 15"
+            />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Descripción</label>
+            <input
+              class="form-control"
+              [(ngModel)]="form.descripcion"
+              placeholder="Descripción detallada"
+            />
+          </div>
+          <div class="form-group">
+            <label>Fecha de Adquisición *</label>
+            <input class="form-control" type="date" [(ngModel)]="form.fechaAdquisicion" />
+          </div>
+          <div class="form-group">
+            <label>Valor de Adquisición (BOB) *</label>
+            <input
+              class="form-control"
+              type="number"
+              [(ngModel)]="form.valorAdquisicion"
+              placeholder="15000.00"
+            />
+          </div>
+          <div class="form-group">
+            <label>Vida Útil (años) *</label>
+            <input class="form-control" type="number" [(ngModel)]="form.vidaUtilAnios" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Categoría *</label>
+            <select class="form-control" [(ngModel)]="form.categoriaId">
+              <option value="">— Seleccionar —</option>
+              @for (c of categorias(); track c.id) {
+                <option [value]="c.id">{{ c.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Área Actual</label>
+            <select class="form-control" [(ngModel)]="form.areaActualId">
+              <option value="">— Sin área —</option>
+              @for (a of areas(); track a.id) {
+                <option [value]="a.id">{{ a.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ubicación</label>
+            <input
+              class="form-control"
+              [(ngModel)]="form.ubicacion"
+              placeholder="Ej: Piso 3 Sala B"
+            />
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
-      <button class="btn btn--primary" (click)="guardar()"
-        [disabled]="saving() || !form.codigo || !form.nombre || !form.categoriaId">
-        {{ saving() ? 'Guardando...' : (editingActivoId() ? 'Actualizar activo' : 'Registrar activo') }}
-      </button>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          (click)="guardar()"
+          [disabled]="saving() || !form.codigo || !form.nombre || !form.categoriaId"
+        >
+          {{
+            saving() ? 'Guardando...' : editingActivoId() ? 'Actualizar activo' : 'Registrar activo'
+          }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 }
 
 <!-- Modal Asignar Activo -->
 @if (showAsignarModal()) {
-<div class="overlay" (click)="showAsignarModal.set(false)">
-  <div class="modal modal--sm" (click)="$event.stopPropagation()">
-    <div class="modal__header">
-      <h3>Asignar Responsable</h3>
-      <button class="btn btn--ghost btn--icon" (click)="showAsignarModal.set(false)">✕</button>
-    </div>
-    <div class="modal__body">
-      <div class="form-grid">
-        <div class="form-group form-group--full">
-          <label>Responsable *</label>
-          <select class="form-control" [(ngModel)]="formAsignar.responsableId">
-            <option value="">— Seleccionar —</option>
-            @for (r of responsables(); track r.id) {
-            <option [value]="r.id">{{ r.nombre }} — {{ r.cargo }}</option>
-            }
-          </select>
-        </div>
-        <div class="form-group form-group--full">
-          <label>Área *</label>
-          <select class="form-control" [(ngModel)]="formAsignar.areaId">
-            <option value="">— Seleccionar —</option>
-            @for (a of areas(); track a.id) {
-            <option [value]="a.id">{{ a.nombre }}</option>
-            }
-          </select>
-        </div>
-        <div class="form-group form-group--full">
-          <label>Fecha de Asignación *</label>
-          <input class="form-control" type="date" [(ngModel)]="formAsignar.fechaAsignacion">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Observaciones</label>
-          <input class="form-control" [(ngModel)]="formAsignar.observaciones" placeholder="Observaciones opcionales">
+  <div class="overlay" (click)="showAsignarModal.set(false)">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3>Asignar Responsable</h3>
+        <button class="btn btn--ghost btn--icon" (click)="showAsignarModal.set(false)">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Responsable *</label>
+            <select class="form-control" [(ngModel)]="formAsignar.responsableId">
+              <option value="">— Seleccionar —</option>
+              @for (r of responsables(); track r.id) {
+                <option [value]="r.id">{{ r.nombre }} — {{ r.cargo }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Área *</label>
+            <select class="form-control" [(ngModel)]="formAsignar.areaId">
+              <option value="">— Seleccionar —</option>
+              @for (a of areas(); track a.id) {
+                <option [value]="a.id">{{ a.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Fecha de Asignación *</label>
+            <input class="form-control" type="date" [(ngModel)]="formAsignar.fechaAsignacion" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Observaciones</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formAsignar.observaciones"
+              placeholder="Observaciones opcionales"
+            />
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--secondary" (click)="showAsignarModal.set(false)">Cancelar</button>
-      <button class="btn btn--primary" (click)="guardarAsignacion()"
-        [disabled]="saving() || !formAsignar.responsableId || !formAsignar.areaId">
-        {{ saving() ? 'Guardando...' : 'Asignar' }}
-      </button>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" (click)="showAsignarModal.set(false)">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          (click)="guardarAsignacion()"
+          [disabled]="saving() || !formAsignar.responsableId || !formAsignar.areaId"
+        >
+          {{ saving() ? 'Guardando...' : 'Asignar' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 }
 
 <!-- Modal Trasladar Activo -->
 @if (showTrasladarModal()) {
-<div class="overlay" (click)="showTrasladarModal.set(false)">
-  <div class="modal modal--sm" (click)="$event.stopPropagation()">
-    <div class="modal__header">
-      <h3>Trasladar Activo</h3>
-      <button class="btn btn--ghost btn--icon" (click)="showTrasladarModal.set(false)">✕</button>
-    </div>
-    <div class="modal__body">
-      <div class="form-grid">
-        <div class="form-group form-group--full">
-          <label>Área Destino *</label>
-          <select class="form-control" [(ngModel)]="formTrasladar.areaDestinoId">
-            <option value="">— Seleccionar —</option>
-            @for (a of areas(); track a.id) {
-            <option [value]="a.id">{{ a.nombre }}</option>
-            }
-          </select>
-        </div>
-        <div class="form-group form-group--full">
-          <label>Autorizado por *</label>
-          <select class="form-control" [(ngModel)]="formTrasladar.autorizadoPorId">
-            <option value="">— Seleccionar —</option>
-            @for (u of usuarios(); track u.id) {
-            <option [value]="u.id">{{ u.username }} ({{ u.rol }})</option>
-            }
-          </select>
-        </div>
-        <div class="form-group form-group--full">
-          <label>Fecha *</label>
-          <input class="form-control" type="date" [(ngModel)]="formTrasladar.fecha">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Motivo del Traslado *</label>
-          <input class="form-control" [(ngModel)]="formTrasladar.motivoTraslado" placeholder="Motivo del traslado">
+  <div class="overlay" (click)="showTrasladarModal.set(false)">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3>Trasladar Activo</h3>
+        <button class="btn btn--ghost btn--icon" (click)="showTrasladarModal.set(false)">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Área Destino *</label>
+            <select class="form-control" [(ngModel)]="formTrasladar.areaDestinoId">
+              <option value="">— Seleccionar —</option>
+              @for (a of areas(); track a.id) {
+                <option [value]="a.id">{{ a.nombre }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Autorizado por *</label>
+            <select class="form-control" [(ngModel)]="formTrasladar.autorizadoPorId">
+              <option value="">— Seleccionar —</option>
+              @for (u of usuarios(); track u.id) {
+                <option [value]="u.id">{{ u.username }} ({{ u.rol }})</option>
+              }
+            </select>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Fecha *</label>
+            <input class="form-control" type="date" [(ngModel)]="formTrasladar.fecha" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Motivo del Traslado *</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formTrasladar.motivoTraslado"
+              placeholder="Motivo del traslado"
+            />
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--secondary" (click)="showTrasladarModal.set(false)">Cancelar</button>
-      <button class="btn btn--primary" (click)="guardarTraslado()"
-        [disabled]="saving() || !formTrasladar.areaDestinoId || !formTrasladar.motivoTraslado">
-        {{ saving() ? 'Trasladando...' : 'Trasladar' }}
-      </button>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" (click)="showTrasladarModal.set(false)">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          (click)="guardarTraslado()"
+          [disabled]="saving() || !formTrasladar.areaDestinoId || !formTrasladar.motivoTraslado"
+        >
+          {{ saving() ? 'Trasladando...' : 'Trasladar' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 }
 
 <!-- Modal Dar de Baja -->
 @if (showBajaModal()) {
-<div class="overlay" (click)="showBajaModal.set(false)">
-  <div class="modal modal--sm" (click)="$event.stopPropagation()">
-    <div class="modal__header modal__header--danger">
-      <h3>Dar de Baja Activo</h3>
-      <button class="btn btn--ghost btn--icon" (click)="showBajaModal.set(false)">✕</button>
-    </div>
-    <div class="modal__body">
-      <p class="modal__warning">Esta acción es <strong>irreversible</strong>. El activo quedará dado de baja
-        definitivamente.</p>
-      <div class="form-grid">
-        <div class="form-group form-group--full">
-          <label>Autorizado por *</label>
-          <select class="form-control" [(ngModel)]="formBaja.autorizadoPorId">
-            <option value="">— Seleccionar —</option>
-            @for (u of usuarios(); track u.id) {
-            <option [value]="u.id">{{ u.username }} ({{ u.rol }})</option>
-            }
-          </select>
-        </div>
-        <div class="form-group form-group--full">
-          <label>Motivo *</label>
-          <input class="form-control" [(ngModel)]="formBaja.motivo" placeholder="Motivo de la baja">
-        </div>
-        <div class="form-group">
-          <label>Valor Residual (BOB)</label>
-          <input class="form-control" type="number" [(ngModel)]="formBaja.valorResidual" min="0">
-        </div>
-        <div class="form-group">
-          <label>Número de Resolución</label>
-          <input class="form-control" [(ngModel)]="formBaja.numeroResolucion" placeholder="RES-2024-001">
+  <div class="overlay" (click)="showBajaModal.set(false)">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal__header modal__header--danger">
+        <h3>Dar de Baja Activo</h3>
+        <button class="btn btn--ghost btn--icon" (click)="showBajaModal.set(false)">✕</button>
+      </div>
+      <div class="modal__body">
+        <p class="modal__warning">
+          Esta acción es <strong>irreversible</strong>. El activo quedará dado de baja
+          definitivamente.
+        </p>
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Autorizado por *</label>
+            <select class="form-control" [(ngModel)]="formBaja.autorizadoPorId">
+              <option value="">— Seleccionar —</option>
+              @for (u of usuarios(); track u.id) {
+                <option [value]="u.id">{{ u.username }} ({{ u.rol }})</option>
+              }
+            </select>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Motivo *</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formBaja.motivo"
+              placeholder="Motivo de la baja"
+            />
+          </div>
+          <div class="form-group">
+            <label>Valor Residual (BOB)</label>
+            <input
+              class="form-control"
+              type="number"
+              [(ngModel)]="formBaja.valorResidual"
+              min="0"
+            />
+          </div>
+          <div class="form-group">
+            <label>Número de Resolución</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formBaja.numeroResolucion"
+              placeholder="RES-2024-001"
+            />
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--secondary" (click)="showBajaModal.set(false)">Cancelar</button>
-      <button class="btn btn--danger" (click)="guardarBaja()"
-        [disabled]="saving() || !formBaja.autorizadoPorId || !formBaja.motivo">
-        {{ saving() ? 'Procesando...' : 'Confirmar Baja' }}
-      </button>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" (click)="showBajaModal.set(false)">Cancelar</button>
+        <button
+          class="btn btn--danger"
+          (click)="guardarBaja()"
+          [disabled]="saving() || !formBaja.autorizadoPorId || !formBaja.motivo"
+        >
+          {{ saving() ? 'Procesando...' : 'Confirmar Baja' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 }
 
 <!-- Panel de Detalle -->
 @if (showDetallePanel()) {
-<div class="detalle-overlay" (click)="cerrarDetalle()"></div>
-<div class="detalle-panel">
-  <div class="modal__header">
-    <h3>Detalle del Activo</h3>
-    <button class="btn btn--ghost btn--icon" (click)="cerrarDetalle()">✕</button>
-  </div>
-  <div class="detalle-body">
-    @if (selectedActivo(); as a) {
-    <div class="detalle-info-grid">
-      <div class="detalle-field">
-        <span class="detalle-label">Código</span>
-        <span class="mono">{{ a.codigo }}</span>
-      </div>
-      <div class="detalle-field">
-        <span class="detalle-label">Estado</span>
-        <span [class]="estadoBadge(a.estado)">{{ estadoLabel(a.estado) }}</span>
-      </div>
-      <div class="detalle-field detalle-field--full">
-        <span class="detalle-label">Nombre</span>
-        <span>{{ a.nombre }}</span>
-      </div>
-      <div class="detalle-field">
-        <span class="detalle-label">Categoría</span>
-        <span>{{ a.categoria.nombre }}</span>
-      </div>
-      <div class="detalle-field">
-        <span class="detalle-label">Área</span>
-        <span>{{ a.areaActual?.nombre ?? '—' }}</span>
-      </div>
-      <div class="detalle-field">
-        <span class="detalle-label">Valor Adquisición</span>
-        <span class="mono">{{ a.valorAdquisicion | currency:'BOB':'symbol':'1.2-2' }}</span>
-      </div>
-      <div class="detalle-field">
-        <span class="detalle-label">Valor en Libros</span>
-        <span class="mono">{{ a.valorLibros != null ? (a.valorLibros | currency:'BOB':'symbol':'1.2-2') : '—' }}</span>
-      </div>
-      <div class="detalle-field">
-        <span class="detalle-label">Vida Útil</span>
-        <span>{{ a.vidaUtilAnios }} años</span>
-      </div>
-      <div class="detalle-field">
-        <span class="detalle-label">F. Adquisición</span>
-        <span>{{ a.fechaAdquisicion | date:'dd/MM/yyyy' }}</span>
-      </div>
-      <div class="detalle-field">
-        <span class="detalle-label">Ubicación</span>
-        <span>{{ a.ubicacion ?? '—' }}</span>
-      </div>
+  <div class="detalle-overlay" (click)="cerrarDetalle()"></div>
+  <div class="detalle-panel">
+    <div class="modal__header">
+      <h3>Detalle del Activo</h3>
+      <button class="btn btn--ghost btn--icon" (click)="cerrarDetalle()">✕</button>
     </div>
+    <div class="detalle-body">
+      @if (selectedActivo(); as a) {
+        <div class="detalle-info-grid">
+          <div class="detalle-field">
+            <span class="detalle-label">Código</span>
+            <span class="mono">{{ a.codigo }}</span>
+          </div>
+          <div class="detalle-field">
+            <span class="detalle-label">Estado</span>
+            <span [class]="estadoBadge(a.estado)">{{ estadoLabel(a.estado) }}</span>
+          </div>
+          <div class="detalle-field detalle-field--full">
+            <span class="detalle-label">Nombre</span>
+            <span>{{ a.nombre }}</span>
+          </div>
+          <div class="detalle-field">
+            <span class="detalle-label">Categoría</span>
+            <span>{{ a.categoria.nombre }}</span>
+          </div>
+          <div class="detalle-field">
+            <span class="detalle-label">Área</span>
+            <span>{{ a.areaActual?.nombre ?? '—' }}</span>
+          </div>
+          <div class="detalle-field">
+            <span class="detalle-label">Valor Adquisición</span>
+            <span class="mono">{{
+              a.valorAdquisicion | currency: 'BOB' : 'symbol' : '1.2-2'
+            }}</span>
+          </div>
+          <div class="detalle-field">
+            <span class="detalle-label">Valor en Libros</span>
+            <span class="mono">{{
+              a.valorLibros != null ? (a.valorLibros | currency: 'BOB' : 'symbol' : '1.2-2') : '—'
+            }}</span>
+          </div>
+          <div class="detalle-field">
+            <span class="detalle-label">Vida Útil</span>
+            <span>{{ a.vidaUtilAnios }} años</span>
+          </div>
+          <div class="detalle-field">
+            <span class="detalle-label">F. Adquisición</span>
+            <span>{{ a.fechaAdquisicion | date: 'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="detalle-field">
+            <span class="detalle-label">Ubicación</span>
+            <span>{{ a.ubicacion ?? '—' }}</span>
+          </div>
+        </div>
 
-    @if (detalleLoading()) {
-    <div class="loading">Cargando detalles...</div>
-    } @else {
+        @if (detalleLoading()) {
+          <div class="loading">Cargando detalles...</div>
+        } @else {
+          @if (proyeccion()) {
+            <div class="detalle-section detalle-section--proyeccion">
+              <h4 class="detalle-section__title">Proyección de vida útil</h4>
+              <div class="proyeccion-grid">
+                <div class="proyeccion-item">
+                  <span class="proyeccion-label">Años transcurridos</span>
+                  <span class="proyeccion-val">{{ proyeccion()!.aniosTranscurridos }}</span>
+                </div>
+                <div class="proyeccion-item">
+                  <span class="proyeccion-label">Años restantes</span>
+                  <span
+                    class="proyeccion-val"
+                    [class.text-danger]="proyeccion()!.aniosRestantes <= 1"
+                    >{{ proyeccion()!.aniosRestantes }}</span
+                  >
+                </div>
+                <div class="proyeccion-item">
+                  <span class="proyeccion-label">Meses restantes</span>
+                  <span class="proyeccion-val">{{ proyeccion()!.mesesRestantes }}</span>
+                </div>
+                <div class="proyeccion-item">
+                  <span class="proyeccion-label">% Depreciado</span>
+                  <span class="proyeccion-val"
+                    >{{ proyeccion()!.porcentajeDepreciado | number: '1.1-1' }}%</span
+                  >
+                </div>
+              </div>
+              @if (proyeccion()!.estaDepreciadoCompletamente) {
+                <div class="badge badge--danger mt-2">Depreciación completada</div>
+              }
+            </div>
+          }
 
-    @if (proyeccion()) {
-    <div class="detalle-section detalle-section--proyeccion">
-      <h4 class="detalle-section__title">Proyección de Vida Útil</h4>
-      <div class="proyeccion-grid">
-        <div class="proyeccion-item">
-          <span class="proyeccion-label">Años transcurridos</span>
-          <span class="proyeccion-val">{{ proyeccion()!.aniosTranscurridos }}</span>
-        </div>
-        <div class="proyeccion-item">
-          <span class="proyeccion-label">Años restantes</span>
-          <span class="proyeccion-val" [class.text-danger]="proyeccion()!.aniosRestantes <= 1">{{
-            proyeccion()!.aniosRestantes }}</span>
-        </div>
-        <div class="proyeccion-item">
-          <span class="proyeccion-label">Meses restantes</span>
-          <span class="proyeccion-val">{{ proyeccion()!.mesesRestantes }}</span>
-        </div>
-        <div class="proyeccion-item">
-          <span class="proyeccion-label">% Depreciado</span>
-          <span class="proyeccion-val">{{ proyeccion()!.porcentajeDepreciado | number:'1.1-1' }}%</span>
-        </div>
-      </div>
-      @if (proyeccion()!.estaDepreciadoCompletamente) {
-      <div class="badge badge--danger mt-2">Depreciación completada</div>
-      }
-    </div>
-    }
+          @if (mlPrediccion()) {
+            <div class="detalle-section detalle-section--ml">
+              <h4 class="detalle-section__title">Riesgo y recomendación preventiva</h4>
+              <div class="proyeccion-grid">
+                <div class="proyeccion-item">
+                  <span class="proyeccion-label">Vida útil restante</span>
+                  <span class="proyeccion-val">{{ mlPrediccion()!.vidaUtilRestante }} meses</span>
+                </div>
+                <div class="proyeccion-item">
+                  <span class="proyeccion-label">Riesgo de fallo (6 meses)</span>
+                  <span
+                    class="proyeccion-val"
+                    [style.color]="
+                      mlPrediccion()!.probabilidad_fallo_6m > 0.6
+                        ? '#ef4444'
+                        : mlPrediccion()!.probabilidad_fallo_6m > 0.3
+                          ? '#f59e0b'
+                          : '#22c55e'
+                    "
+                  >
+                    {{ mlPrediccion()!.probabilidad_fallo_6m | percent: '1.0-1' }}
+                  </span>
+                </div>
+                <div class="proyeccion-item">
+                  <span class="proyeccion-label">Grupo de riesgo</span>
+                  <span class="proyeccion-val">
+                    <span class="badge" [class]="mlClusterBadge(mlPrediccion()!.cluster)">{{
+                      mlPrediccion()!.cluster_label
+                    }}</span>
+                  </span>
+                </div>
+                <div class="proyeccion-item">
+                  <span class="proyeccion-label">Confianza</span>
+                  <span class="proyeccion-val">{{
+                    mlPrediccion()!.confianza | percent: '1.0-1'
+                  }}</span>
+                </div>
+                @if (mlPrediccion()!.recomendacion_mantenimiento) {
+                  <div class="ml-recomendacion">
+                    <span class="ml-recomendacion__title">Recomendación de mantenimiento</span>
+                    <p class="ml-recomendacion__text">
+                      {{ mlPrediccion()!.recomendacion_mantenimiento }}
+                    </p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
 
-    <!-- CU-64: Predicción ML desde MS2 -->
-    @if (mlPrediccion()) {
-    <div class="detalle-section detalle-section--ml">
-      <h4 class="detalle-section__title">Análisis Predictivo (Random Forest · K-Means)</h4>
-      <div class="proyeccion-grid">
-        <div class="proyeccion-item">
-          <span class="proyeccion-label">Vida útil restante</span>
-          <span class="proyeccion-val">{{ mlPrediccion()!.vidaUtilRestante }} meses</span>
-        </div>
-        <div class="proyeccion-item">
-          <span class="proyeccion-label">Riesgo de fallo (6 meses)</span>
-          <span class="proyeccion-val"
-            [style.color]="mlPrediccion()!.probabilidad_fallo_6m > 0.6 ? '#ef4444' : mlPrediccion()!.probabilidad_fallo_6m > 0.3 ? '#f59e0b' : '#22c55e'">
-            {{ mlPrediccion()!.probabilidad_fallo_6m | percent:'1.0-1' }}
-          </span>
-        </div>
-        <div class="proyeccion-item">
-          <span class="proyeccion-label">Cluster</span>
-          <span class="proyeccion-val">
-            <span class="badge" [class]="mlClusterBadge(mlPrediccion()!.cluster)">{{ mlPrediccion()!.cluster_label
-              }}</span>
-          </span>
-        </div>
-        <div class="proyeccion-item">
-          <span class="proyeccion-label">Confianza ML</span>
-          <span class="proyeccion-val">{{ mlPrediccion()!.confianza | percent:'1.0-1' }}</span>
-        </div>
-        @if (mlPrediccion()!.recomendacion_mantenimiento) {
-        <div class="ml-recomendacion">
-          <span class="ml-recomendacion__title">Recomendación — CU-65</span>
-          <p class="ml-recomendacion__text">{{ mlPrediccion()!.recomendacion_mantenimiento }}</p>
-        </div>
+          <div class="detalle-section">
+            <h4 class="detalle-section__title">Asignaciones</h4>
+            @if (a.asignaciones.length) {
+              @for (asig of a.asignaciones; track asig.id) {
+                <div class="detalle-card" [class.detalle-card--active]="asig.activa">
+                  <div class="detalle-card__row">
+                    <strong>{{ asig.responsable.nombre }}</strong>
+                    <span [class]="asig.activa ? 'badge badge--success' : 'badge'">{{
+                      asig.activa ? 'Activa' : 'Cerrada'
+                    }}</span>
+                  </div>
+                  <div class="detalle-card__meta">
+                    {{ asig.responsable.cargo }} · {{ asig.area.nombre }}
+                  </div>
+                  <div class="detalle-card__meta">
+                    Desde {{ asig.fechaAsignacion | date: 'dd/MM/yyyy' }}
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="detalle-empty">Sin asignaciones registradas.</p>
+            }
+          </div>
+          <div class="detalle-section">
+            <h4 class="detalle-section__title">Traslados</h4>
+            @if (a.traslados.length) {
+              @for (tr of a.traslados; track tr.id) {
+                <div class="detalle-card">
+                  <div class="detalle-card__row">
+                    <span>{{ tr.areaOrigen.nombre }} → {{ tr.areaDestino.nombre }}</span>
+                    <span
+                      [class]="
+                        tr.recepcionConfirmada ? 'badge badge--success' : 'badge badge--warning'
+                      "
+                    >
+                      {{ tr.recepcionConfirmada ? 'Confirmado' : 'Pendiente' }}
+                    </span>
+                  </div>
+                  <div class="detalle-card__meta">
+                    {{ tr.fecha | date: 'dd/MM/yyyy' }} · por {{ tr.autorizadoPor.username }}
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="detalle-empty">Sin traslados registrados.</p>
+            }
+          </div>
+          <div class="detalle-section">
+            <h4 class="detalle-section__title">Historial de trazabilidad</h4>
+            @if (a.registrosBlockchain.length) {
+              @for (rb of a.registrosBlockchain; track rb.id) {
+                <div class="blockchain-row">
+                  <span class="blockchain-tipo">{{ rb.tipoTransaccion }}</span>
+                  <span class="blockchain-hash mono">{{ rb.hash | slice: 0 : 18 }}...</span>
+                  <span class="blockchain-time">{{ rb.timestamp | date: 'dd/MM/yy HH:mm' }}</span>
+                </div>
+              }
+            } @else {
+              <p class="detalle-empty">Sin registros de trazabilidad.</p>
+            }
+          </div>
         }
-      </div>
-    </div>
-    }
-
-    <div class="detalle-section">
-      <h4 class="detalle-section__title">Asignaciones</h4>
-      @if (a.asignaciones.length) {
-      @for (asig of a.asignaciones; track asig.id) {
-      <div class="detalle-card" [class.detalle-card--active]="asig.activa">
-        <div class="detalle-card__row">
-          <strong>{{ asig.responsable.nombre }}</strong>
-          <span [class]="asig.activa ? 'badge badge--success' : 'badge'">{{ asig.activa ? 'Activa' : 'Cerrada' }}</span>
-        </div>
-        <div class="detalle-card__meta">{{ asig.responsable.cargo }} · {{ asig.area.nombre }}</div>
-        <div class="detalle-card__meta">Desde {{ asig.fechaAsignacion | date:'dd/MM/yyyy' }}</div>
-      </div>
-      }
-      } @else {
-      <p class="detalle-empty">Sin asignaciones registradas.</p>
       }
     </div>
-    <div class="detalle-section">
-      <h4 class="detalle-section__title">Traslados</h4>
-      @if (a.traslados.length) {
-      @for (tr of a.traslados; track tr.id) {
-      <div class="detalle-card">
-        <div class="detalle-card__row">
-          <span>{{ tr.areaOrigen.nombre }} → {{ tr.areaDestino.nombre }}</span>
-          <span [class]="tr.recepcionConfirmada ? 'badge badge--success' : 'badge badge--warning'">
-            {{ tr.recepcionConfirmada ? 'Confirmado' : 'Pendiente' }}
-          </span>
-        </div>
-        <div class="detalle-card__meta">{{ tr.fecha | date:'dd/MM/yyyy' }} · por {{ tr.autorizadoPor.username }}</div>
-      </div>
-      }
-      } @else {
-      <p class="detalle-empty">Sin traslados registrados.</p>
-      }
-    </div>
-    <div class="detalle-section">
-      <h4 class="detalle-section__title">Historial Blockchain</h4>
-      @if (a.registrosBlockchain.length) {
-      @for (rb of a.registrosBlockchain; track rb.id) {
-      <div class="blockchain-row">
-        <span class="blockchain-tipo">{{ rb.tipoTransaccion }}</span>
-        <span class="blockchain-hash mono">{{ rb.hash | slice:0:18 }}…</span>
-        <span class="blockchain-time">{{ rb.timestamp | date:'dd/MM/yy HH:mm' }}</span>
-      </div>
-      }
-      } @else {
-      <p class="detalle-empty">Sin registros blockchain.</p>
-      }
-    </div>
-    }
-    }
   </div>
-</div>
 }

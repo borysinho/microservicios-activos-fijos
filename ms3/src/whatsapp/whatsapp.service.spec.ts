@@ -22,6 +22,9 @@ describe('WhatsappService', () => {
     enviarEmail: jest.fn().mockResolvedValue({ enviado: false }),
     enviarWhatsAppTexto: jest.fn().mockResolvedValue({ enviado: false }),
   };
+  const llmAgent = {
+    clasificarMensaje: jest.fn().mockResolvedValue(null),
+  };
 
   let service: WhatsappService;
 
@@ -33,6 +36,7 @@ describe('WhatsappService', () => {
       ms1Client as any,
       ms2Client as any,
       notificacionesService as any,
+      llmAgent as any,
     );
   });
 
@@ -53,6 +57,7 @@ describe('WhatsappService', () => {
       ms1Client as any,
       ms2Client as any,
       notificacionesService as any,
+      llmAgent as any,
     );
 
     const signature = `sha256=${createHmac('sha256', 'secret').update(raw).digest('hex')}`;
@@ -73,6 +78,7 @@ describe('WhatsappService', () => {
       ms1Client as any,
       ms2Client as any,
       notificacionesService as any,
+      llmAgent as any,
     );
 
     expect(() => signed.validarFirma(undefined, undefined)).not.toThrow();
@@ -90,6 +96,7 @@ describe('WhatsappService', () => {
       ms1Client as any,
       ms2Client as any,
       notificacionesService as any,
+      llmAgent as any,
     );
 
     expect(() => signed.validarFirma(undefined, undefined)).not.toThrow();
@@ -141,6 +148,93 @@ describe('WhatsappService', () => {
     });
   });
 
+  it('delegacion productiva Twilio -> MS3 -> MS4 sin ejecutar MS1/MS2 dentro del webhook', async () => {
+    flujosService.dispararN8n.mockResolvedValueOnce(true);
+    const twilioConfig = {
+      ...config,
+      n8nWebhookUrl: 'https://ms4.azurewebsites.net/webhook',
+      whatsappProvider: 'twilio',
+    };
+    const signed = new WhatsappService(
+      twilioConfig,
+      flujosService as any,
+      ms1Client as any,
+      ms2Client as any,
+      notificacionesService as any,
+      llmAgent as any,
+    );
+
+    const result = await signed.procesarWebhook({
+      From: 'whatsapp:+59177685777',
+      To: 'whatsapp:+14155238886',
+      Body: 'Solicito revision del activo ACT-2024-001. No enciende',
+      MessageSid: 'SM-TWILIO-001',
+    });
+
+    expect(flujosService.marcar).toHaveBeenCalledWith(
+      'solicitud-revision',
+      'EN_PROCESO',
+      'Mensaje WhatsApp recibido',
+    );
+    expect(flujosService.dispararN8n).toHaveBeenCalledWith(
+      'solicitud-revision',
+      expect.objectContaining({
+        from: 'whatsapp:+59177685777',
+        text: 'Solicito revision del activo ACT-2024-001. No enciende',
+        timestamp: 'SM-TWILIO-001',
+        codigoActivo: 'ACT-2024-001',
+        intencion: 'SOLICITAR_REVISION',
+        origen: 'whatsapp',
+        proveedor: 'twilio',
+        recibidoEn: expect.any(String),
+      }),
+    );
+    expect(ms1Client.buscarActivoPorCodigo).not.toHaveBeenCalled();
+    expect(ms1Client.crearTicketRevision).not.toHaveBeenCalled();
+    expect(ms2Client.obtenerDocumentos).not.toHaveBeenCalled();
+    expect(notificacionesService.enviarEmail).not.toHaveBeenCalled();
+    expect(notificacionesService.enviarWhatsAppTexto).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      recibido: true,
+      codigoActivo: 'ACT-2024-001',
+      intencion: 'SOLICITAR_REVISION',
+      mensaje: 'Solicitud enviada a MS4/N8N',
+    });
+  });
+
+  it('marca error cuando MS4/N8N no recibe el webhook de Twilio', async () => {
+    flujosService.dispararN8n.mockResolvedValueOnce(false);
+    const twilioConfig = {
+      ...config,
+      n8nWebhookUrl: 'https://ms4.azurewebsites.net/webhook',
+      whatsappProvider: 'twilio',
+    };
+    const signed = new WhatsappService(
+      twilioConfig,
+      flujosService as any,
+      ms1Client as any,
+      ms2Client as any,
+      notificacionesService as any,
+      llmAgent as any,
+    );
+
+    const result = await signed.procesarWebhook({
+      From: 'whatsapp:+59177685777',
+      Body: 'Solicito revision de ACT-2024-001',
+      MessageSid: 'SM-TWILIO-002',
+    });
+
+    expect(flujosService.marcar).toHaveBeenLastCalledWith(
+      'solicitud-revision',
+      'ERROR',
+      'MS4/N8N no disponible',
+    );
+    expect(result).toEqual({
+      recibido: true,
+      mensaje: 'No se pudo iniciar el flujo MS4/N8N',
+    });
+  });
+
   it('procesa CU-67 a CU-72 para solicitud de revision', async () => {
     ms1Client.buscarActivoPorCodigo.mockResolvedValue({
       id: '11111111-1111-1111-1111-111111111111',
@@ -180,6 +274,7 @@ describe('WhatsappService', () => {
       codigoActivo: 'ACT-2024-001',
       ticketId: 'TKT-1',
       documentosEncontrados: 2,
+      intencion: 'SOLICITAR_REVISION',
       mensaje: 'Solicitud de revision procesada',
     });
     expect(flujosService.marcar).toHaveBeenLastCalledWith(
@@ -229,7 +324,100 @@ describe('WhatsappService', () => {
       codigoActivo: 'EQ-2024-005',
       ticketId: 'TKT-EQ-1',
       documentosEncontrados: 0,
+      intencion: 'SOLICITAR_REVISION',
       mensaje: 'Solicitud de revision procesada',
+    });
+  });
+
+  it('bloquea operaciones que deben realizarse desde web o movil antes de llegar a MS4', async () => {
+    const twilioConfig = {
+      ...config,
+      n8nWebhookUrl: 'https://ms4.azurewebsites.net/webhook',
+      whatsappProvider: 'twilio',
+    };
+    const signed = new WhatsappService(
+      twilioConfig,
+      flujosService as any,
+      ms1Client as any,
+      ms2Client as any,
+      notificacionesService as any,
+      llmAgent as any,
+    );
+
+    const result = await signed.procesarWebhook({
+      From: 'whatsapp:+59177685777',
+      Body: 'Dar de baja ACT-2024-001 porque ya no sirve',
+      MessageSid: 'SM-TWILIO-BAJA',
+    });
+
+    expect(flujosService.dispararN8n).not.toHaveBeenCalled();
+    expect(llmAgent.clasificarMensaje).not.toHaveBeenCalled();
+    expect(ms1Client.buscarActivoPorCodigo).not.toHaveBeenCalled();
+    expect(ms1Client.crearTicketRevision).not.toHaveBeenCalled();
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      'whatsapp:+59177685777',
+      expect.stringContaining('No puedo realizar esa operacion por WhatsApp'),
+    );
+    expect(result).toEqual({
+      recibido: true,
+      intencion: 'NO_PERMITIDA',
+      codigoActivo: 'ACT-2024-001',
+      mensaje: 'Operacion no permitida por chat',
+    });
+  });
+
+  it('permite consultar informacion basica de un activo por chat sin crear ticket', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+      areaActual: { nombre: 'Contabilidad' },
+    });
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'Consultar estado de ACT-2024-001',
+    });
+
+    expect(ms1Client.buscarActivoPorCodigo).toHaveBeenCalledWith('ACT-2024-001');
+    expect(ms1Client.crearTicketRevision).not.toHaveBeenCalled();
+    expect(ms2Client.obtenerDocumentos).not.toHaveBeenCalled();
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.stringContaining('Estado: ACTIVO'),
+    );
+    expect(result).toEqual({
+      recibido: true,
+      intencion: 'CONSULTAR_ACTIVO',
+      codigoActivo: 'ACT-2024-001',
+      mensaje: 'Consulta de activo procesada',
+    });
+  });
+
+  it('usa el LLM de Azure para clasificar mensajes permitidos antes del fallback deterministico', async () => {
+    llmAgent.clasificarMensaje.mockResolvedValueOnce({
+      intencion: 'CONSULTAR_ACTIVO',
+      codigoActivo: 'ACT-2024-001',
+    });
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+    });
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'Que pasa con ACT-2024-001?',
+    });
+
+    expect(llmAgent.clasificarMensaje).toHaveBeenCalledWith('Que pasa con ACT-2024-001?');
+    expect(ms1Client.buscarActivoPorCodigo).toHaveBeenCalledWith('ACT-2024-001');
+    expect(result).toMatchObject({
+      recibido: true,
+      intencion: 'CONSULTAR_ACTIVO',
+      codigoActivo: 'ACT-2024-001',
     });
   });
 });

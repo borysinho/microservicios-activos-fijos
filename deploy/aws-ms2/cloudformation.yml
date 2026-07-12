@@ -163,15 +163,16 @@ Resources:
         - x86_64
       Environment:
         Variables:
-          AWS_ENDPOINT_URL: ""
-          AUTO_BOOTSTRAP_AWS_RESOURCES: "false"
-          S3_BUCKET_NAME: !Ref BucketName
-          DYNAMODB_TABLE_DOCS: !Ref DocsTableName
-          DYNAMODB_TABLE_AUDITORIA: !Ref AuditTableName
-          JWT_SECRET: !Ref JwtSecret
-          JWT_ALGORITHM: !Ref JwtAlgorithm
-          ALLOWED_ORIGINS: !Ref AllowedOrigins
-          LOAD_AI_MODELS: !Ref LoadAiModels
+          MS2_AWS_ENDPOINT_URL: ""
+          MS2_AWS_REGION: !Ref AWS::Region
+          MS2_AUTO_BOOTSTRAP_AWS_RESOURCES: "false"
+          MS2_S3_BUCKET_NAME: !Ref BucketName
+          MS2_DYNAMODB_TABLE_DOCS: !Ref DocsTableName
+          MS2_DYNAMODB_TABLE_AUDITORIA: !Ref AuditTableName
+          MS2_JWT_SECRET: !Ref JwtSecret
+          MS2_JWT_ALGORITHM: !Ref JwtAlgorithm
+          MS2_ALLOWED_ORIGINS: !Ref AllowedOrigins
+          MS2_LOAD_AI_MODELS: !Ref LoadAiModels
 
   Ms2FunctionUrl:
     Type: AWS::Lambda::Url

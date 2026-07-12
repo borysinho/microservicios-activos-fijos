@@ -1,123 +1,162 @@
 <div class="page-header">
   <div>
-    <h1>Bajas de Activos</h1>
-    <p>Registro de activos retirados definitivamente del inventario</p>
+    <h1>Retiro de activos</h1>
+    <p>Gestione solicitudes, autorizaciones y actas de baja del inventario.</p>
   </div>
   <button class="btn btn--primary" (click)="openModal()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      width="16"
+      height="16"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
-    Registrar baja
+    Solicitar baja
   </button>
 </div>
 
-@if (success()) { <div class="alert alert--success">{{ success() }}</div> }
-@if (error()) { <div class="alert alert--error">{{ error() }}</div> }
+@if (success()) {
+  <div class="alert alert--success">{{ success() }}</div>
+}
+@if (error()) {
+  <div class="alert alert--error">{{ error() }}</div>
+}
 
 <div class="filter-bar card">
-  <input class="form-control filter-bar__search" type="text" [(ngModel)]="searchTerm"
-    placeholder="Buscar por activo o motivo...">
+  <input
+    class="form-control filter-bar__search"
+    type="text"
+    [(ngModel)]="searchTerm"
+    placeholder="Buscar por activo o motivo..."
+  />
   <button class="btn btn--secondary" (click)="cargar()">Actualizar</button>
 </div>
 
 @if (loading()) {
-<div class="loading">Cargando bajas...</div>
+  <div class="loading">Cargando bajas...</div>
 } @else if (bajasFiltradas.length === 0) {
-<div class="empty-state">
-  <div class="empty-icon">🗄️</div>
-  <p>No hay bajas registradas.</p>
-</div>
+  <div class="empty-state">
+    <div class="empty-icon">🗄️</div>
+    <p>No hay bajas registradas.</p>
+  </div>
 } @else {
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Activo</th>
-        <th>Fecha</th>
-        <th>Motivo</th>
-        <th>Valor Residual</th>
-        <th>N° Resolución</th>
-        <th>Autorizado Por</th>
-        <th>Estado</th>
-        <th>Acción</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (b of bajasFiltradas; track b.id) {
-      <tr>
-        <td><strong>{{ b.activo.codigo }}</strong> — {{ b.activo.nombre }}</td>
-        <td>{{ b.fecha | date:'dd/MM/yyyy' }}</td>
-        <td>{{ b.motivo }}</td>
-        <td>{{ b.valorResidual | currency:'BOB':'symbol':'1.2-2' }}</td>
-        <td>{{ b.numeroResolucion || '—' }}</td>
-        <td>{{ b.autorizadoPor.username }}</td>
-        <td>
-          <span [class]="b.autorizada ? 'badge badge--success' : 'badge badge--warning'">
-            {{ b.autorizada ? 'Autorizada' : 'Pendiente' }}
-          </span>
-        </td>
-        <td>
-          @if (!b.autorizada) {
-          <button class="btn btn--sm btn--primary" (click)="autorizar(b)" [disabled]="saving()">
-            Autorizar
-          </button>
-          }
-          <button class="btn btn--sm btn--outline" (click)="generarActaPDF(b)" [disabled]="!b.autorizada"
-            title="Generar Acta PDF">
-            🖨 Acta PDF
-          </button>
-        </td>
-      </tr>
-      }
-    </tbody>
-  </table>
-  <div class="table-footer">{{ bajasFiltradas.length }} baja(s)</div>
-</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Activo</th>
+          <th>Fecha</th>
+          <th>Motivo</th>
+          <th>Valor Residual</th>
+          <th>N° Resolución</th>
+          <th>Autorizado Por</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (b of bajasFiltradas; track b.id) {
+          <tr>
+            <td>
+              <strong>{{ b.activo.codigo }}</strong> — {{ b.activo.nombre }}
+            </td>
+            <td>{{ b.fecha | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ b.motivo }}</td>
+            <td>{{ b.valorResidual | currency: 'BOB' : 'symbol' : '1.2-2' }}</td>
+            <td>{{ b.numeroResolucion || '—' }}</td>
+            <td>{{ b.autorizadoPor.username }}</td>
+            <td>
+              <span [class]="b.autorizada ? 'badge badge--success' : 'badge badge--warning'">
+                {{ b.autorizada ? 'Autorizada' : 'Pendiente' }}
+              </span>
+            </td>
+            <td>
+              @if (!b.autorizada) {
+                <button
+                  class="btn btn--sm btn--primary"
+                  (click)="autorizar(b)"
+                  [disabled]="saving()"
+                >
+                  Autorizar
+                </button>
+              }
+              <button
+                class="btn btn--sm btn--outline"
+                (click)="generarActaPDF(b)"
+                [disabled]="!b.autorizada"
+                title="Generar Acta PDF"
+              >
+                Acta PDF
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="table-footer">{{ bajasFiltradas.length }} baja(s)</div>
+  </div>
 }
 
 @if (showModal()) {
-<div class="modal-overlay" (click)="showModal.set(false)"></div>
-<div class="modal">
-  <div class="modal__header">
-    <h3>Registrar Baja</h3>
-    <button class="modal__close" (click)="showModal.set(false)">✕</button>
-  </div>
-  <div class="modal__body">
-    <div class="form-group">
-      <label>Activo *</label>
-      <select class="form-control" [(ngModel)]="form.activoId" required>
-        <option value="">Seleccionar...</option>
-        @for (a of activosActivos; track a.id) { <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option> }
-      </select>
+  <div class="modal-overlay" (click)="showModal.set(false)"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>Solicitar baja de activo</h3>
+      <button class="modal__close" (click)="showModal.set(false)">✕</button>
     </div>
-    <div class="form-group">
-      <label>Autorizado Por *</label>
-      <select class="form-control" [(ngModel)]="form.autorizadoPorId" required>
-        <option value="">Seleccionar...</option>
-        @for (u of usuarios(); track u.id) { <option [value]="u.id">{{ u.username }}</option> }
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Motivo *</label>
-      <textarea class="form-control" [(ngModel)]="form.motivo" rows="3" required></textarea>
-    </div>
-    <div class="form-row">
+    <div class="modal__body">
       <div class="form-group">
-        <label>Valor Residual (BOB)</label>
-        <input class="form-control" type="number" min="0" step="0.01" [(ngModel)]="form.valorResidual">
+        <label>Activo *</label>
+        <select class="form-control" [(ngModel)]="form.activoId" required>
+          <option value="">Seleccionar...</option>
+          @for (a of activosActivos; track a.id) {
+            <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+          }
+        </select>
       </div>
       <div class="form-group">
-        <label>N° Resolución</label>
-        <input class="form-control" type="text" [(ngModel)]="form.numeroResolucion">
+        <label>Autorizado Por *</label>
+        <select class="form-control" [(ngModel)]="form.autorizadoPorId" required>
+          <option value="">Seleccionar...</option>
+          @for (u of usuarios(); track u.id) {
+            <option [value]="u.id">{{ u.username }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Motivo *</label>
+        <textarea class="form-control" [(ngModel)]="form.motivo" rows="3" required></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Valor Residual (BOB)</label>
+          <input
+            class="form-control"
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="form.valorResidual"
+          />
+        </div>
+        <div class="form-group">
+          <label>N° Resolución</label>
+          <input class="form-control" type="text" [(ngModel)]="form.numeroResolucion" />
+        </div>
       </div>
     </div>
+    <div class="modal__footer">
+      <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
+      <button
+        class="btn btn--danger"
+        (click)="guardar()"
+        [disabled]="saving() || !form.activoId || !form.autorizadoPorId || !form.motivo"
+      >
+        {{ saving() ? 'Guardando...' : 'Registrar solicitud' }}
+      </button>
+    </div>
   </div>
-  <div class="modal__footer">
-    <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
-    <button class="btn btn--danger" (click)="guardar()" [disabled]="saving()">
-      {{ saving() ? 'Guardando...' : 'Dar de baja' }}
-    </button>
-  </div>
-</div>
 }

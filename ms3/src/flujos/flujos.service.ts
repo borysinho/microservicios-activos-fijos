@@ -74,7 +74,7 @@ export class FlujosService {
 
   async dispararN8n<TPayload extends object>(ruta: string, payload: TPayload): Promise<boolean> {
     if (!this.config.n8nWebhookUrl) {
-      this.logger.debug(`MS4_N8N_WEBHOOK_URL no configurado; flujo ${ruta} queda en modo interno`);
+      this.logger.debug(`MS3_MS4_N8N_WEBHOOK_URL no configurado; flujo ${ruta} queda en modo interno`);
       return false;
     }
 

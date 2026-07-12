@@ -1,401 +1,602 @@
 <div class="page-header">
   <div>
-    <h1>Configuración</h1>
-    <p>Usuarios, áreas, responsables y categorías de activos</p>
+    <h1>Usuarios y permisos</h1>
+    <p>Administre accesos, roles y catálogos operativos del sistema.</p>
   </div>
   @if (isAdmin) {
-  <button class="btn btn--primary" (click)="activeTab() === 'usuarios' ? openCrearUsuario()
-    : activeTab() === 'areas' ? openCrearArea()
-    : activeTab() === 'responsables' ? openCrearResp()
-    : openCrearCat()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-    Nuevo
-  </button>
+    <button
+      class="btn btn--primary"
+      (click)="
+        activeTab() === 'usuarios'
+          ? openCrearUsuario()
+          : activeTab() === 'areas'
+            ? openCrearArea()
+            : activeTab() === 'responsables'
+              ? openCrearResp()
+              : openCrearCat()
+      "
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        width="16"
+        height="16"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Crear registro
+    </button>
   }
 </div>
 
 <!-- Tabs -->
 <div class="tab-bar">
-  <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'usuarios'" (click)="setTab('usuarios')">
+  <button
+    class="tab-btn"
+    [class.tab-btn--active]="activeTab() === 'usuarios'"
+    (click)="setTab('usuarios')"
+  >
     Usuarios
   </button>
-  <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'areas'" (click)="setTab('areas')">
+  <button
+    class="tab-btn"
+    [class.tab-btn--active]="activeTab() === 'areas'"
+    (click)="setTab('areas')"
+  >
     Áreas
   </button>
-  <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'responsables'" (click)="setTab('responsables')">
+  <button
+    class="tab-btn"
+    [class.tab-btn--active]="activeTab() === 'responsables'"
+    (click)="setTab('responsables')"
+  >
     Responsables
   </button>
-  <button class="tab-btn" [class.tab-btn--active]="activeTab() === 'categorias'" (click)="setTab('categorias')">
+  <button
+    class="tab-btn"
+    [class.tab-btn--active]="activeTab() === 'categorias'"
+    (click)="setTab('categorias')"
+  >
     Categorías
   </button>
 </div>
 
 <!-- Buscador -->
-<div class="card" style="margin-bottom:1.25rem">
-  <input class="form-control" [(ngModel)]="search" [placeholder]="'Buscar ' + activeTab() + '...'"
-    style="max-width:360px">
+<div class="card" style="margin-bottom: 1.25rem">
+  <input
+    class="form-control"
+    [(ngModel)]="search"
+    [placeholder]="'Buscar ' + activeTab() + '...'"
+    style="max-width: 360px"
+  />
 </div>
 
 @if (loading()) {
-<div class="loading">Cargando...</div>
+  <div class="loading">Cargando...</div>
 } @else {
-
-<!-- ======== TAB: USUARIOS ======== -->
-@if (activeTab() === 'usuarios') {
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Usuario</th>
-        <th>Email</th>
-        <th>Rol</th>
-        <th>Estado</th>
-        @if (isAdmin) { <th>Acciones</th> }
-      </tr>
-    </thead>
-    <tbody>
-      @for (u of usuariosFiltrados; track u.id) {
-      <tr>
-        <td>
-          <div class="user-cell">
-            <div class="user-cell__avatar">{{ u.username.charAt(0).toUpperCase() }}</div>
-            <span>{{ u.username }}</span>
-          </div>
-        </td>
-        <td class="mono" style="font-size:12px;color:var(--text-secondary)">{{ u.email }}</td>
-        <td><span [class]="rolBadge(u.rol)">{{ u.rol }}</span></td>
-        <td>
-          @if (u.activo) {
-          <span class="badge badge--success">Activo</span>
-          } @else {
-          <span class="badge badge--danger">Inactivo</span>
-          }
-        </td>
-        @if (isAdmin) {
-        <td>
-          <button class="btn btn--ghost btn--sm" (click)="openEditarUsuario(u)" title="Editar usuario">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-          <button class="btn btn--ghost btn--sm" (click)="restablecerPassword(u)" title="Restablecer contraseña">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-              <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78z" />
-              <path d="M15.5 7.5L19 4" />
-            </svg>
-          </button>
-          <button class="btn btn--ghost btn--sm" (click)="toggleUsuario(u)"
-            [title]="u.activo ? 'Desactivar usuario' : 'Activar usuario'">
-            @if (u.activo) {
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
-            } @else {
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="9 12 11 14 15 10" />
-            </svg>
+  <!-- ======== TAB: USUARIOS ======== -->
+  @if (activeTab() === 'usuarios') {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            @if (isAdmin) {
+              <th>Acciones</th>
             }
-          </button>
-        </td>
-        }
-      </tr>
-      }
-    </tbody>
-  </table>
-</div>
-<div class="table-footer">{{ usuariosFiltrados.length }} usuario{{ usuariosFiltrados.length !== 1 ? 's' : '' }}</div>
-}
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of usuariosFiltrados; track u.id) {
+            <tr>
+              <td>
+                <div class="user-cell">
+                  <div class="user-cell__avatar">{{ u.username.charAt(0).toUpperCase() }}</div>
+                  <span>{{ u.username }}</span>
+                </div>
+              </td>
+              <td class="mono" style="font-size: 12px; color: var(--text-secondary)">
+                {{ u.email }}
+              </td>
+              <td>
+                <span [class]="rolBadge(u.rol)">{{ u.rol }}</span>
+              </td>
+              <td>
+                @if (u.activo) {
+                  <span class="badge badge--success">Activo</span>
+                } @else {
+                  <span class="badge badge--danger">Inactivo</span>
+                }
+              </td>
+              @if (isAdmin) {
+                <td>
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    (click)="openEditarUsuario(u)"
+                    title="Editar usuario"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    (click)="restablecerPassword(u)"
+                    title="Restablecer contraseña"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <path
+                        d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78z"
+                      />
+                      <path d="M15.5 7.5L19 4" />
+                    </svg>
+                  </button>
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    (click)="toggleUsuario(u)"
+                    [title]="u.activo ? 'Desactivar usuario' : 'Activar usuario'"
+                  >
+                    @if (u.activo) {
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        width="14"
+                        height="14"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="15" y1="9" x2="9" y2="15" />
+                        <line x1="9" y1="9" x2="15" y2="15" />
+                      </svg>
+                    } @else {
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        width="14"
+                        height="14"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="9 12 11 14 15 10" />
+                      </svg>
+                    }
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      {{ usuariosFiltrados.length }} usuario{{ usuariosFiltrados.length !== 1 ? 's' : '' }}
+    </div>
+  }
 
-<!-- ======== TAB: ÁREAS ======== -->
-@if (activeTab() === 'areas') {
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Código</th>
-        <th>Nombre</th>
-        <th>Descripción</th>
-        <th>Responsable</th>
-        @if (isAdmin) { <th>Acciones</th> }
-      </tr>
-    </thead>
-    <tbody>
-      @for (a of areasFiltradas; track a.id) {
-      <tr>
-        <td><span class="mono">{{ a.codigo }}</span></td>
-        <td>{{ a.nombre }}</td>
-        <td style="color:var(--text-secondary);font-size:12px">{{ a.descripcion ?? '—' }}</td>
-        <td>{{ a.responsable?.nombre ?? '—' }}</td>
-        @if (isAdmin) {
-        <td>
-          <button class="btn btn--ghost btn--sm" (click)="openEditarArea(a)" title="Editar área">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-        </td>
-        }
-      </tr>
-      }
-    </tbody>
-  </table>
-</div>
-<div class="table-footer">{{ areasFiltradas.length }} área{{ areasFiltradas.length !== 1 ? 's' : '' }}</div>
-}
+  <!-- ======== TAB: ÁREAS ======== -->
+  @if (activeTab() === 'areas') {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Responsable</th>
+            @if (isAdmin) {
+              <th>Acciones</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of areasFiltradas; track a.id) {
+            <tr>
+              <td>
+                <span class="mono">{{ a.codigo }}</span>
+              </td>
+              <td>{{ a.nombre }}</td>
+              <td style="color: var(--text-secondary); font-size: 12px">
+                {{ a.descripcion ?? '—' }}
+              </td>
+              <td>{{ a.responsable?.nombre ?? '—' }}</td>
+              @if (isAdmin) {
+                <td>
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    (click)="openEditarArea(a)"
+                    title="Editar área"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      {{ areasFiltradas.length }} área{{ areasFiltradas.length !== 1 ? 's' : '' }}
+    </div>
+  }
 
-<!-- ======== TAB: RESPONSABLES ======== -->
-@if (activeTab() === 'responsables') {
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Cargo</th>
-        <th>Email</th>
-        <th>Teléfono</th>
-        @if (isAdmin) { <th>Acciones</th> }
-      </tr>
-    </thead>
-    <tbody>
-      @for (r of responsablesFiltrados; track r.id) {
-      <tr>
-        <td>{{ r.nombre }}</td>
-        <td style="color:var(--text-secondary);font-size:12px">{{ r.cargo }}</td>
-        <td class="mono" style="font-size:12px;color:var(--text-secondary)">{{ r.email }}</td>
-        <td>{{ r.telefono ?? '—' }}</td>
-        @if (isAdmin) {
-        <td>
-          <button class="btn btn--ghost btn--sm" (click)="openEditarResp(r)" title="Editar responsable">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-        </td>
-        }
-      </tr>
-      }
-    </tbody>
-  </table>
-</div>
-<div class="table-footer">{{ responsablesFiltrados.length }} responsable{{ responsablesFiltrados.length !== 1 ? 's' : ''
-  }}</div>
-}
+  <!-- ======== TAB: RESPONSABLES ======== -->
+  @if (activeTab() === 'responsables') {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Cargo</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            @if (isAdmin) {
+              <th>Acciones</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of responsablesFiltrados; track r.id) {
+            <tr>
+              <td>{{ r.nombre }}</td>
+              <td style="color: var(--text-secondary); font-size: 12px">{{ r.cargo }}</td>
+              <td class="mono" style="font-size: 12px; color: var(--text-secondary)">
+                {{ r.email }}
+              </td>
+              <td>{{ r.telefono ?? '—' }}</td>
+              @if (isAdmin) {
+                <td>
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    (click)="openEditarResp(r)"
+                    title="Editar responsable"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      {{ responsablesFiltrados.length }} responsable{{
+        responsablesFiltrados.length !== 1 ? 's' : ''
+      }}
+    </div>
+  }
 
-<!-- ======== TAB: CATEGORÍAS ======== -->
-@if (activeTab() === 'categorias') {
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Descripción</th>
-        <th>Método Depreciación</th>
-        <th>Tasa</th>
-        @if (isAdmin) { <th>Acciones</th> }
-      </tr>
-    </thead>
-    <tbody>
-      @for (c of categoriasFiltradas; track c.id) {
-      <tr>
-        <td>{{ c.nombre }}</td>
-        <td style="color:var(--text-secondary);font-size:12px">{{ c.descripcion ?? '—' }}</td>
-        <td><span class="badge">{{ metodoLabel(c.metodoDepreciacion) }}</span></td>
-        <td class="mono">{{ (c.tasaDepreciacion * 100).toFixed(0) }}%</td>
-        @if (isAdmin) {
-        <td>
-          <button class="btn btn--ghost btn--sm" (click)="openEditarCat(c)" title="Editar categoría">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-        </td>
-        }
-      </tr>
-      }
-    </tbody>
-  </table>
-</div>
-<div class="table-footer">{{ categoriasFiltradas.length }} categoría{{ categoriasFiltradas.length !== 1 ? 's' : '' }}
-</div>
-}
+  <!-- ======== TAB: CATEGORÍAS ======== -->
+  @if (activeTab() === 'categorias') {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Método Depreciación</th>
+            <th>Tasa</th>
+            @if (isAdmin) {
+              <th>Acciones</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of categoriasFiltradas; track c.id) {
+            <tr>
+              <td>{{ c.nombre }}</td>
+              <td style="color: var(--text-secondary); font-size: 12px">
+                {{ c.descripcion ?? '—' }}
+              </td>
+              <td>
+                <span class="badge">{{ metodoLabel(c.metodoDepreciacion) }}</span>
+              </td>
+              <td class="mono">{{ (c.tasaDepreciacion * 100).toFixed(0) }}%</td>
+              @if (isAdmin) {
+                <td>
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    (click)="openEditarCat(c)"
+                    title="Editar categoría"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      {{ categoriasFiltradas.length }} categoría{{ categoriasFiltradas.length !== 1 ? 's' : '' }}
+    </div>
+  }
 }
 
 <!-- ======== MODAL: Usuario ======== -->
 @if (showUsuarioModal()) {
-<div class="overlay" (click)="showUsuarioModal.set(false)">
-  <div class="modal modal--sm" (click)="$event.stopPropagation()">
-    <div class="modal__header">
-      <h3>{{ editingUsuarioId() ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
-      <button class="btn btn--ghost btn--icon" (click)="showUsuarioModal.set(false)">✕</button>
-    </div>
-    <div class="modal__body">
-      <div class="form-grid">
-        <div class="form-group form-group--full">
-          <label>Username *</label>
-          <input class="form-control" [(ngModel)]="formUsuario.username" placeholder="jdoe">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Email *</label>
-          <input class="form-control" type="email" [(ngModel)]="formUsuario.email" placeholder="j@empresa.bo">
-        </div>
-        <div class="form-group form-group--full">
-          <label>{{ editingUsuarioId() ? 'Nueva contraseña' : 'Contraseña *' }}</label>
-          <input class="form-control" type="password" [(ngModel)]="formUsuario.password"
-            [placeholder]="editingUsuarioId() ? 'Dejar vacío para conservar' : 'Mínimo 6 caracteres'">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Rol *</label>
-          <select class="form-control" [(ngModel)]="formUsuario.rol">
-            @for (r of roles; track r) {
-            <option [value]="r">{{ r }}</option>
-            }
-          </select>
+  <div class="overlay" (click)="showUsuarioModal.set(false)">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3>{{ editingUsuarioId() ? 'Editar usuario' : 'Nuevo usuario' }}</h3>
+        <button class="btn btn--ghost btn--icon" (click)="showUsuarioModal.set(false)">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Nombre de usuario *</label>
+            <input class="form-control" [(ngModel)]="formUsuario.username" placeholder="jdoe" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Email *</label>
+            <input
+              class="form-control"
+              type="email"
+              [(ngModel)]="formUsuario.email"
+              placeholder="j@empresa.bo"
+            />
+          </div>
+          <div class="form-group form-group--full">
+            <label>{{ editingUsuarioId() ? 'Nueva contraseña' : 'Contraseña *' }}</label>
+            <input
+              class="form-control"
+              type="password"
+              [(ngModel)]="formUsuario.password"
+              [placeholder]="
+                editingUsuarioId() ? 'Dejar vacío para conservar' : 'Mínimo 6 caracteres'
+              "
+            />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Rol *</label>
+            <select class="form-control" [(ngModel)]="formUsuario.rol">
+              @for (r of roles; track r) {
+                <option [value]="r">{{ r }}</option>
+              }
+            </select>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--secondary" (click)="showUsuarioModal.set(false)">Cancelar</button>
-      <button class="btn btn--primary" (click)="guardarUsuario()"
-        [disabled]="saving() || !formUsuario.username || !formUsuario.email || (!editingUsuarioId() && !formUsuario.password)">
-        {{ saving() ? 'Guardando...' : (editingUsuarioId() ? 'Actualizar usuario' : 'Crear usuario') }}
-      </button>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" (click)="showUsuarioModal.set(false)">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          (click)="guardarUsuario()"
+          [disabled]="
+            saving() ||
+            !formUsuario.username ||
+            !formUsuario.email ||
+            (!editingUsuarioId() && !formUsuario.password)
+          "
+        >
+          {{
+            saving() ? 'Guardando...' : editingUsuarioId() ? 'Actualizar usuario' : 'Crear usuario'
+          }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 }
 
 <!-- ======== MODAL: Área ======== -->
 @if (showAreaModal()) {
-<div class="overlay" (click)="showAreaModal.set(false)">
-  <div class="modal modal--sm" (click)="$event.stopPropagation()">
-    <div class="modal__header">
-      <h3>{{ editingAreaId() ? 'Editar área' : 'Nueva área' }}</h3>
-      <button class="btn btn--ghost btn--icon" (click)="showAreaModal.set(false)">✕</button>
-    </div>
-    <div class="modal__body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Código *</label>
-          <input class="form-control" [(ngModel)]="formArea.codigo" placeholder="TI-001">
-        </div>
-        <div class="form-group">
-          <label>Nombre *</label>
-          <input class="form-control" [(ngModel)]="formArea.nombre" placeholder="Tecnologías de Información">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Descripción</label>
-          <input class="form-control" [(ngModel)]="formArea.descripcion" placeholder="Descripción del área">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Responsable</label>
-          <select class="form-control" [(ngModel)]="formArea.responsableId">
-            <option value="">— Sin responsable —</option>
-            @for (r of responsables(); track r.id) {
-            <option [value]="r.id">{{ r.nombre }}</option>
-            }
-          </select>
+  <div class="overlay" (click)="showAreaModal.set(false)">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3>{{ editingAreaId() ? 'Editar área' : 'Nueva área' }}</h3>
+        <button class="btn btn--ghost btn--icon" (click)="showAreaModal.set(false)">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Código *</label>
+            <input class="form-control" [(ngModel)]="formArea.codigo" placeholder="TI-001" />
+          </div>
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formArea.nombre"
+              placeholder="Tecnologías de Información"
+            />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Descripción</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formArea.descripcion"
+              placeholder="Descripción del área"
+            />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Responsable</label>
+            <select class="form-control" [(ngModel)]="formArea.responsableId">
+              <option value="">— Sin responsable —</option>
+              @for (r of responsables(); track r.id) {
+                <option [value]="r.id">{{ r.nombre }}</option>
+              }
+            </select>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--secondary" (click)="showAreaModal.set(false)">Cancelar</button>
-      <button class="btn btn--primary" (click)="guardarArea()"
-        [disabled]="saving() || !formArea.codigo || !formArea.nombre">
-        {{ saving() ? 'Guardando...' : (editingAreaId() ? 'Actualizar' : 'Crear área') }}
-      </button>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" (click)="showAreaModal.set(false)">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          (click)="guardarArea()"
+          [disabled]="saving() || !formArea.codigo || !formArea.nombre"
+        >
+          {{ saving() ? 'Guardando...' : editingAreaId() ? 'Actualizar' : 'Crear área' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 }
 
 <!-- ======== MODAL: Responsable ======== -->
 @if (showRespModal()) {
-<div class="overlay" (click)="showRespModal.set(false)">
-  <div class="modal modal--sm" (click)="$event.stopPropagation()">
-    <div class="modal__header">
-      <h3>{{ editingRespId() ? 'Editar responsable' : 'Nuevo responsable' }}</h3>
-      <button class="btn btn--ghost btn--icon" (click)="showRespModal.set(false)">✕</button>
-    </div>
-    <div class="modal__body">
-      <div class="form-grid">
-        <div class="form-group form-group--full">
-          <label>Nombre *</label>
-          <input class="form-control" [(ngModel)]="formResp.nombre" placeholder="Juan Pérez">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Cargo *</label>
-          <input class="form-control" [(ngModel)]="formResp.cargo" placeholder="Jefe de Área">
-        </div>
-        <div class="form-group">
-          <label>Email *</label>
-          <input class="form-control" type="email" [(ngModel)]="formResp.email" placeholder="juan@empresa.bo">
-        </div>
-        <div class="form-group">
-          <label>Teléfono</label>
-          <input class="form-control" [(ngModel)]="formResp.telefono" placeholder="+591 7XXXXXXX">
+  <div class="overlay" (click)="showRespModal.set(false)">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3>{{ editingRespId() ? 'Editar responsable' : 'Nuevo responsable' }}</h3>
+        <button class="btn btn--ghost btn--icon" (click)="showRespModal.set(false)">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Nombre *</label>
+            <input class="form-control" [(ngModel)]="formResp.nombre" placeholder="Juan Pérez" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Cargo *</label>
+            <input class="form-control" [(ngModel)]="formResp.cargo" placeholder="Jefe de Área" />
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input
+              class="form-control"
+              type="email"
+              [(ngModel)]="formResp.email"
+              placeholder="juan@empresa.bo"
+            />
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formResp.telefono"
+              placeholder="+591 7XXXXXXX"
+            />
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--secondary" (click)="showRespModal.set(false)">Cancelar</button>
-      <button class="btn btn--primary" (click)="guardarResp()"
-        [disabled]="saving() || !formResp.nombre || !formResp.cargo || !formResp.email">
-        {{ saving() ? 'Guardando...' : (editingRespId() ? 'Actualizar' : 'Crear responsable') }}
-      </button>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" (click)="showRespModal.set(false)">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          (click)="guardarResp()"
+          [disabled]="saving() || !formResp.nombre || !formResp.cargo || !formResp.email"
+        >
+          {{ saving() ? 'Guardando...' : editingRespId() ? 'Actualizar' : 'Crear responsable' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 }
 
 <!-- ======== MODAL: Categoría ======== -->
 @if (showCatModal()) {
-<div class="overlay" (click)="showCatModal.set(false)">
-  <div class="modal modal--sm" (click)="$event.stopPropagation()">
-    <div class="modal__header">
-      <h3>{{ editingCatId() ? 'Editar categoría' : 'Nueva categoría' }}</h3>
-      <button class="btn btn--ghost btn--icon" (click)="showCatModal.set(false)">✕</button>
-    </div>
-    <div class="modal__body">
-      <div class="form-grid">
-        <div class="form-group form-group--full">
-          <label>Nombre *</label>
-          <input class="form-control" [(ngModel)]="formCat.nombre" placeholder="Equipos de Cómputo">
-        </div>
-        <div class="form-group form-group--full">
-          <label>Descripción</label>
-          <input class="form-control" [(ngModel)]="formCat.descripcion" placeholder="Descripción de la categoría">
-        </div>
-        <div class="form-group">
-          <label>Método depreciación *</label>
-          <select class="form-control" [(ngModel)]="formCat.metodoDepreciacion">
-            @for (m of metodos; track m) {
-            <option [value]="m">{{ metodoLabel(m) }}</option>
-            }
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Tasa depreciación (0-1) *</label>
-          <input class="form-control" type="number" [(ngModel)]="formCat.tasaDepreciacion" min="0.01" max="1"
-            step="0.01" placeholder="0.25">
+  <div class="overlay" (click)="showCatModal.set(false)">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h3>{{ editingCatId() ? 'Editar categoría' : 'Nueva categoría' }}</h3>
+        <button class="btn btn--ghost btn--icon" (click)="showCatModal.set(false)">✕</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Nombre *</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formCat.nombre"
+              placeholder="Equipos de Cómputo"
+            />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Descripción</label>
+            <input
+              class="form-control"
+              [(ngModel)]="formCat.descripcion"
+              placeholder="Descripción de la categoría"
+            />
+          </div>
+          <div class="form-group">
+            <label>Método depreciación *</label>
+            <select class="form-control" [(ngModel)]="formCat.metodoDepreciacion">
+              @for (m of metodos; track m) {
+                <option [value]="m">{{ metodoLabel(m) }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tasa anual (ej. 0.25 = 25%) *</label>
+            <input
+              class="form-control"
+              type="number"
+              [(ngModel)]="formCat.tasaDepreciacion"
+              min="0.01"
+              max="1"
+              step="0.01"
+              placeholder="0.25"
+            />
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal__footer">
-      <button class="btn btn--secondary" (click)="showCatModal.set(false)">Cancelar</button>
-      <button class="btn btn--primary" (click)="guardarCat()" [disabled]="saving() || !formCat.nombre">
-        {{ saving() ? 'Guardando...' : (editingCatId() ? 'Actualizar' : 'Crear categoría') }}
-      </button>
+      <div class="modal__footer">
+        <button class="btn btn--secondary" (click)="showCatModal.set(false)">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          (click)="guardarCat()"
+          [disabled]="saving() || !formCat.nombre"
+        >
+          {{ saving() ? 'Guardando...' : editingCatId() ? 'Actualizar' : 'Crear categoría' }}
+        </button>
+      </div>
     </div>
   </div>
-</div>
 }

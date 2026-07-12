@@ -124,3 +124,17 @@ export class ReportarProblemaDto {
   @IsOptional()
   longitud?: number;
 }
+
+export class SolicitudRevisionN8nDto {
+  @IsString()
+  @IsNotEmpty()
+  from!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  text!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  codigoActivo!: string;
+}

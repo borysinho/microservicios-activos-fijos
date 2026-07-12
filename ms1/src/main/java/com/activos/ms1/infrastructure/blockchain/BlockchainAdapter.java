@@ -81,7 +81,7 @@ public class BlockchainAdapter {
     private BlockchainResult registrarSimulado(String payload) {
         var hash = Hash.sha3String(payload + System.currentTimeMillis());
         var bloqueId = obtenerUltimoBloque();
-        log.info("Hash simulado (configurar BLOCKCHAIN_PRIVATE_KEY para tx reales): {}", hash);
+        log.info("Hash simulado (configurar MS1_BLOCKCHAIN_PRIVATE_KEY para tx reales): {}", hash);
         return new BlockchainResult(hash, bloqueId);
     }
 

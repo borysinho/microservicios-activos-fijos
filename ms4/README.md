@@ -14,7 +14,7 @@ MS4 contiene exclusivamente la instancia self-hosted de N8N y los workflows expo
 MS3 conserva la orquestacion de negocio: recibe WhatsApp, eventos de MS1 y alertas de MS2. Cuando el flujo requiere automatizacion visual/versionada, MS3 llama a MS4 usando:
 
 ```dotenv
-MS4_N8N_WEBHOOK_URL=https://<ms4-azure>/webhook
+MS3_MS4_N8N_WEBHOOK_URL=https://<ms4-azure>/webhook
 ```
 
 MS4 no debe recibir llamadas directas de clientes externos. Para la demo, los endpoints publicos se prueban desde MS3.
@@ -36,7 +36,7 @@ http://localhost:5678
 MS3 local debe apuntar a:
 
 ```dotenv
-MS4_N8N_WEBHOOK_URL=http://localhost:5678/webhook
+MS3_MS4_N8N_WEBHOOK_URL=http://localhost:5678/webhook
 ```
 
 ## Workflows
@@ -47,7 +47,7 @@ Los exports estan en `n8n-workflows/`:
 - `flujo_02_alerta_garantia.json`
 - `flujo_03_alerta_mantenimiento.json`
 
-La imagen importa estos workflows al iniciar cuando `N8N_IMPORT_WORKFLOWS=true`.
+La imagen importa estos workflows al iniciar cuando `MS4_N8N_IMPORT_WORKFLOWS=true`.
 
 ### Flujo 01 - Solicitud de revision por WhatsApp
 
@@ -79,23 +79,29 @@ Variables minimas del `.env` en el host Azure:
 
 ```dotenv
 MS4_IMAGE=<acr>.azurecr.io/ms4-n8n:<tag>
-N8N_HOST=<host-ms4>
-N8N_PROTOCOL=https
-N8N_EDITOR_BASE_URL=https://<host-ms4>
-WEBHOOK_URL=https://<host-ms4>
-N8N_ENCRYPTION_KEY=<clave-fija-larga>
-N8N_BASIC_AUTH_USER=admin
-N8N_BASIC_AUTH_PASSWORD=<password>
-MS1_GRAPHQL_URL=https://<ms1-azure>/graphql
-MS2_BASE_URL=https://<ms2-aws>/api
-MS3_BASE_URL=https://<ms3-gcp>/api
+MS4_N8N_HOST=<host-ms4>
+MS4_N8N_PROTOCOL=https
+MS4_N8N_EDITOR_BASE_URL=https://<host-ms4>
+MS4_WEBHOOK_URL=https://<host-ms4>
+MS4_N8N_ENCRYPTION_KEY=<clave-fija-larga>
+MS4_N8N_BASIC_AUTH_USER=admin
+MS4_N8N_BASIC_AUTH_PASSWORD=<password>
+MS4_N8N_DIAGNOSTICS_ENABLED=false
+MS4_N8N_VERSION_NOTIFICATIONS_ENABLED=false
+MS4_N8N_TEMPLATES_ENABLED=false
+MS4_N8N_PERSONALIZATION_ENABLED=false
+MS4_MS1_GRAPHQL_URL=https://<ms1-azure>/graphql
+MS4_MS2_BASE_URL=https://<ms2-aws>/api
+MS4_MS3_BASE_URL=https://<ms3-gcp>/api
 RESPONSABLE_DEFAULT_EMAIL=<correo-para-demo>
 ```
+
+Las variables `MS4_N8N_DIAGNOSTICS_ENABLED=false`, `MS4_N8N_VERSION_NOTIFICATIONS_ENABLED=false`, `MS4_N8N_TEMPLATES_ENABLED=false` y `MS4_N8N_PERSONALIZATION_ENABLED=false` evitan llamadas externas no necesarias desde el editor de N8N durante la demo. Si aparecen logs como `Error fetching feature flags ... PostHog: 401`, recrear el contenedor con esta configuracion.
 
 El workflow usa `MS4_VM_HOST`, `MS4_VM_USER` y `MS4_VM_SSH_KEY`. Para cubrir el alcance del examen, esos secretos deben apuntar a una VM/host Azure propio de MS4; no se debe desplegar MS4 en la misma instancia usada por MS1.
 
 Despues del despliegue de MS4, configurar MS3 con:
 
 ```dotenv
-MS4_N8N_WEBHOOK_URL=https://<host-ms4>/webhook
+MS3_MS4_N8N_WEBHOOK_URL=https://<host-ms4>/webhook
 ```

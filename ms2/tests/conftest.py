@@ -7,18 +7,18 @@ import pytest
 from moto import mock_aws
 
 # Configurar variables de entorno ANTES de importar la app
-os.environ.setdefault("AWS_ACCESS_KEY_ID", "testing")
-os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "testing")
-os.environ.setdefault("AWS_REGION", "us-east-1")
+os.environ.setdefault("MS2_AWS_ACCESS_KEY_ID", "testing")
+os.environ.setdefault("MS2_AWS_SECRET_ACCESS_KEY", "testing")
+os.environ.setdefault("MS2_AWS_REGION", "us-east-1")
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
-os.environ["AWS_ENDPOINT_URL"] = ""
-os.environ["AUTO_BOOTSTRAP_AWS_RESOURCES"] = "false"
-os.environ["LOAD_AI_MODELS"] = "false"
-os.environ["S3_BUCKET_NAME"] = "test-bucket"
-os.environ["DYNAMODB_TABLE_DOCS"] = "documentos"
-os.environ["DYNAMODB_TABLE_AUDITORIA"] = "auditoria"
+os.environ["MS2_AWS_ENDPOINT_URL"] = ""
+os.environ["MS2_AUTO_BOOTSTRAP_AWS_RESOURCES"] = "false"
+os.environ["MS2_LOAD_AI_MODELS"] = "false"
+os.environ["MS2_S3_BUCKET_NAME"] = "test-bucket"
+os.environ["MS2_DYNAMODB_TABLE_DOCS"] = "documentos"
+os.environ["MS2_DYNAMODB_TABLE_AUDITORIA"] = "auditoria"
 os.environ.setdefault(
-    "JWT_SECRET",
+    "MS2_JWT_SECRET",
     "saf-ms1-super-secret-key-2026-activos-fijos-bolivia-uagrm",
 )
 

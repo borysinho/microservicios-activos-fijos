@@ -11,16 +11,16 @@ if [[ -f "$ROOT_DIR/ms2/.env" ]]; then
   set +a
 fi
 
-if [[ "${AWS_ACCESS_KEY_ID:-}" == "test" && "${AWS_SECRET_ACCESS_KEY:-}" == "test" ]]; then
-  unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+if [[ "${MS2_AWS_ACCESS_KEY_ID:-}" == "test" && "${MS2_AWS_SECRET_ACCESS_KEY:-}" == "test" ]]; then
+  unset MS2_AWS_ACCESS_KEY_ID MS2_AWS_SECRET_ACCESS_KEY MS2_AWS_SESSION_TOKEN
 fi
 
-if [[ "${AWS_ENDPOINT_URL:-}" =~ (localhost|127\.0\.0\.1|localstack) ]]; then
-  unset AWS_ENDPOINT_URL
+if [[ "${MS2_AWS_ENDPOINT_URL:-}" =~ (localhost|127\.0\.0\.1|localstack) ]]; then
+  unset MS2_AWS_ENDPOINT_URL
 fi
 
-if [[ "${S3_BUCKET_NAME:-}" == "activos-fijos-documentos-dev" ]]; then
-  unset S3_BUCKET_NAME
+if [[ "${MS2_S3_BUCKET_NAME:-}" == "activos-fijos-documentos-dev" ]]; then
+  unset MS2_S3_BUCKET_NAME
 fi
 
 AWS_CLI="${AWS_CLI:-$(command -v aws || true)}"
@@ -28,20 +28,20 @@ if [[ -z "$AWS_CLI" && -x /tmp/aws-cli-ms2-bin/aws ]]; then
   AWS_CLI="/tmp/aws-cli-ms2-bin/aws"
 fi
 
-PROJECT_NAME="${PROJECT_NAME:-activos-fijos-ms2}"
-STACK_NAME="${STACK_NAME:-$PROJECT_NAME}"
-AWS_REGION="${AWS_REGION:-us-east-1}"
+MS2_PROJECT_NAME_VALUE="${MS2_PROJECT_NAME:-activos-fijos-ms2}"
+MS2_STACK_NAME_VALUE="${MS2_STACK_NAME:-$MS2_PROJECT_NAME_VALUE}"
+MS2_AWS_REGION_VALUE="${MS2_AWS_REGION:-us-east-1}"
 AWS_PROFILE_ARG=()
 if [[ -n "${AWS_PROFILE:-}" ]]; then
   AWS_PROFILE_ARG=(--profile "$AWS_PROFILE")
 fi
 
-DOCS_TABLE_NAME="${DYNAMODB_TABLE_DOCS:-activos-fijos-ms2-documentos}"
-AUDIT_TABLE_NAME="${DYNAMODB_TABLE_AUDITORIA:-activos-fijos-ms2-auditoria}"
-JWT_SECRET="${JWT_SECRET:-saf-ms1-super-secret-key-2026-activos-fijos-bolivia-uagrm}"
-JWT_ALGORITHM="${JWT_ALGORITHM:-HS512}"
-ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-*}"
-LOAD_AI_MODELS="${LOAD_AI_MODELS:-true}"
+MS2_DOCS_TABLE_NAME_VALUE="${MS2_DYNAMODB_TABLE_DOCS:-activos-fijos-ms2-documentos}"
+MS2_AUDIT_TABLE_NAME_VALUE="${MS2_DYNAMODB_TABLE_AUDITORIA:-activos-fijos-ms2-auditoria}"
+MS2_JWT_SECRET_VALUE="${MS2_JWT_SECRET:-saf-ms1-super-secret-key-2026-activos-fijos-bolivia-uagrm}"
+MS2_JWT_ALGORITHM_VALUE="${MS2_JWT_ALGORITHM:-HS512}"
+MS2_ALLOWED_ORIGINS_VALUE="${MS2_ALLOWED_ORIGINS:-*}"
+MS2_LOAD_AI_MODELS_VALUE="${MS2_LOAD_AI_MODELS:-true}"
 
 [[ -n "$AWS_CLI" && -x "$AWS_CLI" ]] || {
   echo "ERROR: aws CLI no esta instalado." >&2
@@ -53,28 +53,28 @@ command -v docker >/dev/null || {
 }
 
 ACCOUNT_ID="$("$AWS_CLI" "${AWS_PROFILE_ARG[@]}" sts get-caller-identity --query Account --output text)"
-BUCKET_NAME="${S3_BUCKET_NAME:-${PROJECT_NAME}-${ACCOUNT_ID}-${AWS_REGION}}"
-ECR_REPO="${ECR_REPO:-$PROJECT_NAME}"
+MS2_BUCKET_NAME_VALUE="${MS2_S3_BUCKET_NAME:-${MS2_PROJECT_NAME_VALUE}-${ACCOUNT_ID}-${MS2_AWS_REGION_VALUE}}"
+MS2_ECR_REPO_VALUE="${MS2_ECR_REPO:-$MS2_PROJECT_NAME_VALUE}"
 
 echo "AWS CLI: $AWS_CLI"
-echo "Region: $AWS_REGION"
+echo "Region: $MS2_AWS_REGION_VALUE"
 echo "Cuenta AWS: $ACCOUNT_ID"
-echo "Stack: $STACK_NAME"
-echo "Bucket S3: $BUCKET_NAME"
-echo "ECR repo: $ECR_REPO"
+echo "Stack: $MS2_STACK_NAME_VALUE"
+echo "Bucket S3: $MS2_BUCKET_NAME_VALUE"
+echo "ECR repo: $MS2_ECR_REPO_VALUE"
 
 if ! "$AWS_CLI" "${AWS_PROFILE_ARG[@]}" ecr describe-repositories \
-  --region "$AWS_REGION" \
-  --repository-names "$ECR_REPO" >/dev/null 2>&1; then
+  --region "$MS2_AWS_REGION_VALUE" \
+  --repository-names "$MS2_ECR_REPO_VALUE" >/dev/null 2>&1; then
   "$AWS_CLI" "${AWS_PROFILE_ARG[@]}" ecr create-repository \
-    --region "$AWS_REGION" \
-    --repository-name "$ECR_REPO" \
+    --region "$MS2_AWS_REGION_VALUE" \
+    --repository-name "$MS2_ECR_REPO_VALUE" \
     --image-scanning-configuration scanOnPush=true >/dev/null
 fi
 
 "$AWS_CLI" "${AWS_PROFILE_ARG[@]}" ecr put-lifecycle-policy \
-  --region "$AWS_REGION" \
-  --repository-name "$ECR_REPO" \
+  --region "$MS2_AWS_REGION_VALUE" \
+  --repository-name "$MS2_ECR_REPO_VALUE" \
   --lifecycle-policy-text '{
     "rules": [
       {
@@ -92,11 +92,11 @@ fi
     ]
   }' >/dev/null
 
-ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}"
+ECR_URI="${ACCOUNT_ID}.dkr.ecr.${MS2_AWS_REGION_VALUE}.amazonaws.com/${MS2_ECR_REPO_VALUE}"
 IMAGE_TAG="${IMAGE_TAG:-$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || date +%Y%m%d%H%M%S)}"
 IMAGE_URI="${ECR_URI}:${IMAGE_TAG}"
 
-"$AWS_CLI" "${AWS_PROFILE_ARG[@]}" ecr get-login-password --region "$AWS_REGION" \
+"$AWS_CLI" "${AWS_PROFILE_ARG[@]}" ecr get-login-password --region "$MS2_AWS_REGION_VALUE" \
   | docker login --username AWS --password-stdin "$ECR_URI"
 
 docker buildx build \
@@ -110,23 +110,23 @@ docker buildx build \
 docker push "$IMAGE_URI"
 
 "$AWS_CLI" "${AWS_PROFILE_ARG[@]}" cloudformation deploy \
-  --region "$AWS_REGION" \
-  --stack-name "$STACK_NAME" \
+  --region "$MS2_AWS_REGION_VALUE" \
+  --stack-name "$MS2_STACK_NAME_VALUE" \
   --template-file "$DEPLOY_DIR/cloudformation.yml" \
   --capabilities CAPABILITY_IAM \
   --parameter-overrides \
-    ProjectName="$PROJECT_NAME" \
+    ProjectName="$MS2_PROJECT_NAME_VALUE" \
     ImageUri="$IMAGE_URI" \
-    BucketName="$BUCKET_NAME" \
-    DocsTableName="$DOCS_TABLE_NAME" \
-    AuditTableName="$AUDIT_TABLE_NAME" \
-    JwtSecret="$JWT_SECRET" \
-    JwtAlgorithm="$JWT_ALGORITHM" \
-    AllowedOrigins="$ALLOWED_ORIGINS" \
-    LoadAiModels="$LOAD_AI_MODELS"
+    BucketName="$MS2_BUCKET_NAME_VALUE" \
+    DocsTableName="$MS2_DOCS_TABLE_NAME_VALUE" \
+    AuditTableName="$MS2_AUDIT_TABLE_NAME_VALUE" \
+    JwtSecret="$MS2_JWT_SECRET_VALUE" \
+    JwtAlgorithm="$MS2_JWT_ALGORITHM_VALUE" \
+    AllowedOrigins="$MS2_ALLOWED_ORIGINS_VALUE" \
+    LoadAiModels="$MS2_LOAD_AI_MODELS_VALUE"
 
 "$AWS_CLI" "${AWS_PROFILE_ARG[@]}" cloudformation describe-stacks \
-  --region "$AWS_REGION" \
-  --stack-name "$STACK_NAME" \
+  --region "$MS2_AWS_REGION_VALUE" \
+  --stack-name "$MS2_STACK_NAME_VALUE" \
   --query "Stacks[0].Outputs" \
   --output table

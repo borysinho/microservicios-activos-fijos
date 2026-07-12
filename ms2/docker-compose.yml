@@ -23,7 +23,7 @@ services:
     ports:
       - "8002:8002"
     environment:
-      - AWS_ENDPOINT_URL=http://localstack:4566
+      - MS2_AWS_ENDPOINT_URL=http://localstack:4566
     volumes:
       - ./models:/code/models:ro
     depends_on:

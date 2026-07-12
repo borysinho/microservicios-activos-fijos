@@ -1,208 +1,288 @@
 <div class="page-header">
   <div>
-    <h1>Gestión Documental</h1>
-    <p>Carga, versiones, auditoría y verificación IA de evidencia — MS2 FastAPI + S3 + DynamoDB</p>
+    <h1>Expedientes digitales</h1>
+    <p>Centralice contratos, facturas, actas, manuales e imágenes de cada activo.</p>
   </div>
 </div>
 
 <div class="docs-layout">
-
   <!-- ══ Panel izquierdo: búsqueda + lista ══════════════════════════════════ -->
   <div class="docs-panel">
-
     <!-- Búsqueda ──────────────────────────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section-title">Documentos del Activo</h3>
+      <h3 class="section-title">Expediente del activo</h3>
       <div class="search-row">
-        <select class="form-control" [(ngModel)]="activoId" (ngModelChange)="onActivoChange()"
-          [disabled]="cargandoActivos()">
-          <option value="">{{ cargandoActivos() ? 'Cargando activos...' : '— Seleccionar activo —' }}</option>
+        <select
+          class="form-control"
+          [(ngModel)]="activoId"
+          (ngModelChange)="onActivoChange()"
+          [disabled]="cargandoActivos()"
+        >
+          <option value="">
+            {{ cargandoActivos() ? 'Cargando activos...' : 'Seleccionar activo' }}
+          </option>
           @for (a of activos(); track a.id) {
-          <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+            <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
           }
         </select>
-        <select class="form-control form-control--sm" [(ngModel)]="tipoFiltro" (ngModelChange)="buscar()">
+        <select
+          class="form-control form-control--sm"
+          [(ngModel)]="tipoFiltro"
+          (ngModelChange)="buscar()"
+        >
           <option value="">Todos los tipos</option>
-          @for (t of tiposDocumento; track t) { <option [value]="t">{{ t }}</option> }
+          @for (t of tiposDocumento; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
         </select>
       </div>
 
       @if (loading()) {
-      <div class="loading">Cargando documentos...</div>
+        <div class="loading">Cargando documentos...</div>
       } @else if (!activoId()) {
-      <div class="empty-state empty-state--sm">
-        <p>Selecciona un activo para ver sus documentos.</p>
-      </div>
-      } @else if (documentos().length === 0) {
-      <div class="empty-state empty-state--sm">
-        <p>Este activo no tiene documentos aún.</p>
-      </div>
-      } @else {
-      <div class="doc-list">
-        @for (doc of documentos(); track doc.documentoId) {
-        <div class="doc-item" [class.doc-item--selected]="docSeleccionado()?.documentoId === doc.documentoId">
-          <div class="doc-item__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-          </div>
-          <div class="doc-item__info">
-            <span class="doc-item__name">{{ doc.nombre }}</span>
-            <span class="doc-item__meta">
-              <span class="badge badge--type">{{ doc.tipo }}</span>
-              v{{ doc.version }} · {{ doc.fechaCreacion | date:'dd/MM/yy HH:mm' }}
-            </span>
-          </div>
-          <div class="doc-item__actions">
-            <button class="btn btn--ghost btn--icon" title="Descargar" (click)="descargar(doc)">↓</button>
-            <button class="btn btn--ghost btn--icon" title="Versiones" (click)="verVersiones(doc)">↔</button>
-            @if (puedeVerAudit()) {
-            <button class="btn btn--ghost btn--icon" title="Auditoría" (click)="verAuditoria(doc)">🔍</button>
-            }
-            <button class="btn btn--ghost btn--icon btn--danger" title="Eliminar" (click)="eliminar(doc)">✕</button>
-          </div>
+        <div class="empty-state empty-state--sm">
+          <p>Selecciona un activo para ver sus documentos.</p>
         </div>
-        }
-      </div>
+      } @else if (documentos().length === 0) {
+        <div class="empty-state empty-state--sm">
+          <p>Este activo no tiene documentos aún.</p>
+        </div>
+      } @else {
+        <div class="doc-list">
+          @for (doc of documentos(); track doc.documentoId) {
+            <div
+              class="doc-item"
+              [class.doc-item--selected]="docSeleccionado()?.documentoId === doc.documentoId"
+            >
+              <div class="doc-item__icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  width="20"
+                  height="20"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div class="doc-item__info">
+                <span class="doc-item__name">{{ doc.nombre }}</span>
+                <span class="doc-item__meta">
+                  <span class="badge badge--type">{{ doc.tipo }}</span>
+                  v{{ doc.version }} · {{ doc.fechaCreacion | date: 'dd/MM/yy HH:mm' }}
+                </span>
+              </div>
+              <div class="doc-item__actions">
+                <button class="btn btn--ghost btn--icon" title="Descargar" (click)="descargar(doc)">
+                  ↓
+                </button>
+                <button
+                  class="btn btn--ghost btn--icon"
+                  title="Historial de versiones"
+                  (click)="verVersiones(doc)"
+                >
+                  v
+                </button>
+                @if (puedeVerAudit()) {
+                  <button
+                    class="btn btn--ghost btn--icon"
+                    title="Auditoría"
+                    (click)="verAuditoria(doc)"
+                  >
+                    i
+                  </button>
+                }
+                <button
+                  class="btn btn--ghost btn--icon btn--danger"
+                  title="Eliminar"
+                  (click)="eliminar(doc)"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          }
+        </div>
       }
     </div>
 
     <!-- Panel lateral: versiones o auditoría ──────────────────────────────── -->
     @if (docSeleccionado(); as doc) {
-    <div class="card card--detail">
-      <div class="card-detail-header">
-        <h4>{{ mostrarAudit() ? 'Log de Auditoría' : 'Historial de Versiones' }} — {{ doc.nombre }}</h4>
-        <button class="btn btn--ghost btn--sm" (click)="cerrarPanel()">✕</button>
-      </div>
-
-      <!-- Versiones ──────────────────────────────────────────────────────── -->
-      @if (!mostrarAudit()) {
-      @if (cargandoVersiones()) {
-      <div class="loading">Cargando versiones...</div>
-      } @else {
-      <div class="version-list">
-        @for (v of versiones(); track v.version) {
-        <div class="version-item" [class.version-item--active]="v.activo">
-          <span class="version-badge">v{{ v.version }}</span>
-          <span class="version-meta">{{ v.nombre }} · {{ v.fechaCreacion | date:'dd/MM/yy HH:mm' }}</span>
-          <span class="version-user">{{ v.subidoPor }}</span>
-          @if (!v.activo) { <span class="badge badge--inactive">Anterior</span> }
+      <div class="card card--detail">
+        <div class="card-detail-header">
+          <h4>
+            {{ mostrarAudit() ? 'Auditoría del documento' : 'Historial de versiones' }} —
+            {{ doc.nombre }}
+          </h4>
+          <button class="btn btn--ghost btn--sm" (click)="cerrarPanel()">✕</button>
         </div>
+
+        <!-- Versiones ──────────────────────────────────────────────────────── -->
+        @if (!mostrarAudit()) {
+          @if (cargandoVersiones()) {
+            <div class="loading">Cargando versiones...</div>
+          } @else {
+            <div class="version-list">
+              @for (v of versiones(); track v.version) {
+                <div class="version-item" [class.version-item--active]="v.activo">
+                  <span class="version-badge">v{{ v.version }}</span>
+                  <span class="version-meta"
+                    >{{ v.nombre }} · {{ v.fechaCreacion | date: 'dd/MM/yy HH:mm' }}</span
+                  >
+                  <span class="version-user">{{ v.subidoPor }}</span>
+                  @if (!v.activo) {
+                    <span class="badge badge--inactive">Anterior</span>
+                  }
+                </div>
+              }
+            </div>
+            <div class="nueva-version">
+              <h5>Subir nueva versión</h5>
+              <input type="file" class="form-control" (change)="onArchivoNuevaVersion($event)" />
+              <button
+                class="btn btn--secondary btn--sm"
+                [disabled]="!archivoNuevaVersion || subiendo()"
+                (click)="subirNuevaVersion()"
+              >
+                {{ subiendo() ? 'Subiendo...' : 'Publicar versión' }}
+              </button>
+            </div>
+          }
+        }
+
+        <!-- Auditoría ──────────────────────────────────────────────────────── -->
+        @if (mostrarAudit()) {
+          @if (cargandoAudit()) {
+            <div class="loading">Cargando eventos...</div>
+          } @else {
+            <div class="audit-list">
+              @for (evt of auditoria(); track evt.eventoId) {
+                <div class="audit-item">
+                  <span class="audit-accion badge">{{ evt.accion }}</span>
+                  <span class="audit-meta">{{ evt.usuario }} — {{ evt.ipOrigen }}</span>
+                  <span class="audit-time">{{ evt.timestamp | date: 'dd/MM/yy HH:mm:ss' }}</span>
+                </div>
+              } @empty {
+                <p class="text-muted">Sin eventos registrados.</p>
+              }
+            </div>
+          }
         }
       </div>
-      <div class="nueva-version">
-        <h5>Subir nueva versión</h5>
-        <input type="file" class="form-control" (change)="onArchivoNuevaVersion($event)">
-        <button class="btn btn--secondary btn--sm" [disabled]="!archivoNuevaVersion || subiendo()"
-          (click)="subirNuevaVersion()">
-          {{ subiendo() ? 'Subiendo...' : 'Publicar versión' }}
-        </button>
-      </div>
-      }
-      }
-
-      <!-- Auditoría ──────────────────────────────────────────────────────── -->
-      @if (mostrarAudit()) {
-      @if (cargandoAudit()) {
-      <div class="loading">Cargando eventos...</div>
-      } @else {
-      <div class="audit-list">
-        @for (evt of auditoria(); track evt.eventoId) {
-        <div class="audit-item">
-          <span class="audit-accion badge">{{ evt.accion }}</span>
-          <span class="audit-meta">{{ evt.usuario }} — {{ evt.ipOrigen }}</span>
-          <span class="audit-time">{{ evt.timestamp | date:'dd/MM/yy HH:mm:ss' }}</span>
-        </div>
-        } @empty {
-        <p class="text-muted">Sin eventos registrados.</p>
-        }
-      </div>
-      }
-      }
-    </div>
     }
-
-  </div><!-- /docs-panel izquierdo -->
+  </div>
+  <!-- /docs-panel izquierdo -->
 
   <!-- ══ Panel derecho: subir + IA ══════════════════════════════════════════ -->
   <div class="docs-panel">
-
     <!-- Upload ────────────────────────────────────────────────────────────── -->
     <div class="card">
-      <h3 class="section-title">Subir Documento / Imagen</h3>
+      <h3 class="section-title">Agregar al expediente</h3>
 
       <div class="form-group">
-        <label>Tipo de documento</label>
+        <label>Tipo de archivo</label>
         <select class="form-control" [(ngModel)]="tipoDocumento">
-          @for (t of tiposDocumento; track t) { <option [value]="t">{{ t }}</option> }
+          @for (t of tiposDocumento; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
         </select>
       </div>
 
-      <div class="drop-zone" [class.drop-zone--over]="dragOver()"
-        (dragover)="$event.preventDefault(); dragOver.set(true)" (dragleave)="dragOver.set(false)"
-        (drop)="onDrop($event)">
+      <div
+        class="drop-zone"
+        [class.drop-zone--over]="dragOver()"
+        (dragover)="$event.preventDefault(); dragOver.set(true)"
+        (dragleave)="dragOver.set(false)"
+        (drop)="onDrop($event)"
+      >
         @if (selectedFile) {
-        <div class="drop-zone__file">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="24" height="24">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
-          <span>{{ selectedFile.name }}</span>
-        </div>
+          <div class="drop-zone__file">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              width="24"
+              height="24"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            <span>{{ selectedFile.name }}</span>
+          </div>
         } @else {
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="36" height="36"
-          style="color:var(--text-muted)">
-          <polyline points="16 16 12 12 8 16" />
-          <line x1="12" y1="12" x2="12" y2="21" />
-          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
-        </svg>
-        <p>Arrastre un archivo aquí</p>
-        <label class="btn btn--ghost btn--sm" style="cursor:pointer">
-          Seleccionar archivo
-          <input type="file" hidden (change)="onFileSelect($event)">
-        </label>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            width="36"
+            height="36"
+            style="color: var(--text-muted)"
+          >
+            <polyline points="16 16 12 12 8 16" />
+            <line x1="12" y1="12" x2="12" y2="21" />
+            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+          </svg>
+          <p>Arrastre un archivo aquí</p>
+          <label class="btn btn--ghost btn--sm" style="cursor: pointer">
+            Seleccionar archivo
+            <input type="file" hidden (change)="onFileSelect($event)" />
+          </label>
         }
       </div>
 
       <div class="upload-actions">
-        <button class="btn btn--secondary" (click)="subir()" [disabled]="!selectedFile || !activoId() || uploading()">
-          {{ uploading() ? 'Subiendo...' : 'Subir a S3' }}
+        <button
+          class="btn btn--secondary"
+          (click)="subir()"
+          [disabled]="!selectedFile || !activoId() || uploading()"
+        >
+          {{ uploading() ? 'Guardando...' : 'Guardar documento' }}
         </button>
-        <button class="btn btn--primary" (click)="diagnosticar()" [disabled]="!selectedFile || diagnosing()">
-          {{ diagnosing() ? 'Analizando...' : 'Verificación IA' }}
+        <button
+          class="btn btn--primary"
+          (click)="diagnosticar()"
+          [disabled]="!selectedFile || diagnosing()"
+        >
+          {{ diagnosing() ? 'Analizando...' : 'Analizar imagen' }}
         </button>
       </div>
 
       @if (resultado(); as r) {
-      <div class="ia-result">
-        <h4>Resultado de Verificación IA</h4>
-        <div class="ia-result__body">
-          <div class="ia-result__row">
-            <span>Resultado</span>
-            <strong>{{ r.diagnostico ?? r.clase ?? '—' }}</strong>
+        <div class="ia-result">
+          <h4>Resultado del análisis de imagen</h4>
+          <div class="ia-result__body">
+            <div class="ia-result__row">
+              <span>Resultado</span>
+              <strong>{{ r.diagnostico ?? r.clase ?? '—' }}</strong>
+            </div>
+            <div class="ia-result__row">
+              <span>Confianza</span>
+              <strong class="mono"
+                >{{ (r.confianza ?? r.confidence ?? 0) * 100 | number: '1.1-1' }}%</strong
+              >
+            </div>
+            @if (r.detalle) {
+              <div class="ia-result__row ia-result__row--full">
+                <span>Detalle</span>
+                <p>{{ r.detalle }}</p>
+              </div>
+            }
+            @if (r.recomendacion) {
+              <div class="ia-result__row ia-result__row--full">
+                <span>Recomendación</span>
+                <p>{{ r.recomendacion }}</p>
+              </div>
+            }
           </div>
-          <div class="ia-result__row">
-            <span>Confianza</span>
-            <strong class="mono">{{ ((r.confianza ?? r.confidence ?? 0) * 100) | number:'1.1-1' }}%</strong>
-          </div>
-          @if (r.detalle) {
-          <div class="ia-result__row ia-result__row--full">
-            <span>Detalle</span>
-            <p>{{ r.detalle }}</p>
-          </div>
-          }
-          @if (r.recomendacion) {
-          <div class="ia-result__row ia-result__row--full">
-            <span>Recomendación</span>
-            <p>{{ r.recomendacion }}</p>
-          </div>
-          }
         </div>
-      </div>
       }
-    </div><!-- /card upload -->
-
-  </div><!-- /docs-panel derecho -->
-
-</div><!-- /docs-layout -->
+    </div>
+    <!-- /card upload -->
+  </div>
+  <!-- /docs-panel derecho -->
+</div>
+<!-- /docs-layout -->

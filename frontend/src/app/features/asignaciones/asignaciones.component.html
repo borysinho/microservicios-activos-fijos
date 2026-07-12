@@ -1,134 +1,167 @@
 <div class="page-header">
   <div>
-    <h1>Asignaciones</h1>
-    <p>Gestión de asignaciones de activos a responsables de área</p>
+    <h1>Responsables asignados</h1>
+    <p>Controle quién tiene cada activo, desde cuándo y en qué área se encuentra.</p>
   </div>
   <button class="btn btn--primary" (click)="openModal()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      width="16"
+      height="16"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
-    Nueva asignación
+    Asignar activo
   </button>
 </div>
 
-@if (success()) { <div class="alert alert--success">{{ success() }}</div> }
-@if (error()) { <div class="alert alert--error">{{ error() }}</div> }
+@if (success()) {
+  <div class="alert alert--success">{{ success() }}</div>
+}
+@if (error()) {
+  <div class="alert alert--error">{{ error() }}</div>
+}
 
 <!-- Filtro por activo -->
 <div class="filter-bar card">
-  <select class="form-control filter-bar__search" [(ngModel)]="selectedActivoId" (ngModelChange)="onActivoChange()">
+  <select
+    class="form-control filter-bar__search"
+    [(ngModel)]="selectedActivoId"
+    (ngModelChange)="onActivoChange()"
+  >
     <option value="">— Seleccionar activo —</option>
     @for (a of activos(); track a.id) {
-    <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+      <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
     }
   </select>
-  <input class="form-control" type="text" [(ngModel)]="searchTerm" placeholder="Buscar por responsable o área...">
+  <input
+    class="form-control"
+    type="text"
+    [(ngModel)]="searchTerm"
+    placeholder="Buscar por responsable o área..."
+  />
 </div>
 
 <!-- Tabla -->
 @if (loading()) {
-<div class="loading">Cargando asignaciones...</div>
+  <div class="loading">Cargando asignaciones...</div>
 } @else if (!selectedActivoId()) {
-<div class="empty-state">
-  <div class="empty-icon">📋</div>
-  <p>Selecciona un activo para ver sus asignaciones.</p>
-</div>
+  <div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <p>Selecciona un activo para ver sus asignaciones.</p>
+  </div>
 } @else if (asignacionesFiltradas.length === 0) {
-<div class="empty-state">
-  <div class="empty-icon">📋</div>
-  <p>No hay asignaciones para este activo.</p>
-</div>
+  <div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <p>No hay asignaciones para este activo.</p>
+  </div>
 } @else {
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th>Responsable</th>
-        <th>Área</th>
-        <th>F. Asignación</th>
-        <th>F. Devolución</th>
-        <th>Estado</th>
-        <th>Observaciones</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (a of asignacionesFiltradas; track a.id) {
-      <tr>
-        <td><strong>{{ a.responsable.nombre }}</strong><br><small>{{ a.responsable.cargo }}</small></td>
-        <td>{{ a.area.nombre }}</td>
-        <td>{{ a.fechaAsignacion | date:'dd/MM/yyyy' }}</td>
-        <td>{{ (a.fechaDevolucion | date:'dd/MM/yyyy') || '—' }}</td>
-        <td>
-          <span [class]="a.activa ? 'badge badge--success' : 'badge badge--secondary'">
-            {{ a.activa ? 'Activa' : 'Devuelta' }}
-          </span>
-        </td>
-        <td>{{ a.observaciones || '—' }}</td>
-        <td class="action-btns">
-          @if (a.activa) {
-          <button class="btn btn--sm btn--danger-ghost" (click)="devolver(a)" title="Devolver activo">Devolver</button>
-          }
-        </td>
-      </tr>
-      }
-    </tbody>
-  </table>
-  <div class="table-footer">{{ asignacionesFiltradas.length }} asignación(es)</div>
-</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Responsable</th>
+          <th>Área</th>
+          <th>F. Asignación</th>
+          <th>F. Devolución</th>
+          <th>Estado</th>
+          <th>Observaciones</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of asignacionesFiltradas; track a.id) {
+          <tr>
+            <td>
+              <strong>{{ a.responsable.nombre }}</strong
+              ><br /><small>{{ a.responsable.cargo }}</small>
+            </td>
+            <td>{{ a.area.nombre }}</td>
+            <td>{{ a.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
+            <td>{{ (a.fechaDevolucion | date: 'dd/MM/yyyy') || '—' }}</td>
+            <td>
+              <span [class]="a.activa ? 'badge badge--success' : 'badge badge--secondary'">
+                {{ a.activa ? 'Activa' : 'Devuelta' }}
+              </span>
+            </td>
+            <td>{{ a.observaciones || '—' }}</td>
+            <td class="action-btns">
+              @if (a.activa) {
+                <button
+                  class="btn btn--sm btn--danger-ghost"
+                  (click)="devolver(a)"
+                  title="Devolver activo"
+                >
+                  Devolver
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="table-footer">{{ asignacionesFiltradas.length }} asignación(es)</div>
+  </div>
 }
 
 <!-- Modal Nueva Asignación -->
 @if (showModal()) {
-<div class="modal-overlay" (click)="showModal.set(false)"></div>
-<div class="modal">
-  <div class="modal__header">
-    <h3>Nueva Asignación</h3>
-    <button class="modal__close" (click)="showModal.set(false)">✕</button>
+  <div class="modal-overlay" (click)="showModal.set(false)"></div>
+  <div class="modal">
+    <div class="modal__header">
+      <h3>Asignar activo a responsable</h3>
+      <button class="modal__close" (click)="showModal.set(false)">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label>Activo *</label>
+        <select class="form-control" [(ngModel)]="form.activoId" required>
+          <option value="">Seleccionar...</option>
+          @for (a of activosDisponibles; track a.id) {
+            <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Responsable *</label>
+        <select class="form-control" [(ngModel)]="form.responsableId" required>
+          <option value="">Seleccionar...</option>
+          @for (r of responsables(); track r.id) {
+            <option [value]="r.id">{{ r.nombre }} ({{ r.cargo }})</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Área *</label>
+        <select class="form-control" [(ngModel)]="form.areaId" required>
+          <option value="">Seleccionar...</option>
+          @for (ar of areas(); track ar.id) {
+            <option [value]="ar.id">{{ ar.codigo }} — {{ ar.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fecha de Asignación *</label>
+        <input class="form-control" type="date" [(ngModel)]="form.fechaAsignacion" required />
+      </div>
+      <div class="form-group">
+        <label>Observaciones</label>
+        <textarea class="form-control" [(ngModel)]="form.observaciones" rows="3"></textarea>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
+      <button
+        class="btn btn--primary"
+        (click)="guardar()"
+        [disabled]="saving() || !form.activoId || !form.responsableId || !form.areaId"
+      >
+        {{ saving() ? 'Guardando...' : 'Asignar' }}
+      </button>
+    </div>
   </div>
-  <div class="modal__body">
-    <div class="form-group">
-      <label>Activo *</label>
-      <select class="form-control" [(ngModel)]="form.activoId" required>
-        <option value="">Seleccionar...</option>
-        @for (a of activosDisponibles; track a.id) {
-        <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
-        }
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Responsable *</label>
-      <select class="form-control" [(ngModel)]="form.responsableId" required>
-        <option value="">Seleccionar...</option>
-        @for (r of responsables(); track r.id) {
-        <option [value]="r.id">{{ r.nombre }} ({{ r.cargo }})</option>
-        }
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Área *</label>
-      <select class="form-control" [(ngModel)]="form.areaId" required>
-        <option value="">Seleccionar...</option>
-        @for (ar of areas(); track ar.id) {
-        <option [value]="ar.id">{{ ar.codigo }} — {{ ar.nombre }}</option>
-        }
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Fecha de Asignación *</label>
-      <input class="form-control" type="date" [(ngModel)]="form.fechaAsignacion" required>
-    </div>
-    <div class="form-group">
-      <label>Observaciones</label>
-      <textarea class="form-control" [(ngModel)]="form.observaciones" rows="3"></textarea>
-    </div>
-  </div>
-  <div class="modal__footer">
-    <button class="btn btn--secondary" (click)="showModal.set(false)">Cancelar</button>
-    <button class="btn btn--primary" (click)="guardar()" [disabled]="saving()">
-      {{ saving() ? 'Guardando...' : 'Asignar' }}
-    </button>
-  </div>
-</div>
 }

@@ -1,6 +1,6 @@
 {
   "name": "Flujo 01 - Solicitud de Revision por WhatsApp",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
@@ -12,83 +12,51 @@
       "name": "WhatsApp Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0]
+      "position": [0, 0],
+      "webhookId": "ms4"
     },
     {
       "parameters": {
-        "jsCode": "const text = $json.text || ''; const match = text.match(/[A-Z]{2,4}-\\d{4}-\\d+/i); return [{ json: { ...$json, codigoActivo: match ? match[0].toUpperCase() : null } }];"
+        "jsCode": "const data = $json.body || $json; const text = String(data.text || data.Body || '').trim(); const from = data.from || data.From || ''; const timestamp = data.timestamp || data.MessageSid || data.SmsMessageSid || ''; const match = text.match(/[A-Z]{2,4}-\\d{4}-\\d+/i); return [{ json: { ...data, from, text, timestamp: String(timestamp), codigoActivo: match ? match[0].toUpperCase() : null } }];"
       },
       "id": "extraer-codigo",
       "name": "Extraer Codigo Activo",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 0]
+      "position": [260, 0]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS1_GRAPHQL_URL}}",
-        "sendBody": true,
-        "contentType": "json",
-        "jsonBody": "={\"query\":\"query BuscarActivoPorCodigo($codigo: String!) { activos(filtro: { codigo: $codigo }) { id codigo nombre estado } }\",\"variables\":{\"codigo\":\"{{$json.codigoActivo}}\"}}"
+        "url": "={{ $env.MS4_MS3_BASE_URL + '/webhooks/solicitud-revision?from=' + encodeURIComponent($json.from) + '&text=' + encodeURIComponent($json.text) + '&codigoActivo=' + encodeURIComponent($json.codigoActivo) }}"
       },
-      "id": "consultar-ms1",
-      "name": "Consultar Activo MS1",
+      "id": "crear-solicitud-ms3",
+      "name": "Crear Solicitud via MS3",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [480, 0]
+      "position": [540, 0]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS3_BASE_URL}}/webhooks/reportar-problema",
-        "sendBody": true,
-        "contentType": "json",
-        "jsonBody": "={\"activoId\":\"{{$json.data.activos[0].id}}\",\"activoCodigo\":\"{{$json.data.activos[0].codigo}}\",\"descripcion\":\"{{$node['WhatsApp Trigger'].json.text}}\",\"origen\":\"n8n\"}"
-      },
-      "id": "crear-ticket",
-      "name": "Crear Orden via MS3",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [720, 0]
-    },
-    {
-      "parameters": {
-        "url": "={{$env.MS2_BASE_URL}}/documentos?activoId={{$node['Consultar Activo MS1'].json.data.activos[0].id}}"
-      },
-      "id": "verificar-documentos",
-      "name": "Verificar Documentos MS2",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [960, 0]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{$env.MS3_BASE_URL}}/notificaciones/email",
-        "sendBody": true,
-        "contentType": "json",
-        "jsonBody": "={\"to\":\"{{$env.RESPONSABLE_DEFAULT_EMAIL}}\",\"subject\":\"Solicitud de revision {{$node['Extraer Codigo Activo'].json.codigoActivo}}\",\"text\":\"Solicitud recibida. Ticket: {{$node['Crear Orden via MS3'].json.ticketId}}. Documentos verificados en MS2.\"}"
+        "url": "={{ $env.MS4_MS3_BASE_URL + '/notificaciones/email?to=' + encodeURIComponent($json.responsableEmail) + '&subject=' + encodeURIComponent(`Solicitud de revision ${$json.codigoActivo}`) + '&text=' + encodeURIComponent(`Solicitud recibida por WhatsApp. Activo: ${$json.codigoActivo} - ${$json.activoNombre}. Estado: ${$json.activoEstado}. Ticket: ${$json.ticketId}. Documentos asociados: ${$json.documentosEncontrados}.`) }}"
       },
       "id": "sendgrid-email",
       "name": "Enviar Email via MS3",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1200, 0]
+      "position": [820, 0]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS3_BASE_URL}}/whatsapp/enviar",
-        "sendBody": true,
-        "contentType": "json",
-        "jsonBody": "={\"to\":\"{{$node['WhatsApp Trigger'].json.from}}\",\"mensaje\":\"Tu solicitud de revision fue recibida.\"}"
+        "url": "={{ $env.MS4_MS3_BASE_URL + '/whatsapp/enviar?to=' + encodeURIComponent($('Crear Solicitud via MS3').item.json.from) + '&mensaje=' + encodeURIComponent(`Tu solicitud de revision para el activo ${$('Crear Solicitud via MS3').item.json.codigoActivo} fue recibida. Referencia: ${$('Crear Solicitud via MS3').item.json.ticketId}.`) }}"
       },
       "id": "responder-whatsapp",
       "name": "Responder WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1440, 0]
+      "position": [1100, 0]
     }
   ],
   "connections": {
@@ -96,19 +64,17 @@
       "main": [[{ "node": "Extraer Codigo Activo", "type": "main", "index": 0 }]]
     },
     "Extraer Codigo Activo": {
-      "main": [[{ "node": "Consultar Activo MS1", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Crear Solicitud via MS3", "type": "main", "index": 0 }]]
     },
-    "Consultar Activo MS1": {
-      "main": [[{ "node": "Crear Orden via MS3", "type": "main", "index": 0 }]]
-    },
-    "Crear Orden via MS3": {
-      "main": [[{ "node": "Verificar Documentos MS2", "type": "main", "index": 0 }]]
-    },
-    "Verificar Documentos MS2": {
+    "Crear Solicitud via MS3": {
       "main": [[{ "node": "Enviar Email via MS3", "type": "main", "index": 0 }]]
     },
     "Enviar Email via MS3": {
       "main": [[{ "node": "Responder WhatsApp", "type": "main", "index": 0 }]]
     }
-  }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Headers, HttpCode, Post, Query, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { EnviarWhatsappDto } from './dto';
 import { WhatsappService } from './whatsapp.service';
@@ -23,6 +23,7 @@ export class WhatsappController {
   }
 
   @Post('webhook')
+  @HttpCode(200)
   recibirMensaje(
     @Body() payload: any,
     @Headers('x-hub-signature-256') signature: string | undefined,
@@ -32,7 +33,8 @@ export class WhatsappController {
   }
 
   @Post('enviar')
-  enviar(@Body() dto: EnviarWhatsappDto) {
-    return this.notificacionesService.enviarWhatsAppTexto(dto.to, dto.mensaje);
+  enviar(@Body() dto: Partial<EnviarWhatsappDto>, @Query() query: Partial<EnviarWhatsappDto>) {
+    const payload = query.to ? query : dto;
+    return this.notificacionesService.enviarWhatsAppTexto(payload.to!, payload.mensaje!);
   }
 }

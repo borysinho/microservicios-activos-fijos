@@ -22,14 +22,14 @@ permissions:
   id-token: write
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-  PROJECT_NAME: ${{ vars.MS2_PROJECT_NAME || 'activos-fijos-ms2' }}
-  STACK_NAME: ${{ vars.MS2_STACK_NAME || 'activos-fijos-ms2' }}
-  ECR_REPO: ${{ vars.MS2_ECR_REPO || 'activos-fijos-ms2' }}
-  DYNAMODB_TABLE_DOCS: ${{ vars.DYNAMODB_TABLE_DOCS || 'activos-fijos-ms2-documentos' }}
-  DYNAMODB_TABLE_AUDITORIA: ${{ vars.DYNAMODB_TABLE_AUDITORIA || 'activos-fijos-ms2-auditoria' }}
-  ALLOWED_ORIGINS: ${{ vars.MS2_ALLOWED_ORIGINS || '*' }}
-  LOAD_AI_MODELS: ${{ vars.MS2_LOAD_AI_MODELS || 'true' }}
+  MS2_AWS_REGION: ${{ vars.MS2_AWS_REGION || 'us-east-1' }}
+  MS2_PROJECT_NAME: ${{ vars.MS2_PROJECT_NAME || 'activos-fijos-ms2' }}
+  MS2_STACK_NAME: ${{ vars.MS2_STACK_NAME || 'activos-fijos-ms2' }}
+  MS2_ECR_REPO: ${{ vars.MS2_ECR_REPO || 'activos-fijos-ms2' }}
+  MS2_DYNAMODB_TABLE_DOCS: ${{ vars.MS2_DYNAMODB_TABLE_DOCS || 'activos-fijos-ms2-documentos' }}
+  MS2_DYNAMODB_TABLE_AUDITORIA: ${{ vars.MS2_DYNAMODB_TABLE_AUDITORIA || 'activos-fijos-ms2-auditoria' }}
+  MS2_ALLOWED_ORIGINS: ${{ vars.MS2_ALLOWED_ORIGINS || '*' }}
+  MS2_LOAD_AI_MODELS: ${{ vars.MS2_LOAD_AI_MODELS || 'true' }}
 
 jobs:
   test:
@@ -73,23 +73,23 @@ jobs:
       - name: Check deployment configuration
         id: deployment-config
         env:
-          AWS_ROLE_TO_ASSUME: ${{ vars.AWS_ROLE_TO_ASSUME }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          MS2_AWS_ROLE_TO_ASSUME: ${{ vars.MS2_AWS_ROLE_TO_ASSUME }}
+          MS2_AWS_ACCESS_KEY_ID: ${{ secrets.MS2_AWS_ACCESS_KEY_ID }}
+          MS2_AWS_SECRET_ACCESS_KEY: ${{ secrets.MS2_AWS_SECRET_ACCESS_KEY }}
+          MS2_JWT_SECRET: ${{ secrets.MS2_JWT_SECRET }}
         run: |
-          if [ -n "$AWS_ROLE_TO_ASSUME" ]; then
-            test -n "$JWT_SECRET" || { echo "::error::JWT_SECRET secret is required"; exit 1; }
+          if [ -n "$MS2_AWS_ROLE_TO_ASSUME" ]; then
+            test -n "$MS2_JWT_SECRET" || { echo "::error::MS2_JWT_SECRET secret is required"; exit 1; }
             echo "configured=oidc" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
-            test -n "$JWT_SECRET" || { echo "::error::JWT_SECRET secret is required"; exit 1; }
+          if [ -n "$MS2_AWS_ACCESS_KEY_ID" ] && [ -n "$MS2_AWS_SECRET_ACCESS_KEY" ]; then
+            test -n "$MS2_JWT_SECRET" || { echo "::error::MS2_JWT_SECRET secret is required"; exit 1; }
             echo "configured=keys" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
-            echo "::warning::AWS deployment credentials are not configured. Build/deploy will be skipped until AWS_ROLE_TO_ASSUME or AWS access key secrets are added."
+          if [ -z "$MS2_AWS_ACCESS_KEY_ID" ] || [ -z "$MS2_AWS_SECRET_ACCESS_KEY" ]; then
+            echo "::warning::AWS deployment credentials are not configured. Build/deploy will be skipped until MS2_AWS_ROLE_TO_ASSUME or MS2 AWS access key secrets are added."
             echo "configured=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -98,24 +98,27 @@ jobs:
         if: steps.deployment-config.outputs.configured == 'oidc'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ vars.MS2_AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.MS2_AWS_REGION }}
 
       - name: Configure AWS credentials with access keys
         if: steps.deployment-config.outputs.configured == 'keys'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.MS2_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.MS2_AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.MS2_AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.MS2_AWS_REGION }}
 
       - name: Deploy MS2 to AWS
         if: steps.deployment-config.outputs.configured == 'oidc' || steps.deployment-config.outputs.configured == 'keys'
         env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_ALGORITHM: ${{ vars.JWT_ALGORITHM || 'HS512' }}
-          S3_BUCKET_NAME: ${{ vars.MS2_S3_BUCKET_NAME }}
-          LOAD_AI_MODELS: ${{ env.LOAD_AI_MODELS }}
+          MS2_JWT_SECRET: ${{ secrets.MS2_JWT_SECRET }}
+          MS2_JWT_ALGORITHM: ${{ vars.MS2_JWT_ALGORITHM || 'HS512' }}
+          MS2_S3_BUCKET_NAME: ${{ vars.MS2_S3_BUCKET_NAME }}
+          MS2_LOAD_AI_MODELS: ${{ env.MS2_LOAD_AI_MODELS }}
+          MS2_PROJECT_NAME: ${{ env.MS2_PROJECT_NAME }}
+          MS2_STACK_NAME: ${{ env.MS2_STACK_NAME }}
+          MS2_ECR_REPO: ${{ env.MS2_ECR_REPO }}
           IMAGE_TAG: ${{ github.sha }}
         run: bash deploy/aws-ms2/deploy.sh

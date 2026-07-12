@@ -21,5 +21,6 @@ export type ResultadoSolicitudRevision = {
   codigoActivo?: string;
   ticketId?: string;
   documentosEncontrados?: number;
+  intencion?: string;
   mensaje: string;
 };

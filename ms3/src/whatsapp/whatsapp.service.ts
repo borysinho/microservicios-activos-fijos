@@ -6,8 +6,16 @@ import { Ms1ClientService } from '../ms1-client/ms1-client.service';
 import { Ms2ClientService } from '../ms2-client/ms2-client.service';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
 import { ResultadoSolicitudRevision, WhatsappMensajeEntrante } from './dto';
+import { DecisionAgenteWhatsapp, IntencionWhatsapp, WhatsappLlmAgentService } from './whatsapp-llm-agent.service';
 
 const CODIGO_ACTIVO_REGEX = /[A-Z]{2,4}-\d{4}-\d+/i;
+const OPERACION_WEB_MOVIL_REGEX =
+  /\b(?:dar\s+de\s+baja|baja\s+definitiva|trasladar|traslado|transferir|transferencia|asignar|reasignar|crear\s+activo|registrar\s+activo|alta\s+de\s+activo|editar|modificar|actualizar|cambiar\s+valor|depreciar|depreciacion|subir\s+documento|cargar\s+documento|adjuntar|descargar\s+documento|eliminar\s+documento|diagnosticar|diagnostico|camara|foto|imagen|programar|agendar|usuario|usuarios|rol|roles|permiso|permisos|dashboard|bi|indicador|kpi)\b/i;
+const AYUDA_REGEX = /\b(?:ayuda|menu|opciones|comandos|hola|buenas)\b/i;
+const CONSULTA_REGEX =
+  /\b(?:consultar|consulta|estado|ubicacion|ubicado|donde|informacion|info|ver|responsable)\b/i;
+const SOLICITUD_REVISION_REGEX =
+  /\b(?:revision|revisar|mantenimiento|falla|fallo|problema|incidente|averia|danado|roto|no\s+enciende|defecto|soporte)\b/i;
 
 @Injectable()
 export class WhatsappService {
@@ -17,6 +25,7 @@ export class WhatsappService {
     private readonly ms1Client: Ms1ClientService,
     private readonly ms2Client: Ms2ClientService,
     private readonly notificacionesService: NotificacionesService,
+    private readonly llmAgent: WhatsappLlmAgentService,
   ) {}
 
   verificarWebhook(mode?: string, token?: string, challenge?: string): string {
@@ -92,7 +101,196 @@ export class WhatsappService {
     if (!mensaje) {
       return { recibido: true, mensaje: 'Payload sin mensaje procesable' };
     }
+    return this.procesarMensajeAgente(mensaje);
+  }
+
+  async procesarMensajeAgente(mensaje: WhatsappMensajeEntrante): Promise<ResultadoSolicitudRevision> {
+    const decision = await this.analizarIntencionNegocio(mensaje.text);
+
+    if (decision.intencion === 'AYUDA') {
+      await this.notificacionesService.enviarWhatsAppTexto(mensaje.from, this.mensajeAyuda());
+      return { recibido: true, intencion: decision.intencion, mensaje: 'Ayuda enviada' };
+    }
+
+    if (decision.intencion === 'NO_PERMITIDA') {
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'Operacion no permitida por chat');
+      await this.notificacionesService.enviarWhatsAppTexto(
+        mensaje.from,
+        [
+          'No puedo realizar esa operacion por WhatsApp.',
+          'Por seguridad debe hacerse desde la aplicacion web o movil, con autenticacion y validaciones completas.',
+          this.mensajeAyuda(),
+        ].join('\n'),
+      );
+      return {
+        recibido: true,
+        intencion: decision.intencion,
+        codigoActivo: decision.codigoActivo,
+        mensaje: 'Operacion no permitida por chat',
+      };
+    }
+
+    if (decision.intencion === 'NO_ENTENDIDA') {
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'Intencion no entendida');
+      await this.notificacionesService.enviarWhatsAppTexto(
+        mensaje.from,
+        [
+          'No pude identificar una operacion permitida para este chat.',
+          this.mensajeAyuda(),
+        ].join('\n'),
+      );
+      return {
+        recibido: true,
+        intencion: decision.intencion,
+        mensaje: 'Intencion no entendida',
+      };
+    }
+
+    if (decision.intencion === 'CONSULTAR_ACTIVO') {
+      return this.consultarActivoPorChat(mensaje, decision.codigoActivo!);
+    }
+
+    if (this.config.n8nWebhookUrl) {
+      return this.procesarSolicitudRevisionConMs4(mensaje, decision.codigoActivo);
+    }
     return this.procesarSolicitudRevision(mensaje);
+  }
+
+  async analizarIntencionNegocio(texto?: string): Promise<DecisionAgenteWhatsapp> {
+    const textoNormalizado = this.normalizarTexto(texto);
+    const codigoActivo = texto?.match(CODIGO_ACTIVO_REGEX)?.[0]?.toUpperCase();
+
+    if (!textoNormalizado) {
+      return { intencion: 'NO_ENTENDIDA' };
+    }
+
+    if (OPERACION_WEB_MOVIL_REGEX.test(textoNormalizado)) {
+      return { intencion: 'NO_PERMITIDA', codigoActivo };
+    }
+
+    const decisionLlm = await this.llmAgent.clasificarMensaje(texto ?? '');
+    const decisionSegura = this.sanitizarDecisionLlm(decisionLlm, codigoActivo);
+    if (decisionSegura) {
+      return decisionSegura;
+    }
+
+    if (AYUDA_REGEX.test(textoNormalizado)) {
+      return { intencion: 'AYUDA', codigoActivo };
+    }
+
+    if (!codigoActivo) {
+      return { intencion: 'NO_ENTENDIDA' };
+    }
+
+    if (CONSULTA_REGEX.test(textoNormalizado)) {
+      return { intencion: 'CONSULTAR_ACTIVO', codigoActivo };
+    }
+
+    if (SOLICITUD_REVISION_REGEX.test(textoNormalizado)) {
+      return { intencion: 'SOLICITAR_REVISION', codigoActivo };
+    }
+
+    if (textoNormalizado.trim() === codigoActivo.toLowerCase()) {
+      return { intencion: 'CONSULTAR_ACTIVO', codigoActivo };
+    }
+
+    return { intencion: 'NO_ENTENDIDA', codigoActivo };
+  }
+
+  private sanitizarDecisionLlm(
+    decision: DecisionAgenteWhatsapp | null,
+    codigoDetectado?: string,
+  ): DecisionAgenteWhatsapp | null {
+    if (!decision) {
+      return null;
+    }
+
+    const codigoActivo = (codigoDetectado ?? decision.codigoActivo)?.match(CODIGO_ACTIVO_REGEX)?.[0]?.toUpperCase();
+    const intencion = this.intencionPermitida(decision.intencion) ? decision.intencion : 'NO_ENTENDIDA';
+
+    if ((intencion === 'CONSULTAR_ACTIVO' || intencion === 'SOLICITAR_REVISION') && !codigoActivo) {
+      return { intencion: 'NO_ENTENDIDA' };
+    }
+
+    return { intencion, codigoActivo };
+  }
+
+  private intencionPermitida(intencion: IntencionWhatsapp): boolean {
+    return (
+      intencion === 'AYUDA' ||
+      intencion === 'CONSULTAR_ACTIVO' ||
+      intencion === 'SOLICITAR_REVISION' ||
+      intencion === 'NO_PERMITIDA' ||
+      intencion === 'NO_ENTENDIDA'
+    );
+  }
+
+  async procesarSolicitudRevisionConMs4(
+    mensaje: WhatsappMensajeEntrante,
+    codigoActivo?: string,
+  ): Promise<ResultadoSolicitudRevision> {
+    this.flujosService.marcar('solicitud-revision', 'EN_PROCESO', 'Mensaje WhatsApp recibido');
+
+    const disparado = await this.flujosService.dispararN8n('solicitud-revision', {
+      ...mensaje,
+      codigoActivo,
+      intencion: 'SOLICITAR_REVISION',
+      origen: 'whatsapp',
+      proveedor: this.config.whatsappProvider || 'desconocido',
+      recibidoEn: new Date().toISOString(),
+    });
+
+    if (!disparado) {
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'MS4/N8N no disponible');
+      return { recibido: true, mensaje: 'No se pudo iniciar el flujo MS4/N8N' };
+    }
+
+    return {
+      recibido: true,
+      codigoActivo,
+      intencion: 'SOLICITAR_REVISION',
+      mensaje: 'Solicitud enviada a MS4/N8N',
+    };
+  }
+
+  async consultarActivoPorChat(
+    mensaje: WhatsappMensajeEntrante,
+    codigoActivo: string,
+  ): Promise<ResultadoSolicitudRevision> {
+    this.flujosService.marcar('solicitud-revision', 'EN_PROCESO', 'Consulta de activo por chat');
+
+    const activo = await this.ms1Client.buscarActivoPorCodigo(codigoActivo);
+    if (!activo) {
+      await this.notificacionesService.enviarWhatsAppTexto(
+        mensaje.from,
+        `Codigo de activo no encontrado: ${codigoActivo}.`,
+      );
+      this.flujosService.marcar('solicitud-revision', 'ERROR', 'Activo no existe en MS1');
+      return {
+        recibido: true,
+        intencion: 'CONSULTAR_ACTIVO',
+        codigoActivo,
+        mensaje: 'Activo no encontrado',
+      };
+    }
+
+    await this.notificacionesService.enviarWhatsAppTexto(
+      mensaje.from,
+      [
+        `Activo: ${activo.codigo} - ${activo.nombre}`,
+        `Estado: ${activo.estado ?? 'SIN_ESTADO'}`,
+        `Area: ${activo.areaActual?.nombre ?? 'No registrada'}`,
+        'Para solicitar revision, escribe: revisar ' + activo.codigo + ' y el motivo.',
+      ].join('\n'),
+    );
+
+    this.flujosService.marcar('solicitud-revision', 'COMPLETADO', `Consulta ${activo.codigo}`);
+    return {
+      recibido: true,
+      intencion: 'CONSULTAR_ACTIVO',
+      codigoActivo: activo.codigo,
+      mensaje: 'Consulta de activo procesada',
+    };
   }
 
   async procesarSolicitudRevision(mensaje: WhatsappMensajeEntrante): Promise<ResultadoSolicitudRevision> {
@@ -161,7 +359,25 @@ export class WhatsappService {
       codigoActivo,
       ticketId: ticket.ticketId,
       documentosEncontrados: documentos.length,
+      intencion: 'SOLICITAR_REVISION',
       mensaje: 'Solicitud de revision procesada',
     };
+  }
+
+  private normalizarTexto(texto?: string): string {
+    return (texto ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+  }
+
+  private mensajeAyuda(): string {
+    return [
+      'Operaciones permitidas por WhatsApp:',
+      '- Consultar estado/ubicacion: consultar ACT-2024-001',
+      '- Solicitar revision o mantenimiento: revisar ACT-2024-001 no enciende',
+      'Altas, bajas, traslados, asignaciones, documentos, diagnostico con camara y administracion se realizan solo desde web o movil.',
+    ].join('\n');
   }
 }

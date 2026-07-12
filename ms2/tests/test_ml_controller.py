@@ -14,7 +14,7 @@ from main import app
 
 pytestmark = pytest.mark.asyncio
 
-JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_SECRET = os.environ["MS2_JWT_SECRET"]
 JWT_ALGORITHM = "HS512"
 
 

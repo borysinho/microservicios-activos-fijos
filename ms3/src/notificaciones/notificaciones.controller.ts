@@ -18,8 +18,8 @@ export class NotificacionesController {
   }
 
   @Post('email')
-  enviarEmail(@Body() dto: EnviarEmailDto) {
-    return this.notificacionesService.enviarEmail(dto);
+  enviarEmail(@Body() dto: Partial<EnviarEmailDto>, @Query() query: Partial<EnviarEmailDto>) {
+    return this.notificacionesService.enviarEmail((query.to ? query : dto) as EnviarEmailDto);
   }
 
   @Get()

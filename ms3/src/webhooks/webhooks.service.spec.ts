@@ -149,9 +149,57 @@ describe('WebhooksService', () => {
       motivo: 'Solicitud recibida desde N8N',
     });
     expect(flujosService.dispararN8n).not.toHaveBeenCalled();
+    expect(flujosService.marcar).toHaveBeenCalledWith(
+      'solicitud-revision',
+      'COMPLETADO',
+      'Ticket TKT-N8N-1',
+    );
     expect(result).toEqual({
       ticketId: 'TKT-N8N-1',
       mensaje: 'Reporte recibido para EQ-2024-005',
+    });
+  });
+
+  it('procesa solicitud de revision desde N8N usando MS3 como fachada del sistema', async () => {
+    ms1Client.obtenerActivoPorId.mockReset();
+    (ms1Client as any).buscarActivoPorCodigo = jest.fn().mockResolvedValue({
+      id: '550e8400-e29b-41d4-a716-446655440000',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+      responsableEmail: 'resp@empresa.com',
+    });
+    ms1Client.crearTicketRevision.mockResolvedValue({
+      ticketId: 'TKT-N8N-2',
+      activoId: '550e8400-e29b-41d4-a716-446655440000',
+      estado: 'CREADO',
+    });
+    ms2Client.obtenerDocumentos.mockResolvedValue([{ documentoId: 'doc-1' }]);
+
+    const result = await service.solicitudRevisionN8n({
+      from: 'whatsapp:+59177685777',
+      text: 'Solicito revision del activo ACT-2024-001',
+      codigoActivo: 'ACT-2024-001',
+    });
+
+    expect((ms1Client as any).buscarActivoPorCodigo).toHaveBeenCalledWith('ACT-2024-001');
+    expect(ms1Client.crearTicketRevision).toHaveBeenCalledWith({
+      activoId: '550e8400-e29b-41d4-a716-446655440000',
+      solicitadoPorWhatsApp: 'whatsapp:+59177685777',
+      motivo: 'Solicito revision del activo ACT-2024-001',
+    });
+    expect(ms2Client.obtenerDocumentos).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000');
+    expect(flujosService.marcar).toHaveBeenCalledWith(
+      'solicitud-revision',
+      'COMPLETADO',
+      'Ticket TKT-N8N-2',
+    );
+    expect(result).toMatchObject({
+      encontrado: true,
+      codigoActivo: 'ACT-2024-001',
+      responsableEmail: 'resp@empresa.com',
+      ticketId: 'TKT-N8N-2',
+      documentosEncontrados: 1,
     });
   });
 });

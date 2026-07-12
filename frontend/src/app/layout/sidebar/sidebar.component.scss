@@ -2,7 +2,7 @@
   width: var(--sidebar-w);
   min-width: var(--sidebar-w);
   height: 100vh;
-  background: var(--bg-surface);
+  background: #fbfcfe;
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -11,78 +11,119 @@
   &__logo {
     display: flex;
     align-items: center;
-    gap: .9rem;
+    gap: 0.9rem;
     padding: 1.25rem 1.25rem 1rem;
     border-bottom: 1px solid var(--border);
   }
 
   &__logo-mark {
-    width: 36px; height: 36px; flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
     background: linear-gradient(135deg, var(--accent), var(--accent-dim));
     border-radius: var(--radius-md);
-    display: flex; align-items: center; justify-content: center;
-    color: #000;
-    box-shadow: 0 2px 12px rgba(240,165,0,.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(15, 118, 110, 0.18);
   }
 
   &__logo-title {
-    display: block; font-size: 14px; font-weight: 700; color: var(--text-primary);
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
     line-height: 1.2;
   }
 
   &__logo-sub {
-    display: block; font-size: 11px; color: var(--text-muted);
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
   }
 
   &__nav {
-    flex: 1; padding: 1rem .75rem; display: flex; flex-direction: column; gap: .15rem;
+    flex: 1;
+    padding: 1rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
     overflow-y: auto;
   }
 
   &__nav-label {
-    font-size: 10px; font-weight: 700; color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 1.2px;
-    padding: .5rem .5rem .5rem;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 0.5rem 0.5rem;
     display: block;
   }
 
   &__item {
-    display: flex; align-items: center; gap: .8rem;
-    padding: .6rem .75rem; border-radius: var(--radius-md);
-    color: var(--text-secondary); font-size: 13px; font-weight: 500;
-    transition: all .15s; cursor: pointer; text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    cursor: pointer;
+    text-decoration: none;
     position: relative;
 
-    &:hover { background: var(--bg-raised); color: var(--text-primary); }
+    &:hover {
+      background: var(--bg-raised);
+      color: var(--text-primary);
+    }
 
     &--active {
       background: var(--accent-glow) !important;
       color: var(--accent) !important;
       font-weight: 600;
 
-      .sidebar__item-icon svg { stroke: var(--accent); }
+      .sidebar__item-icon svg {
+        stroke: var(--accent);
+      }
 
       // Barra lateral izquierda de indicador activo
       &::before {
         content: '';
-        position: absolute; left: 0; top: 20%; bottom: 20%;
-        width: 3px; border-radius: 0 3px 3px 0;
+        position: absolute;
+        left: 0;
+        top: 20%;
+        bottom: 20%;
+        width: 3px;
+        border-radius: 0 3px 3px 0;
         background: var(--accent);
-        box-shadow: 0 0 8px rgba(240,165,0,.5);
+        box-shadow: 0 0 8px rgba(15, 118, 110, 0.25);
       }
     }
   }
 
   &__item-icon {
-    width: 20px; height: 20px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    svg { width: 18px; height: 18px; }
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    svg {
+      width: 18px;
+      height: 18px;
+    }
   }
 
-  &__item-label { flex: 1; }
+  &__item-label {
+    flex: 1;
+  }
 
   &__footer {
-    padding: 0 .75rem .85rem;
+    padding: 0 0.75rem 0.85rem;
     flex-shrink: 0;
 
     // Separador superior con gradiente de color
@@ -90,81 +131,136 @@
       content: '';
       display: block;
       height: 1px;
-      margin-bottom: .75rem;
-      background: linear-gradient(90deg, transparent, var(--border), var(--accent-glow), var(--border), transparent);
+      margin-bottom: 0.75rem;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        var(--border),
+        var(--accent-glow),
+        var(--border),
+        transparent
+      );
     }
   }
 
   &__footer-inner {
-    display: flex; align-items: center; gap: .7rem;
-    padding: .65rem .75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0.75rem;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, var(--bg-raised), rgba(240,165,0,.04));
+    background: #fff;
     border: 1px solid var(--border);
-    transition: border-color .2s;
+    transition: border-color 0.2s;
 
-    &:hover { border-color: rgba(240,165,0,.2); }
+    &:hover {
+      border-color: rgba(15, 118, 110, 0.2);
+    }
   }
 
   &__avatar-wrap {
-    position: relative; flex-shrink: 0;
+    position: relative;
+    flex-shrink: 0;
   }
 
   &__avatar {
-    width: 34px; height: 34px;
+    width: 34px;
+    height: 34px;
     background: linear-gradient(135deg, var(--accent), var(--accent-dim));
     border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 800; color: #000;
-    box-shadow: 0 0 0 2px var(--bg-raised), 0 0 0 3px rgba(240,165,0,.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    box-shadow:
+      0 0 0 2px #fff,
+      0 0 0 3px rgba(15, 118, 110, 0.18);
   }
 
   &__online-dot {
-    position: absolute; bottom: 1px; right: 0;
-    width: 8px; height: 8px; border-radius: 50%;
+    position: absolute;
+    bottom: 1px;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     background: var(--success);
-    border: 2px solid var(--bg-raised);
-    box-shadow: 0 0 5px rgba(34,197,94,.6);
+    border: 2px solid #fff;
+    box-shadow: 0 0 5px rgba(34, 197, 94, 0.6);
     animation: pulse-dot 2s ease-in-out infinite;
   }
 
-  &__user { flex: 1; min-width: 0; }
+  &__user {
+    flex: 1;
+    min-width: 0;
+  }
 
-  &__user-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  &__user-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
 
   &__user-name {
-    display: block; font-size: 12px; font-weight: 700;
-    color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     line-height: 1.2;
   }
 
   &__user-role {
-    display: inline-block; font-size: 9px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .6px;
-    color: var(--accent); background: var(--accent-glow);
-    padding: 1px 6px; border-radius: 20px;
-    border: 1px solid rgba(240,165,0,.2);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--accent);
+    background: var(--accent-glow);
+    padding: 1px 6px;
+    border-radius: 20px;
+    border: 1px solid rgba(240, 165, 0, 0.2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   &__logout-btn {
     flex-shrink: 0;
-    width: 28px; height: 28px;
+    width: 28px;
+    height: 28px;
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--radius-md);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--text-muted); cursor: pointer; transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
 
     &:hover {
       color: var(--danger);
       background: var(--danger-dim);
-      border-color: rgba(239,68,68,.2);
+      border-color: rgba(239, 68, 68, 0.2);
     }
   }
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: .45; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }

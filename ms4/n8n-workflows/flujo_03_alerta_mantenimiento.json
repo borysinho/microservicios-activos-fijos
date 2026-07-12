@@ -1,6 +1,6 @@
 {
   "name": "Flujo 03 - Alerta de Mantenimiento Programado",
-  "active": false,
+  "active": true,
   "nodes": [
     {
       "parameters": {
@@ -12,12 +12,13 @@
       "name": "Webhook MS1 Mantenimiento",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0]
+      "position": [0, 0],
+      "webhookId": "ms4"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS1_GRAPHQL_URL}}",
+        "url": "={{$env.MS4_MS1_GRAPHQL_URL}}",
         "sendBody": true,
         "contentType": "json",
         "jsonBody": "={\"query\":\"query Activo($id: ID!) { activo(id: $id) { id codigo nombre estado } }\",\"variables\":{\"id\":\"{{$json.activoId}}\"}}"
@@ -31,7 +32,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS3_BASE_URL}}/notificaciones/email",
+        "url": "={{$env.MS4_MS3_BASE_URL}}/notificaciones/email",
         "sendBody": true,
         "contentType": "json",
         "jsonBody": "={\"to\":\"{{$node['Webhook MS1 Mantenimiento'].json.responsableEmail}}\",\"subject\":\"Mantenimiento programado {{$node['Webhook MS1 Mantenimiento'].json.codigo}}\",\"text\":\"Coordine el mantenimiento programado del activo.\"}"
@@ -45,7 +46,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.MS3_BASE_URL}}/whatsapp/enviar",
+        "url": "={{$env.MS4_MS3_BASE_URL}}/whatsapp/enviar",
         "sendBody": true,
         "contentType": "json",
         "jsonBody": "={\"to\":\"{{$node['Webhook MS1 Mantenimiento'].json.responsablePhone}}\",\"mensaje\":\"Recordatorio: el activo {{$node['Webhook MS1 Mantenimiento'].json.codigo}} tiene mantenimiento programado para {{$node['Webhook MS1 Mantenimiento'].json.fechaMantenimiento}}.\"}"
@@ -67,5 +68,9 @@
     "Enviar Email via MS3": {
       "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]]
     }
-  }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
 }

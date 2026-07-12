@@ -1,92 +1,142 @@
 <div class="page-header">
   <div>
-    <h1>Machine Learning</h1>
-    <p>Predicción de vida útil (Random Forest) y clustering de activos (K-Means) — MS2 FastAPI</p>
+    <h1>Predicción de mantenimiento</h1>
+    <p>Anticipe fallas, priorice revisiones y detecte grupos de activos críticos.</p>
   </div>
 </div>
 
 <div class="tab-nav">
-  <button [class.active]="tab() === 'vida'" (click)="tab.set('vida')">📈 Predicción Vida Útil</button>
-  <button [class.active]="tab() === 'cluster'" (click)="tab.set('cluster')">🔵 Clustering K-Means</button>
-</div>
-
-@if (tab() === 'vida') {
-<div class="ml-layout">
-  <div class="card ml-form">
-    <h3>Parámetros del Activo</h3>
-    <p class="ml-desc">El modelo Random Forest estima los años de vida útil restante basado en características del
-      activo.</p>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>ID de Categoría</label>
-        <input class="form-control" [(ngModel)]="vidaParams.categoriaId" placeholder="UUID categoría">
-      </div>
-      <div class="form-group">
-        <label>Valor de Adquisición (BOB)</label>
-        <input class="form-control" type="number" [(ngModel)]="vidaParams.valorAdquisicion" placeholder="15000">
-      </div>
-      <div class="form-group">
-        <label>Años desde fabricación</label>
-        <input class="form-control" type="number" [(ngModel)]="vidaParams.aniosFabricacion" placeholder="3">
-      </div>
-    </div>
-    <button class="btn btn--primary" (click)="predecirVida()" [disabled]="vidaLoading()">
-      {{ vidaLoading() ? 'Procesando...' : 'Ejecutar predicción' }}
-    </button>
-  </div>
-
-  @if (vidaResult(); as r) {
-  <div class="card ml-result">
-    <h3>Resultado del Modelo</h3>
-    <div class="result-metric">
-      <span class="result-metric__label">Vida útil restante</span>
-      <span class="result-metric__value mono">{{ r.vidaUtilRestante ?? '—' }} meses</span>
-    </div>
-    <div class="result-metric">
-      <span class="result-metric__label">Probabilidad de fallo (6 meses)</span>
-      <span class="result-metric__value mono"
-        [style.color]="r.probabilidad_fallo_6m > 0.6 ? '#ef4444' : r.probabilidad_fallo_6m > 0.3 ? '#f59e0b' : '#22c55e'">
-        {{ (r.probabilidad_fallo_6m ?? 0) | percent:'1.0-1' }}
-      </span>
-    </div>
-    <div class="result-metric">
-      <span class="result-metric__label">Cluster K-Means</span>
-      <span class="result-metric__value">
-        <span class="badge" [class]="clusterBadge(r.cluster)">{{ r.cluster_label ?? '—' }}</span>
-      </span>
-    </div>
-    <div class="result-metric">
-      <span class="result-metric__label">Confianza del modelo</span>
-      <span class="result-metric__value mono">{{ (r.confianza ?? 0) | percent:'1.0-1' }}</span>
-    </div>
-    @if (r.recomendacion_mantenimiento) {
-    <div class="result-recomendacion">
-      <span class="result-recomendacion__title">Recomendación de mantenimiento</span>
-      <p class="result-recomendacion__text">{{ r.recomendacion_mantenimiento }}</p>
-    </div>
-    }
-  </div>
-  }
-</div>
-}
-
-@if (tab() === 'cluster') {
-<div class="card" style="margin-bottom:1.25rem">
-  <p class="ml-desc">El algoritmo K-Means agrupa los activos por similitud de características para identificar patrones
-    en el inventario.</p>
-  <button class="btn btn--primary" (click)="ejecutarClustering()" [disabled]="clusterLoading()">
-    {{ clusterLoading() ? 'Procesando...' : 'Ejecutar K-Means clustering' }}
+  <button [class.active]="tab() === 'vida'" (click)="tab.set('vida')">Vida útil y riesgo</button>
+  <button [class.active]="tab() === 'cluster'" (click)="tab.set('cluster')">
+    Segmentos del inventario
   </button>
 </div>
 
-@if (clusterLoading()) {
-<div class="loading">Ejecutando algoritmo K-Means...</div>
-} @else if (clusterResult()) {
-<div class="card">
-  <h3 class="chart-title">Visualización de Clusters</h3>
-  <div style="height:400px;position:relative">
-    <canvas #clusterCanvas></canvas>
+@if (tab() === 'vida') {
+  <div class="ml-layout">
+    <div class="card ml-form">
+      <h3>Activo a evaluar</h3>
+      <p class="ml-desc">
+        Seleccione un activo del inventario. Puede ajustar los datos antes de calcular el riesgo.
+      </p>
+      <div class="form-group">
+        <label>Activo</label>
+        <select
+          class="form-control"
+          [(ngModel)]="selectedActivoId"
+          (ngModelChange)="onActivoSeleccionado()"
+          [disabled]="cargandoCatalogos()"
+        >
+          <option value="">
+            {{ cargandoCatalogos() ? 'Cargando inventario...' : 'Seleccionar activo' }}
+          </option>
+          @for (a of activos(); track a.id) {
+            <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Categoría</label>
+          <select class="form-control" [(ngModel)]="vidaParams.categoriaId">
+            <option value="">Seleccionar categoría</option>
+            @for (c of categorias(); track c.id) {
+              <option [value]="c.id">{{ c.nombre }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valor de Adquisición (BOB)</label>
+          <input
+            class="form-control"
+            type="number"
+            [(ngModel)]="vidaParams.valorAdquisicion"
+            placeholder="15000"
+          />
+        </div>
+        <div class="form-group">
+          <label>Antigüedad estimada (años)</label>
+          <input
+            class="form-control"
+            type="number"
+            [(ngModel)]="vidaParams.aniosFabricacion"
+            placeholder="3"
+          />
+        </div>
+      </div>
+      <button
+        class="btn btn--primary"
+        (click)="predecirVida()"
+        [disabled]="vidaLoading() || !vidaParams.categoriaId"
+      >
+        {{ vidaLoading() ? 'Calculando...' : 'Calcular riesgo' }}
+      </button>
+    </div>
+
+    @if (vidaResult(); as r) {
+      <div class="card ml-result">
+        <h3>Resultado para mantenimiento</h3>
+        <div class="result-metric">
+          <span class="result-metric__label">Vida útil restante</span>
+          <span class="result-metric__value mono">{{ r.vidaUtilRestante ?? '—' }} meses</span>
+        </div>
+        <div class="result-metric">
+          <span class="result-metric__label">Probabilidad de fallo (6 meses)</span>
+          <span
+            class="result-metric__value mono"
+            [style.color]="
+              r.probabilidad_fallo_6m > 0.6
+                ? '#ef4444'
+                : r.probabilidad_fallo_6m > 0.3
+                  ? '#f59e0b'
+                  : '#22c55e'
+            "
+          >
+            {{ r.probabilidad_fallo_6m ?? 0 | percent: '1.0-1' }}
+          </span>
+        </div>
+        <div class="result-metric">
+          <span class="result-metric__label">Grupo de riesgo</span>
+          <span class="result-metric__value">
+            <span class="badge" [class]="clusterBadge(r.cluster)">{{
+              r.cluster_label ?? '—'
+            }}</span>
+          </span>
+        </div>
+        <div class="result-metric">
+          <span class="result-metric__label">Confianza del análisis</span>
+          <span class="result-metric__value mono">{{ r.confianza ?? 0 | percent: '1.0-1' }}</span>
+        </div>
+        @if (r.recomendacion_mantenimiento) {
+          <div class="result-recomendacion">
+            <span class="result-recomendacion__title">Recomendación de mantenimiento</span>
+            <p class="result-recomendacion__text">{{ r.recomendacion_mantenimiento }}</p>
+          </div>
+        }
+      </div>
+    }
   </div>
-</div>
 }
+
+@if (tab() === 'cluster') {
+  <div class="card" style="margin-bottom: 1.25rem">
+    <p class="ml-desc">
+      Agrupa activos con comportamiento similar para priorizar mantenimiento, renovación o
+      seguimiento preventivo.
+    </p>
+    <button class="btn btn--primary" (click)="ejecutarClustering()" [disabled]="clusterLoading()">
+      {{ clusterLoading() ? 'Analizando inventario...' : 'Analizar segmentos' }}
+    </button>
+  </div>
+
+  @if (clusterLoading()) {
+    <div class="loading">Analizando segmentos del inventario...</div>
+  } @else if (clusterResult()) {
+    <div class="card">
+      <h3 class="chart-title">Mapa de segmentos</h3>
+      <div style="height: 400px; position: relative">
+        <canvas #clusterCanvas></canvas>
+      </div>
+    </div>
+  }
 }
