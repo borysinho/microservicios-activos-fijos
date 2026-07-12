@@ -84,6 +84,7 @@ MS4_N8N_PROTOCOL=https
 MS4_N8N_EDITOR_BASE_URL=https://<host-ms4>
 MS4_WEBHOOK_URL=https://<host-ms4>
 MS4_N8N_ENCRYPTION_KEY=<clave-fija-larga>
+MS4_N8N_SECURE_COOKIE=true
 MS4_N8N_BASIC_AUTH_USER=admin
 MS4_N8N_BASIC_AUTH_PASSWORD=<password>
 MS4_N8N_DIAGNOSTICS_ENABLED=false
@@ -97,6 +98,8 @@ RESPONSABLE_DEFAULT_EMAIL=<correo-para-demo>
 ```
 
 Las variables `MS4_N8N_DIAGNOSTICS_ENABLED=false`, `MS4_N8N_VERSION_NOTIFICATIONS_ENABLED=false`, `MS4_N8N_TEMPLATES_ENABLED=false` y `MS4_N8N_PERSONALIZATION_ENABLED=false` evitan llamadas externas no necesarias desde el editor de N8N durante la demo. Si aparecen logs como `Error fetching feature flags ... PostHog: 401`, recrear el contenedor con esta configuracion.
+
+Si la demo se expone temporalmente por HTTP sin TLS, configurar `MS4_N8N_PROTOCOL=http`, URLs `http://...` y `MS4_N8N_SECURE_COOKIE=false`; con HTTPS debe mantenerse en `true`.
 
 El workflow usa `MS4_VM_HOST`, `MS4_VM_USER` y `MS4_VM_SSH_KEY`. Para cubrir el alcance del examen, esos secretos deben apuntar a una VM/host Azure propio de MS4; no se debe desplegar MS4 en la misma instancia usada por MS1.
 

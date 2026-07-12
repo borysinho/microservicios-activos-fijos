@@ -123,6 +123,7 @@ jobs:
           MS4_N8N_EDITOR_BASE_URL: ${{ vars.MS4_N8N_EDITOR_BASE_URL }}
           MS4_WEBHOOK_URL: ${{ vars.MS4_WEBHOOK_URL }}
           MS4_N8N_ENCRYPTION_KEY: ${{ secrets.MS4_N8N_ENCRYPTION_KEY }}
+          MS4_N8N_SECURE_COOKIE: ${{ vars.MS4_N8N_SECURE_COOKIE || (vars.MS4_N8N_PROTOCOL == 'http' && 'false' || 'true') }}
           MS4_N8N_BASIC_AUTH_ACTIVE: ${{ vars.MS4_N8N_BASIC_AUTH_ACTIVE || 'true' }}
           MS4_N8N_BASIC_AUTH_USER: ${{ vars.MS4_N8N_BASIC_AUTH_USER }}
           MS4_N8N_BASIC_AUTH_PASSWORD: ${{ secrets.MS4_N8N_BASIC_AUTH_PASSWORD }}
@@ -149,6 +150,7 @@ jobs:
             printf 'MS4_N8N_EDITOR_BASE_URL=%s\n' "$MS4_N8N_EDITOR_BASE_URL"
             printf 'MS4_WEBHOOK_URL=%s\n' "$MS4_WEBHOOK_URL"
             printf 'MS4_N8N_ENCRYPTION_KEY=%s\n' "$MS4_N8N_ENCRYPTION_KEY"
+            printf 'MS4_N8N_SECURE_COOKIE=%s\n' "$MS4_N8N_SECURE_COOKIE"
             printf 'MS4_N8N_BASIC_AUTH_ACTIVE=%s\n' "$MS4_N8N_BASIC_AUTH_ACTIVE"
             printf 'MS4_N8N_BASIC_AUTH_USER=%s\n' "$MS4_N8N_BASIC_AUTH_USER"
             printf 'MS4_N8N_BASIC_AUTH_PASSWORD=%s\n' "$MS4_N8N_BASIC_AUTH_PASSWORD"
