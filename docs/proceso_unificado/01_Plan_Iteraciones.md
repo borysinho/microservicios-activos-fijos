@@ -333,7 +333,7 @@ Implementar la aplicación móvil completa para el Responsable de Área, con cá
 
 ### Objetivo
 
-Implementar MS3 (NestJS + N8N) con los flujos de automatización completos. Verificar la integración de todos los microservicios. Preparar el despliegue cloud.
+Implementar MS3 (NestJS coordinador) y MS4 (N8N en Azure) con los flujos de automatización completos. Verificar la integración de todos los microservicios. Preparar el despliegue cloud.
 
 ### Componentes a implementar
 
@@ -393,7 +393,7 @@ Al finalizar IT-C5, el sistema debe cumplir al 100% todos los requisitos del doc
 
 | Requisito                      | Evidencia requerida                                  |
 | ------------------------------ | ---------------------------------------------------- |
-| ≥ 3 microservicios distintos   | MS1 (Azure), MS2 (AWS), MS3 (GCP) desplegados        |
+| ≥ 3 microservicios distintos   | MS1 (Azure), MS2 (AWS), MS3 (GCP), MS4 (Azure/N8N) desplegados |
 | Multi-cloud                    | URLs públicas de los 3 proveedores                   |
 | Multi-lenguaje                 | Java (MS1), Python (MS2), Node.js (MS3)              |
 | Frontend Angular               | URL de la aplicación web funcionando                 |

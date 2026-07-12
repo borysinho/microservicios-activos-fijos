@@ -20,7 +20,7 @@ env:
   MS1_GRAPHQL_URL: ${{ vars.MS1_GRAPHQL_URL }}
   MS2_BASE_URL: ${{ vars.MS2_BASE_URL }}
   SENDGRID_FROM_EMAIL: ${{ vars.SENDGRID_FROM_EMAIL || 'noreply@activos.empresa.com' }}
-  N8N_WEBHOOK_URL: ${{ vars.N8N_WEBHOOK_URL }}
+  MS4_N8N_WEBHOOK_URL: ${{ vars.MS4_N8N_WEBHOOK_URL }}
 
 jobs:
   test:
@@ -99,7 +99,7 @@ jobs:
             --timeout=60 \
             --cpu-throttling \
             --no-cpu-boost \
-            --set-env-vars "NODE_ENV=production,MS3_DEV_TOOLS_ENABLED=false,MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL},MS2_BASE_URL=${MS2_BASE_URL},MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN},SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL},N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}"
+            --set-env-vars "NODE_ENV=production,MS3_DEV_TOOLS_ENABLED=false,MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL},MS2_BASE_URL=${MS2_BASE_URL},MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN},SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL},MS4_N8N_WEBHOOK_URL=${MS4_N8N_WEBHOOK_URL}"
 
       - name: Show deployed URL
         id: service-url

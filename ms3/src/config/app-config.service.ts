@@ -15,7 +15,8 @@ export class AppConfig {
   readonly ms1TicketsUrl = env('MS1_TICKETS_URL');
   readonly ms2BaseUrl = env('MS2_BASE_URL', 'http://localhost:8000/api');
   readonly ms2AuthToken = env('MS2_AUTH_TOKEN');
-  readonly n8nWebhookUrl = env('N8N_WEBHOOK_URL');
+  readonly ms4N8nWebhookUrl = env('MS4_N8N_WEBHOOK_URL', env('N8N_WEBHOOK_URL'));
+  readonly n8nWebhookUrl = this.ms4N8nWebhookUrl;
   readonly corsOrigins = env('CORS_ORIGINS', '*').split(',').map((origin) => origin.trim());
 
   readonly whatsappApiUrl = env('WHATSAPP_API_URL', 'https://graph.facebook.com/v18.0');

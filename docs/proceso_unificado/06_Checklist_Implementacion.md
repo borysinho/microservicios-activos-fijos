@@ -11,7 +11,7 @@
 
 | #   | Requisito                       | Componente          | Criterio de cumplimiento                      | ✅  |
 | --- | ------------------------------- | ------------------- | --------------------------------------------- | --- |
-| R01 | ≥ 3 microservicios              | MS1, MS2, MS3       | 3 servicios corriendo en URLs distintas       | [ ] |
+| R01 | ≥ 3 microservicios              | MS1, MS2, MS3, MS4  | 4 servicios definidos; MS4 consumido solo por MS3 | [ ] |
 | R02 | Multi-cloud                     | Azure/AWS/GCP       | URLs con dominios de cada proveedor           | [ ] |
 | R03 | Multi-lenguaje                  | Java/Python/Node.js | Cada MS en su lenguaje correspondiente        | [ ] |
 | R04 | Frontend Angular                | `frontend/`         | App Angular compilada y desplegada            | [ ] |
@@ -24,7 +24,7 @@
 | R11 | ML Supervisado (Random Forest)  | MS2                 | Endpoint `/ml/prediccion-vida-util` funcional | [ ] |
 | R12 | ML No Supervisado (K-Means)     | MS2                 | Endpoint `/ml/clustering` funcional           | [ ] |
 | R13 | Blockchain                      | MS1                 | Hash verificable en Etherscan Sepolia         | [ ] |
-| R14 | N8N ≥ 3 pasos                   | MS3                 | Demo flujo WhatsApp → sistema → email         | [ ] |
+| R14 | N8N ≥ 3 pasos                   | MS3 + MS4           | Demo MS3 → MS4/N8N: WhatsApp → sistema → email | [ ] |
 | R15 | BD Relacional (PostgreSQL)      | MS1                 | MS1 conectado a Supabase PostgreSQL           | [ ] |
 | R16 | BD NoSQL (DynamoDB)             | MS2                 | MS2 conectado a DynamoDB en AWS               | [ ] |
 | R17 | Almacenamiento de archivos (S3) | MS2                 | Documentos almacenados y descargables         | [ ] |
@@ -246,13 +246,13 @@
 - [ ] `jwt_middleware.py` — verificar JWT emitido por MS1 (mismo secreto)
 - [ ] Aplicar middleware a todos los endpoints que requieren autenticación
 
-### MS3 — NestJS + N8N
+### MS3 — NestJS
 
 #### Proyecto base
 
 - [x] `package.json` con: `@nestjs/core`, `@nestjs/common`, `@nestjs/axios`, `axios`, `class-validator`, `jest`
 - [x] `app.module.ts` importando todos los módulos
-- [x] `Dockerfile` + `docker-compose.yml` (NestJS + N8N)
+- [x] `Dockerfile` + `docker-compose.yml` (NestJS coordinador)
 
 #### NestJS Endpoints
 
@@ -263,12 +263,17 @@
 - [x] `ms1-client.service.ts` — llamadas GraphQL a MS1 + creación de ticket de revisión con fallback local
 - [x] `ms2-client.service.ts` — llamadas REST a MS2 para documentación del activo
 
+### MS4 — N8N en Azure
+
 #### N8N Workflows (JSON exportados)
 
-- [x] `flujo_01_solicitud_revision.json` — Flujo 1 (7 nodos): WhatsApp → identificar activo → consultar MS1 → crear ticket → verificar docs → email → responder WhatsApp
-- [x] `flujo_02_alerta_garantia.json` — Flujo 2 (5 nodos): Webhook MS1 → datos activo → docs → email → push
-- [x] `flujo_03_alerta_mantenimiento.json` — Flujo 3 (4 nodos): Webhook MS1 → datos activo → email → WhatsApp
-- [x] Variables de N8N documentadas en `.env.example`/`docker-compose.yml`: `MS1_GRAPHQL_URL`, `MS2_BASE_URL`, `SENDGRID_API_KEY`, `WHATSAPP_TOKEN`, `FCM_*`
+- [x] `ms4/n8n-workflows/flujo_01_solicitud_revision.json` — Flujo 1 (7 nodos): WhatsApp → identificar activo → consultar MS1 → crear ticket → verificar docs → email → responder WhatsApp
+- [x] `ms4/n8n-workflows/flujo_02_alerta_garantia.json` — Flujo 2 (5 nodos): Webhook MS1 → datos activo → docs → email → push
+- [x] `ms4/n8n-workflows/flujo_03_alerta_mantenimiento.json` — Flujo 3 (4 nodos): Webhook MS1 → datos activo → email → WhatsApp
+- [x] Variables de N8N documentadas en `ms4/.env.example`/`ms4/docker-compose.yml`: `MS1_GRAPHQL_URL`, `MS2_BASE_URL`, `SENDGRID_FROM_EMAIL`
+- [x] CI/CD automático configurado: `.github/workflows/ms4-azure-cd.yml`
+- [ ] Host Azure con Docker Compose y volumen persistente para N8N
+- [ ] MS3 configurado con `MS4_N8N_WEBHOOK_URL`
 
 ### Frontend — Angular
 
@@ -388,8 +393,7 @@
 ### MS3 — Google Cloud Platform
 
 - [ ] Google Cloud Run con imagen Docker de MS3 (NestJS)
-- [ ] Cloud Run o VM para N8N con datos persistentes (Cloud SQL o bucket para sqlite)
-- [x] Variables de entorno documentadas para despliegue: `MS1_GRAPHQL_URL`, `MS2_BASE_URL`, `WHATSAPP_*`, `SENDGRID_API_KEY`, `FCM_*`
+- [x] Variables de entorno documentadas para despliegue: `MS1_GRAPHQL_URL`, `MS2_BASE_URL`, `MS4_N8N_WEBHOOK_URL`, `WHATSAPP_*`, `SENDGRID_API_KEY`, `FCM_*`
 - [ ] Firebase proyecto creado para FCM
 - [x] CI/CD automático configurado: `.github/workflows/ms3-gcp-cd.yml` (CU-84)
 - [ ] Secretos GitHub Actions configurados: `GCP_SA_KEY`
@@ -430,6 +434,6 @@
 
 **Bloque 4 — App Móvil (5 min)** 14. [ ] Abrir app, mostrar lista de activos en modo offline (CU-40, R06) 15. [ ] Fotografiar activo con cámara y enviar a verificación IA (CU-34, R06, R07) 16. [ ] Registrar ubicación GPS del activo (CU-42, R06) 17. [ ] Mostrar notificación push recibida (CU-44)
 
-**Bloque 5 — MS3 Automatización (5 min)** 18. [ ] Enviar mensaje de WhatsApp con código de activo (CU-67) 19. [ ] Mostrar en N8N que el flujo se ejecutó (6 pasos) (R14) 20. [ ] Mostrar el email recibido en SendGrid (CU-71) 21. [ ] Mostrar respuesta de WhatsApp recibida (CU-72)
+**Bloque 5 — MS3/MS4 Automatización (5 min)** 18. [ ] Enviar mensaje de WhatsApp con código de activo a MS3 (CU-67) 19. [ ] Mostrar en MS4/N8N que el flujo se ejecutó (6 pasos) (R14) 20. [ ] Mostrar el email recibido en SendGrid (CU-71) 21. [ ] Mostrar respuesta de WhatsApp recibida (CU-72)
 
-**Bloque 6 — Arquitectura y Nube (5 min)** 22. [ ] Mostrar URLs de producción de los 3 microservicios (R01, R02) 23. [ ] Mostrar panel de Azure con MS1 corriendo 24. [ ] Mostrar panel de Supabase con PostgreSQL y tablas de MS1 25. [ ] Mostrar panel de AWS con S3 y DynamoDB 26. [ ] Mostrar panel de GCP con Cloud Run o N8N corriendo 27. [ ] Mostrar GitHub Actions con CI/CD automático de MS1, MS2 y MS3 (CU-82, CU-83, CU-84)
+**Bloque 6 — Arquitectura y Nube (5 min)** 22. [ ] Mostrar URLs de producción de MS1, MS2, MS3 y MS4 (R01, R02) 23. [ ] Mostrar panel de Azure con MS1 y MS4 corriendo 24. [ ] Mostrar panel de Supabase con PostgreSQL y tablas de MS1 25. [ ] Mostrar panel de AWS con S3 y DynamoDB 26. [ ] Mostrar panel de GCP con Cloud Run de MS3 27. [ ] Mostrar GitHub Actions con CI/CD automático de MS1, MS2, MS3 y MS4 (CU-82, CU-83, CU-84)

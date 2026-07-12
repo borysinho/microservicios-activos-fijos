@@ -1,7 +1,7 @@
 {
   "name": "ms3-automatizacion",
   "version": "1.0.0",
-  "description": "MS3 Automatizacion y orquestacion con NestJS + N8N para gestion de activos fijos",
+  "description": "MS3 Automatizacion y orquestacion con NestJS para gestion de activos fijos",
   "private": true,
   "scripts": {
     "build": "nest build",

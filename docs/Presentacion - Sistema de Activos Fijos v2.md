@@ -96,7 +96,7 @@ Santa Cruz – Bolivia
 
 El sistema a desarrollar es una **plataforma distribuida de gestión integral de activos fijos** para una organización. Cubre las áreas operativas, administrativas y de inteligencia de negocio relacionadas con el ciclo de vida completo de los activos: registro, asignación, traslado, depreciación, mantenimiento y baja. Incorpora capacidades avanzadas de **Inteligencia Artificial, Machine Learning, Deep Learning, Blockchain y Automatización de Procesos**.
 
-El sistema se distribuye en **3 microservicios** desplegados en proveedores de nube distintos (Azure, AWS, Google Cloud), con un frontend web único en Angular y una aplicación móvil en React Native orientada al trabajo de campo del responsable de área.
+El sistema se distribuye en **4 microservicios** desplegados en la nube: MS1 en Azure, MS2 en AWS, MS3 como coordinador Node.js y MS4 como motor N8N en Azure. El frontend web único en Angular y la aplicación móvil React Native consumen MS1, MS2 y MS3; MS4 solo es invocado por MS3.
 
 ---
 
@@ -153,7 +153,8 @@ Rel(saf, blockchain_ext, "Registra transacciones de activos")
 | :----------------------------: | :------------------------------------: | :----------------------------------------------------------: |
 |        **Backend MS1**         |           Spring Boot (Java)           |          Gestión de Activos Fijos — Microsoft Azure          |
 |        **Backend MS2**         |            FastAPI (Python)            |             Gestión Documental e IA — Amazon AWS             |
-|        **Backend MS3**         |            NestJS (Node.js)            |        Automatización y Notificaciones — Google Cloud        |
+|        **Backend MS3**         |            NestJS (Node.js)            |        Coordinación de Automatización y Notificaciones       |
+|        **Backend MS4**         |                  N8N                   |        Motor de workflows automatizados — Microsoft Azure    |
 |        **Frontend Web**        |                Angular                 |        Interfaz única para todos los actores internos        |
 |         **App Móvil**          |              React Native              | Trabajo de campo para el Responsable de Área (iOS y Android) |
 |  **Base de Datos Relacional**  |          Supabase PostgreSQL            |          MS1 — activos, asignaciones, depreciación           |
@@ -163,9 +164,9 @@ Rel(saf, blockchain_ext, "Registra transacciones de activos")
 |      **Machine Learning**      |         scikit-learn (Python)          |       Predicción de vida útil y clustering de activos        |
 |         **Blockchain**         |        Ethereum Sepolia / Web3j        |        Registro inmutable de transacciones de activos        |
 |  **Inteligencia de Negocio**   |        GraphQL + Chart.js / D3         |    Dashboards ejecutivos con KPIs en el frontend Angular     |
-|       **Automatización**       | N8N + WhatsApp Business API + SendGrid |         Flujo automatizado de solicitudes y alertas          |
+|       **Automatización**       | MS4/N8N + WhatsApp Business API + SendGrid |      Flujo automatizado de solicitudes y alertas          |
 |        **API Gateway**         |    GraphQL (MS1) / REST (MS2 y MS3)    |        Comunicación entre frontend, móvil y backends         |
-|      **Infraestructura**       |                 Docker                 |             Contenedores en 3 proveedores cloud              |
+|      **Infraestructura**       |                 Docker                 |             Contenedores en Azure, AWS y Google Cloud        |
 
 ---
 
@@ -217,7 +218,11 @@ System_Boundary(saf, "Sistema de Activos Fijos") {
     }
 
     Container_Boundary(gcp_ms, "MS3 — Google Cloud") {
-        Container(ms3, "Automatización", "NestJS / N8N", "Orquestación de flujos automatizados y notificaciones")
+        Container(ms3, "Automatización", "NestJS / Node.js", "Coordinación de flujos automatizados y notificaciones")
+    }
+
+    Container_Boundary(azure_ms4, "MS4 — Azure") {
+        Container(ms4, "Motor N8N", "N8N", "Ejecución de workflows automatizados")
     }
 }
 
@@ -241,6 +246,7 @@ Rel(ms2, dynamo, "Lee y escribe metadatos", "AWS SDK")
 Rel(ms2, s3, "Almacena archivos", "AWS SDK")
 Rel(ms3, ms1, "Detecta eventos de activos", "Webhook")
 Rel(ms3, ms2, "Verifica documentación", "REST")
+Rel(ms3, ms4, "Dispara workflows", "Webhook N8N")
 Rel(ms3, email, "Envía notificaciones")
 Rel(ms3, whatsapp, "Recibe solicitudes")
 
@@ -264,30 +270,36 @@ Rel(ms3, whatsapp, "Recibe solicitudes")
 ## 4.3 MS3 — Automatización y Notificaciones
 
 - **Framework Backend:** NestJS (Node.js)
-- **Herramienta de Automatización:** N8N
 - **Proveedor Cloud:** Google Cloud Platform (Cloud Run)
-- **Responsabilidades:** Orquestación de flujos automatizados con N8N, recepción de solicitudes vía WhatsApp Business API, generación automática de órdenes de revisión y mantenimiento, envío de notificaciones por correo electrónico (SendGrid), alertas por vencimiento de garantías o mantenimientos programados.
+- **Responsabilidades:** Recepción de solicitudes vía WhatsApp Business API, exposición de webhooks para MS1/MS2, coordinación de flujos automatizados, generación automática de órdenes de revisión y mantenimiento, envío de notificaciones por correo electrónico (SendGrid), alertas por vencimiento de garantías o mantenimientos programados. Cuando el flujo requiere N8N, MS3 invoca MS4.
 
-## 4.4 Almacenamiento de Archivos
+## 4.4 MS4 — Motor N8N
+
+- **Herramienta:** N8N self-hosted
+- **Proveedor Cloud:** Microsoft Azure
+- **Responsabilidades:** Ejecutar los workflows N8N exportados, conservar credenciales y ejecuciones de N8N en volumen persistente, y exponer webhooks consumidos exclusivamente por MS3.
+- **CI/CD:** Pipeline propio en `.github/workflows/ms4-azure-cd.yml`.
+
+## 4.5 Almacenamiento de Archivos
 
 - **Servicio:** Amazon S3
 - **Uso:** Documentos PDF de compra y garantía, fotografías de estado inicial y diagnóstico, informes de mantenimiento, actas de baja, contratos y reportes exportados.
 
-## 4.5 Frontend Web
+## 4.6 Frontend Web
 
 - **Framework:** Angular
-- **Interacción con backends:** GraphQL hacia MS1 (gestión de activos y BI); REST hacia MS2 (documentos, IA) y MS3 (flujos, notificaciones).
+- **Interacción con backends:** GraphQL hacia MS1 (gestión de activos y BI); REST hacia MS2 (documentos, IA) y MS3 (flujos, notificaciones). No consume MS4 directamente.
 
-## 4.6 Aplicación Móvil
+## 4.7 Aplicación Móvil
 
 - **Framework:** React Native
 - **Público objetivo:** Responsable de Área (personal de campo)
 - **Funcionalidades Clave:** Consulta de activos asignados al área, fotografía de activos con verificación IA en tiempo real, geolocalización de activos mediante GPS, reporte de problemas o solicitud de revisión, trabajo offline con caché local de activos, recepción de notificaciones push.
 
-## 4.7 Infraestructura y Despliegue
+## 4.8 Infraestructura y Despliegue
 
 - **Contenedores:** Docker (todos los servicios)
-- **Proveedores:** Microsoft Azure (MS1 App Service) — Supabase (PostgreSQL MS1) — Amazon Web Services (MS2) — Google Cloud Platform (MS3)
+- **Proveedores:** Microsoft Azure (MS1 App Service y MS4/N8N) — Supabase (PostgreSQL MS1) — Amazon Web Services (MS2) — Google Cloud Platform (MS3)
 
 ### Diagrama de Despliegue
 
@@ -298,6 +310,9 @@ title Diagrama de Despliegue — Infraestructura Cloud
 node "Microsoft Azure" as azure #lightblue {
     node "Azure App Service" as app_service {
         artifact "MS1: Gestión de Activos\n(Spring Boot / Java)" as ms1_app
+    }
+    node "Azure VM / Docker Compose" as azure_n8n {
+        artifact "MS4: Motor N8N\n(Workflows)" as ms4_app
     }
 }
 
@@ -319,7 +334,7 @@ node "Amazon Web Services (AWS)" as aws #orange {
 
 node "Google Cloud Platform" as gcp #lightgreen {
     node "Cloud Run" as cloud_run {
-        artifact "MS3: Automatización\n(NestJS + N8N)" as ms3_app
+        artifact "MS3: Automatización\n(NestJS / Node.js)" as ms3_app
     }
 }
 
@@ -337,6 +352,7 @@ internet --> ms3_app : REST
 
 ms3_app --> ms1_app : Webhook
 ms3_app --> ms2_app : REST
+ms3_app --> ms4_app : Webhook N8N
 
 @enduml
 ```
@@ -537,14 +553,14 @@ W2 ..> W7 : <<include>>
 
 ## MÓDULO 10 — Automatización de Procesos
 
-**Objetivo:** Orquestar flujos automatizados de mínimo 3 pasos que conectan los microservicios del sistema con canales externos (WhatsApp, Email) sin intervención manual. El motor de automatización es N8N desplegado en MS3.
+**Objetivo:** Orquestar flujos automatizados de mínimo 3 pasos que conectan los microservicios del sistema con canales externos (WhatsApp, Email) sin intervención manual. MS3 coordina los eventos y MS4 ejecuta N8N en Azure.
 
 **Funciones principales:** _Recibir solicitud por WhatsApp, identificar activo, crear ticket de revisión, verificar documentación, enviar confirmación por email, enviar alertas automáticas._
 
 - CU-67: Recibir mensaje de WhatsApp del responsable de área
-- CU-68: Identificar activo por código en el mensaje (N8N + MS1)
-- CU-69: Crear ticket de revisión en MS1 (REST desde N8N)
-- CU-70: Verificar documentación del activo en MS2 (REST desde N8N)
+- CU-68: Identificar activo por código en el mensaje (MS4/N8N + MS1)
+- CU-69: Crear ticket de revisión en MS1 (REST desde MS4/N8N)
+- CU-70: Verificar documentación del activo en MS2 (REST desde MS4/N8N)
 - CU-71: Enviar email de confirmación de solicitud (SendGrid)
 - CU-72: Responder por WhatsApp con estado de la solicitud
 - CU-73: Enviar alerta automática por vencimiento de garantía
@@ -655,13 +671,13 @@ end note
 
 |                     **Acción**                      | **Caso de Uso** |            **Herramienta**             |
 | :-------------------------------------------------: | :-------------: | :------------------------------------: |
-|   El responsable contacta al sistema por WhatsApp   |      CU-67      |      WhatsApp Business API + N8N       |
-|  N8N identifica el activo por código en el mensaje  |      CU-68      | N8N (regex / NLP básico) + MS1 GraphQL |
-|         N8N crea ticket de revisión en MS1          |      CU-69      |        N8N + MS1 REST / GraphQL        |
-|    N8N verifica documentación del activo en MS2     |      CU-70      |             N8N + MS2 REST             |
-| El sistema envía confirmación por email (SendGrid)  |      CU-71      |           N8N + SendGrid API           |
-|     El sistema responde al WhatsApp con estado      |      CU-72      |      N8N + WhatsApp Business API       |
-| N8N detecta vencimiento de garantía y genera alerta |      CU-73      |       N8N (scheduler) + SendGrid       |
+|   El responsable contacta al sistema por WhatsApp   |      CU-67      |      WhatsApp Business API + MS3       |
+|  MS4/N8N identifica el activo por código en el mensaje |   CU-68      | MS4/N8N (regex / NLP básico) + MS1 GraphQL |
+|         MS4/N8N crea ticket de revisión en MS1      |      CU-69      |        MS4/N8N + MS1 REST / GraphQL    |
+|    MS4/N8N verifica documentación del activo en MS2 |      CU-70      |             MS4/N8N + MS2 REST         |
+| El sistema envía confirmación por email (SendGrid)  |      CU-71      |           MS4/N8N + SendGrid API       |
+|     El sistema responde al WhatsApp con estado      |      CU-72      |      MS3 + WhatsApp Business API       |
+| MS4/N8N procesa vencimiento de garantía y genera alerta |  CU-73    |       MS4/N8N + SendGrid               |
 
 ### Diagrama de Actividad — Flujo N8N
 
@@ -764,10 +780,10 @@ stop
 
 | **Requisito**                   | **Solución en el Proyecto**                                           |
 | :------------------------------ | :-------------------------------------------------------------------- |
-| ≥ 3 microservicios              | MS1 (Activos), MS2 (Docs/IA), MS3 (Automatización)                    |
+| ≥ 3 microservicios              | MS1 (Activos), MS2 (Docs/IA), MS3 (Automatización), MS4 (N8N)          |
 | 3 lenguajes distintos           | Java (MS1), Python (MS2), Node.js/NestJS (MS3)                        |
-| 3 proveedores cloud             | Azure (MS1), AWS (MS2), Google Cloud (MS3); Supabase como PostgreSQL administrado de MS1 |
-| Frontend Angular                | Interfaz web única para los 3 microservicios                          |
+| 3 proveedores cloud             | Azure (MS1 y MS4), AWS (MS2), Google Cloud (MS3); Supabase como PostgreSQL administrado de MS1 |
+| Frontend Angular                | Interfaz web única para MS1, MS2 y MS3; MS4 solo vía MS3               |
 | App móvil React Native          | App de campo para el Responsable de Área                              |
 | ≥ 3 recursos del dispositivo    | Cámara, GPS, almacenamiento local (AsyncStorage)                      |
 | IA en móvil                     | Diagnóstico de estado de activo por fotografía (CNN)                  |
@@ -778,7 +794,7 @@ stop
 | ML No Supervisado               | K-Means: agrupación de activos por patrones de uso                    |
 | Business Intelligence           | Dashboard Angular con KPIs, depreciación, tendencias                  |
 | Blockchain                      | Registro inmutable de cada transacción del ciclo de vida              |
-| Automatización N8N (≥ 3 pasos)  | WhatsApp → identificar activo → crear ticket → verificar docs → email |
+| Automatización N8N (≥ 3 pasos)  | MS3 dispara MS4/N8N: WhatsApp → identificar activo → ticket → docs → email |
 | BD Relacional (PostgreSQL)      | MS1: activos, asignaciones, traslados, depreciación en Supabase       |
 | BD NoSQL (DynamoDB)             | MS2: metadatos de documentos y auditoría                              |
 | Almacenamiento de archivos (S3) | MS2: PDF, imágenes, contratos, actas                                  |

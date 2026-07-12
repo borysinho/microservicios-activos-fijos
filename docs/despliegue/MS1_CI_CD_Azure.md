@@ -235,7 +235,7 @@ curl "https://ms1-activos-fijos-bq20260710.eastus.cloudapp.azure.com/actuator/he
 
 Si el workflow termina bien, cada cambio futuro en `ms1/**` desplegara automaticamente a produccion.
 
-El despliegue conjunto de los 3 microservicios esta documentado en `docs/despliegue/CI_CD_Produccion_3MS.md`.
+El despliegue conjunto de los microservicios esta documentado en `docs/despliegue/CI_CD_Produccion_3MS.md`.
 
 ## 8. Logs y diagnostico
 

@@ -1,12 +1,12 @@
 # MS3 - Automatizacion y Orquestacion
 
-Microservicio NestJS encargado de automatizar flujos entre WhatsApp, MS1, MS2, email y notificaciones. Expone webhooks para eventos de activos, garantia, mantenimiento y diagnosticos criticos. Incluye workflows N8N exportados para evidencia del flujo WhatsApp -> sistema -> email.
+Microservicio NestJS encargado de coordinar flujos entre WhatsApp, MS1, MS2, email, notificaciones y MS4/N8N. Expone webhooks para eventos de activos, garantia, mantenimiento y diagnosticos criticos. MS3 es el unico servicio autorizado para invocar MS4.
 
 ## Stack
 
 - Node.js 20
 - NestJS
-- N8N
+- MS4/N8N mediante webhooks
 - WhatsApp Business API o WAHA en desarrollo
 - SendGrid
 - Firebase Cloud Messaging opcional
@@ -44,7 +44,7 @@ Variables clave:
 - `MS1_TICKETS_URL`: endpoint de tickets/solicitudes en MS1 si aplica.
 - `MS2_BASE_URL`: URL base REST de MS2 con prefijo `/api`.
 - `MS2_AUTH_TOKEN`: JWT Bearer para consultar endpoints protegidos de MS2.
-- `N8N_WEBHOOK_URL`: URL de N8N.
+- `MS4_N8N_WEBHOOK_URL`: URL base de MS4/N8N. `N8N_WEBHOOK_URL` se mantiene solo como compatibilidad temporal.
 - `WHATSAPP_PROVIDER`: `meta` o `waha`.
 - `WAHA_BASE_URL`, `WAHA_SESSION`, `WAHA_API_KEY`: WhatsApp local con WAHA.
 - `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`: email.
@@ -52,7 +52,7 @@ Variables clave:
 
 ## Arranque en desarrollo con Docker
 
-Modo recomendado. Levanta MS3 y N8N.
+Levanta solo MS3. Para ejecutar N8N localmente, iniciar `ms4/` en otra terminal.
 
 ```bash
 cd ms3
@@ -65,7 +65,12 @@ URLs locales:
 ```text
 http://localhost:3000/api/flujos
 http://localhost:3000/api/dev/health
-http://localhost:5678
+```
+
+MS4 local debe estar disponible en `http://localhost:5678`, y MS3 debe tener:
+
+```dotenv
+MS4_N8N_WEBHOOK_URL=http://localhost:5678/webhook
 ```
 
 Detener:
@@ -74,11 +79,7 @@ Detener:
 docker compose down
 ```
 
-Eliminar tambien datos de N8N:
-
-```bash
-docker compose down -v
-```
+Los datos de N8N se gestionan desde `ms4/docker-compose.yml`.
 
 ## Arranque en desarrollo sin Docker
 
@@ -137,7 +138,7 @@ MS3_DEV_TOOLS_ENABLED=false
 MS1_GRAPHQL_URL=https://<ms1-azure>/graphql
 MS2_BASE_URL=https://<ms2-aws>/api
 MS2_AUTH_TOKEN=<JWT_MS2>
-N8N_WEBHOOK_URL=https://<n8n-o-webhook>
+MS4_N8N_WEBHOOK_URL=https://<ms4-azure>/webhook
 SENDGRID_API_KEY=<SENDGRID_API_KEY>
 SENDGRID_FROM_EMAIL=noreply@activos.empresa.com
 WHATSAPP_PROVIDER=meta
@@ -172,7 +173,7 @@ Variables opcionales:
 - `GCP_REGION`
 - `MS3_CLOUD_RUN_SERVICE`
 - `SENDGRID_FROM_EMAIL`
-- `N8N_WEBHOOK_URL`
+- `MS4_N8N_WEBHOOK_URL`
 
 El despliegue usa limites conservadores para presentacion y capa gratuita:
 `--min-instances=0`, `--max-instances=1`, `--cpu=1`, `--memory=512Mi`,
@@ -245,10 +246,12 @@ npm test
 npm run build
 ```
 
-## N8N
+## Integracion con MS4/N8N
 
-Los workflows exportados estan en `n8n-workflows/`:
+Los workflows exportados ya no viven en MS3. Estan en `../ms4/n8n-workflows/`:
 
 - `flujo_01_solicitud_revision.json`
 - `flujo_02_alerta_garantia.json`
 - `flujo_03_alerta_mantenimiento.json`
+
+Regla de integracion: MS3 dispara esos workflows usando `MS4_N8N_WEBHOOK_URL`. Ningun cliente externo debe llamar directamente a MS4.

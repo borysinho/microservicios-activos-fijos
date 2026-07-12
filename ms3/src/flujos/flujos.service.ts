@@ -74,7 +74,7 @@ export class FlujosService {
 
   async dispararN8n<TPayload extends object>(ruta: string, payload: TPayload): Promise<boolean> {
     if (!this.config.n8nWebhookUrl) {
-      this.logger.debug(`N8N_WEBHOOK_URL no configurado; flujo ${ruta} queda en modo interno`);
+      this.logger.debug(`MS4_N8N_WEBHOOK_URL no configurado; flujo ${ruta} queda en modo interno`);
       return false;
     }
 
@@ -83,7 +83,7 @@ export class FlujosService {
       await firstValueFrom(this.http.post(url, payload));
       return true;
     } catch (error) {
-      this.logger.warn(`No se pudo disparar N8N ${ruta}: ${(error as Error).message}`);
+      this.logger.warn(`No se pudo disparar MS4/N8N ${ruta}: ${(error as Error).message}`);
       return false;
     }
   }

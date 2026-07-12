@@ -1,0 +1,121 @@
+name: MS4 Azure CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "ms4/**"
+      - ".github/workflows/ms4-azure-cd.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "ms4/**"
+      - ".github/workflows/ms4-azure-cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ${{ vars.MS4_IMAGE_NAME || 'ms4-n8n' }}
+
+jobs:
+  validate:
+    name: Validate MS4
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate N8N workflow exports
+        run: |
+          for workflow in ms4/n8n-workflows/*.json; do
+            jq empty "$workflow"
+          done
+
+      - name: Build MS4 image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ms4
+          push: false
+          tags: ms4-n8n:test
+
+  build-and-deploy:
+    name: Build image and deploy
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name != 'pull_request'
+    environment: production
+    concurrency:
+      group: ms4-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
+        run: |
+          test -n "$ACR_LOGIN_SERVER" || { echo "::error::ACR_LOGIN_SERVER secret is required"; exit 1; }
+          test -n "$ACR_USERNAME" || { echo "::error::ACR_USERNAME secret is required"; exit 1; }
+          test -n "$ACR_PASSWORD" || { echo "::error::ACR_PASSWORD secret is required"; exit 1; }
+          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST secret is required"; exit 1; }
+          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER secret is required"; exit 1; }
+          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY secret is required"; exit 1; }
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push MS4 image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ms4
+          push: true
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Deploy container to Azure VM
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$MS4_VM_SSH_KEY" > ~/.ssh/ms4_vm_key
+          chmod 600 ~/.ssh/ms4_vm_key
+          ssh-keyscan -H "$MS4_VM_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" 'mkdir -p /opt/ms4'
+          scp -i ~/.ssh/ms4_vm_key ms4/docker-compose.prod.yml "$MS4_VM_USER@$MS4_VM_HOST:/opt/ms4/docker-compose.yml"
+
+          ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
+            "cd /opt/ms4 \
+            && touch .env \
+            && if grep -q '^MS4_IMAGE=' .env; then sed -i 's#^MS4_IMAGE=.*#MS4_IMAGE=$ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG#' .env; else echo 'MS4_IMAGE=$ACR_LOGIN_SERVER/$IMAGE_NAME:$IMAGE_TAG' >> .env; fi"
+
+          printf '%s\n' "$ACR_PASSWORD" | ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
+            "docker login '$ACR_LOGIN_SERVER' --username '$ACR_USERNAME' --password-stdin"
+
+          ssh -i ~/.ssh/ms4_vm_key "$MS4_VM_USER@$MS4_VM_HOST" \
+            "cd /opt/ms4 \
+            && docker compose --env-file .env -f docker-compose.yml pull \
+            && docker compose --env-file .env -f docker-compose.yml up -d --remove-orphans"

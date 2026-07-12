@@ -10,7 +10,7 @@
 
 El sistema propuesto es una plataforma distribuida para la **gestión integral de activos fijos** de una organización. Permite registrar, asignar, trasladar, depreciar y dar de baja activos físicos, integrando inteligencia artificial para verificación visual de evidencia, gestión documental con auditoría, automatización de procesos y analítica de negocios.
 
-El sistema está compuesto por **tres microservicios independientes**, desplegados en distintos proveedores de nube, con un frontend web en Angular y una aplicación móvil en React Native.
+El sistema está compuesto por **cuatro microservicios independientes**, desplegados en la nube, con un frontend web en Angular y una aplicación móvil en React Native. MS4 separa N8N de MS3 para que la automatización tenga despliegue y CI/CD propios en Azure; MS3 conserva la coordinación y es el único consumidor de MS4.
 
 ---
 
@@ -82,7 +82,11 @@ System_Boundary(saf, "Sistema de Activos Fijos") {
     }
 
     Container_Boundary(gcp_ms, "MS3 — Google Cloud") {
-        Container(ms3, "Automatización", "NestJS / Node.js", "Orquestación de flujos con N8N, notificaciones")
+        Container(ms3, "Automatización", "NestJS / Node.js", "Recepción de eventos, coordinación de flujos y notificaciones")
+    }
+
+    Container_Boundary(azure_ms4, "MS4 — Azure") {
+        Container(ms4, "Motor N8N", "N8N", "Ejecución de workflows automatizados versionados")
     }
 }
 
@@ -106,6 +110,7 @@ Rel(ms2, dynamo, "Lee y escribe metadatos de documentos y auditoría", "AWS SDK"
 Rel(ms2, s3, "Almacena y recupera archivos (PDF, imágenes, contratos)", "AWS SDK")
 Rel(ms3, ms1, "Detecta eventos de activos", "REST / Webhook")
 Rel(ms3, ms2, "Verifica documentación del activo", "REST")
+Rel(ms3, ms4, "Dispara workflows automatizados", "Webhook N8N / HTTPS")
 Rel(ms3, email, "Envía notificaciones automáticas")
 Rel(ms3, whatsapp, "Recibe solicitudes de revisión")
 
@@ -123,6 +128,9 @@ title Diagrama de Despliegue — Infraestructura Cloud
 node "Microsoft Azure" as azure #lightblue {
     node "Azure App Service" as app_service {
         artifact "MS1: Gestión de Activos\n(Spring Boot / Java)" as ms1_app
+    }
+    node "Azure VM / Docker Compose" as azure_n8n {
+        artifact "MS4: Motor N8N\n(Workflows automatizados)" as ms4_app
     }
 }
 
@@ -144,7 +152,7 @@ node "Amazon Web Services (AWS)" as aws #orange {
 
 node "Google Cloud Platform" as gcp #lightgreen {
     node "Cloud Run" as cloud_run {
-        artifact "MS3: Automatización\n(NestJS + N8N)" as ms3_app
+        artifact "MS3: Automatización\n(NestJS / Node.js)" as ms3_app
     }
 }
 
@@ -162,6 +170,7 @@ internet --> ms3_app : REST
 
 ms3_app --> ms1_app : Webhook
 ms3_app --> ms2_app : REST
+ms3_app --> ms4_app : Webhook N8N
 
 @enduml
 ```
@@ -555,22 +564,24 @@ api --> mobile : {resultado, confianza, detalle, recomendacion}
 
 **Lenguaje**: NestJS (Node.js)
 **Proveedor**: Google Cloud Platform
-**Herramienta de automatización**: N8N
+**Motor de automatización**: MS4 — N8N en Azure
 **API**: REST / Webhooks
 
 #### Funcionalidades principales
 
-- Orquestación de flujos automatizados con N8N
+- Recepción y coordinación de eventos de automatización
+- Disparo de workflows en MS4/N8N mediante webhook
 - Recepción de solicitudes vía WhatsApp
 - Generación automática de órdenes de mantenimiento o revisión
 - Envío de notificaciones por correo electrónico
 - Alertas por vencimiento de garantías o mantenimientos programados
+- Regla de seguridad: MS4 solo es consumido por MS3
 
 #### Diagrama de Actividad — Flujo de Automatización
 
 ```plantuml
 @startuml FlujoAutomatizacion
-title Flujo de Automatización N8N — Vencimiento de Garantía
+title Flujo de Automatización — MS3 coordina y MS4/N8N ejecuta
 
 start
 
@@ -578,10 +589,12 @@ start
 
 :MS1 dispara webhook\nhacia MS3;
 
-:N8N recibe evento;
+:MS3 valida evento y\ndispara workflow en MS4/N8N;
+
+:MS4/N8N recibe evento;
 
 fork
-    :MS3 consulta a MS2\nsi documentación está completa;
+    :MS4/N8N consulta a MS2\nsi documentación está completa;
     if (¿Documentos completos?) then (Sí)
         :Marcar revisión\ncomo "Lista para ejecutar";
     else (No)
@@ -593,7 +606,7 @@ end fork
 
 :Generar orden de\nrevisión de garantía;
 
-:Enviar email al responsable\ndel activo (SendGrid);
+:MS4/N8N solicita notificación\nal responsable (SendGrid);
 
 :Enviar notificación\npush a App Móvil;
 
@@ -606,7 +619,7 @@ stop
 
 ```plantuml
 @startuml FlujoWhatsApp
-title Flujo N8N — Solicitud por WhatsApp
+title Flujo WhatsApp — MS3 coordina y MS4/N8N ejecuta
 
 start
 
@@ -614,13 +627,15 @@ start
 
 :WhatsApp Business API\nrecibe mensaje;
 
-:N8N interpreta mensaje\n(NLP básico / regex);
+:MS3 recibe mensaje y\ndispara MS4/N8N;
 
-:N8N consulta MS1:\n¿Existe activo COD-123?;
+:MS4/N8N interpreta mensaje\n(NLP básico / regex);
+
+:MS4/N8N consulta MS1:\n¿Existe activo COD-123?;
 
 if (¿Activo encontrado?) then (Sí)
-    :N8N crea ticket de\nrevisión en MS1 (REST);
-    :N8N solicita a MS3\nenviar confirmación por email;
+    :MS4/N8N crea ticket de\nrevisión en MS1 (REST);
+    :MS4/N8N solicita a MS3\nenviar confirmación por email;
     :Enviar email:\n"Solicitud recibida para COD-123";
     :Responder WhatsApp:\n"Solicitud registrada. Se le notificará.";
 else (No)
@@ -633,6 +648,28 @@ stop
 ```
 
 ---
+
+### 3.4 MS4 — Motor N8N
+
+**Herramienta**: N8N self-hosted
+**Proveedor**: Microsoft Azure
+**Persistencia**: Volumen Docker para datos, credenciales y ejecuciones de N8N
+**API**: Webhooks N8N consumidos solo por MS3
+
+#### Funcionalidades principales
+
+- Ejecutar workflows exportados y versionados en `ms4/n8n-workflows/`
+- Mantener credenciales y configuracion de N8N aisladas de MS3
+- Exponer webhooks internos para que MS3 dispare automatizaciones
+- Tener CI/CD independiente mediante `.github/workflows/ms4-azure-cd.yml`
+
+#### Restricción de integración
+
+```text
+Frontend / Mobile / MS1 / MS2 -> MS3 -> MS4
+```
+
+MS4 no forma parte del contrato publico del sistema. Si un flujo debe usar N8N, primero debe llegar a MS3.
 
 ## 4. Frontend Web — Angular
 
@@ -684,7 +721,7 @@ W3 ..> W10 : <<include>>
 @enduml
 ```
 
-Interfaz web única que consume los tres microservicios. La comunicación con MS1 usa exclusivamente **GraphQL**; con MS2 y MS3 usa REST.
+Interfaz web única que consume MS1, MS2 y MS3. La comunicación con MS1 usa exclusivamente **GraphQL**; con MS2 y MS3 usa REST. MS4 no se consume directamente desde el frontend.
 
 ### Módulos principales
 
@@ -695,6 +732,7 @@ Interfaz web única que consume los tres microservicios. La comunicación con MS
 | Gestión Documental      | MS2           | REST      |
 | Auditoría               | MS2           | REST      |
 | Flujos y Notificaciones | MS3           | REST      |
+| Workflows N8N           | MS4           | Solo vía MS3 |
 
 ---
 
@@ -888,10 +926,10 @@ DynamoDB almacena un registro por cada acción:
 
 | Requisito del Docente          | Solución en el Proyecto                                       |
 | ------------------------------ | ------------------------------------------------------------- |
-| ≥ 3 microservicios             | MS1 (Activos), MS2 (Docs/IA), MS3 (Automatización)            |
+| ≥ 3 microservicios             | MS1 (Activos), MS2 (Docs/IA), MS3 (Automatización), MS4 (N8N) |
 | 3 lenguajes distintos          | Java (MS1), Python (MS2), NestJS (MS3)                        |
-| 3 proveedores cloud            | Azure (MS1), AWS (MS2), Google Cloud (MS3); Supabase como PostgreSQL administrado de MS1 |
-| Frontend Angular               | Interfaz web única para los 3 microservicios                  |
+| 3 proveedores cloud            | Azure (MS1 y MS4), AWS (MS2), Google Cloud (MS3); Supabase como PostgreSQL administrado de MS1 |
+| Frontend Angular               | Interfaz web única para MS1, MS2 y MS3                        |
 | App móvil React Native         | App de campo para responsables de área                        |
 | 3 recursos del dispositivo     | Cámara, GPS, almacenamiento local                             |
 | IA en móvil                    | Verificación visual de evidencia del activo por fotografía    |
@@ -903,7 +941,7 @@ DynamoDB almacena un registro por cada acción:
 | ML No Supervisado              | K-Means: agrupación por patrones de uso                       |
 | Business Intelligence          | Dashboard con KPIs, depreciación, tendencias                  |
 | Blockchain                     | Registro inmutable de transacciones de activos                |
-| Automatización N8N (≥ 3 pasos) | Flujo: evento → verificar docs → orden → email                |
+| Automatización N8N (≥ 3 pasos) | MS3 dispara MS4/N8N: evento → verificar docs → orden → email |
 | PostgreSQL                     | MS1: datos principales de activos en Supabase PostgreSQL       |
 | DynamoDB                       | MS2: metadatos de documentos y auditoría                      |
 | Amazon S3                      | MS2: almacenamiento de archivos físicos                       |

@@ -1,0 +1,27 @@
+services:
+  ms4-n8n:
+    image: ${MS4_IMAGE}
+    container_name: activos-ms4-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      NODE_ENV: production
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_BASIC_AUTH_ACTIVE: ${N8N_BASIC_AUTH_ACTIVE:-true}
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
+      N8N_IMPORT_WORKFLOWS: ${N8N_IMPORT_WORKFLOWS:-true}
+      MS1_GRAPHQL_URL: ${MS1_GRAPHQL_URL}
+      MS2_BASE_URL: ${MS2_BASE_URL}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-noreply@activos.empresa.com}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
