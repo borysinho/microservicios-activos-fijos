@@ -62,9 +62,9 @@ jobs:
           ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
-          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
-          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST || secrets.MS1_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER || secrets.MS1_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY || secrets.MS1_VM_SSH_KEY }}
           N8N_HOST: ${{ vars.N8N_HOST }}
           N8N_EDITOR_BASE_URL: ${{ vars.N8N_EDITOR_BASE_URL }}
           WEBHOOK_URL: ${{ vars.WEBHOOK_URL }}
@@ -78,9 +78,9 @@ jobs:
           test -n "$ACR_LOGIN_SERVER" || { echo "::error::ACR_LOGIN_SERVER secret is required"; exit 1; }
           test -n "$ACR_USERNAME" || { echo "::error::ACR_USERNAME secret is required"; exit 1; }
           test -n "$ACR_PASSWORD" || { echo "::error::ACR_PASSWORD secret is required"; exit 1; }
-          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST secret is required; MS4 must run on its own Azure VM/host for the exam scope"; exit 1; }
-          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER secret is required"; exit 1; }
-          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY secret is required"; exit 1; }
+          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST or MS1_VM_HOST secret is required"; exit 1; }
+          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER or MS1_VM_USER secret is required"; exit 1; }
+          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY or MS1_VM_SSH_KEY secret is required"; exit 1; }
           test -n "$N8N_HOST" || { echo "::error::N8N_HOST variable is required"; exit 1; }
           test -n "$N8N_EDITOR_BASE_URL" || { echo "::error::N8N_EDITOR_BASE_URL variable is required"; exit 1; }
           test -n "$WEBHOOK_URL" || { echo "::error::WEBHOOK_URL variable is required"; exit 1; }
@@ -112,9 +112,9 @@ jobs:
           ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
-          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
-          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST || secrets.MS1_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER || secrets.MS1_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY || secrets.MS1_VM_SSH_KEY }}
           IMAGE_TAG: ${{ github.sha }}
           N8N_HOST: ${{ vars.N8N_HOST }}
           N8N_PORT: ${{ vars.N8N_PORT || '5678' }}
