@@ -78,6 +78,23 @@ describe('WhatsappService', () => {
     expect(() => signed.validarFirma(undefined, undefined)).not.toThrow();
   });
 
+  it('omite validacion HMAC de Meta cuando el proveedor es Twilio', () => {
+    const twilioConfig = {
+      ...config,
+      whatsappProvider: 'twilio',
+      whatsappAppSecret: 'meta-secret-no-aplica',
+    };
+    const signed = new WhatsappService(
+      twilioConfig,
+      flujosService as any,
+      ms1Client as any,
+      ms2Client as any,
+      notificacionesService as any,
+    );
+
+    expect(() => signed.validarFirma(undefined, undefined)).not.toThrow();
+  });
+
   it('extrae mensajes entrantes desde webhook WAHA', () => {
     expect(
       service.extraerMensaje({

@@ -27,7 +27,7 @@ export class WhatsappService {
   }
 
   validarFirma(signature: string | undefined, rawBody?: Buffer): void {
-    if (this.config.whatsappProvider === 'waha') {
+    if (this.config.whatsappProvider === 'waha' || this.config.whatsappProvider === 'twilio') {
       return;
     }
 

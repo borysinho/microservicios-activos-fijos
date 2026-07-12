@@ -129,6 +129,26 @@ describe('MS3 API (e2e)', () => {
       });
   });
 
+  it('POST /whatsapp/webhook procesa webhook form-urlencoded de Twilio Sandbox', async () => {
+    await request(app.getHttpServer())
+      .post('/whatsapp/webhook')
+      .type('form')
+      .send({
+        From: 'whatsapp:+59177685777',
+        To: 'whatsapp:+14155238886',
+        Body: 'Solicito revision del activo ACT-2024-001. No enciende y necesito mantenimiento',
+        MessageSid: 'SM-TWILIO-001',
+      })
+      .expect(201)
+      .expect((response) => {
+        expect(response.body).toMatchObject({
+          recibido: true,
+          codigoActivo: 'ACT-2024-001',
+          ticketId: 'TKT-1',
+        });
+      });
+  });
+
   it('GET /api/flujos lista los tres flujos', async () => {
     await request(app.getHttpServer())
       .get('/api/flujos')

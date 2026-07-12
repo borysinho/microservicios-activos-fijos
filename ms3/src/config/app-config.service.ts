@@ -19,18 +19,18 @@ export class AppConfig {
   readonly n8nWebhookUrl = this.ms4N8nWebhookUrl;
   readonly corsOrigins = env('CORS_ORIGINS', '*').split(',').map((origin) => origin.trim());
 
+  readonly twilioAccountSid = env('TWILIO_ACCOUNT_SID');
+  readonly twilioAuthToken = env('TWILIO_AUTH_TOKEN');
+  readonly twilioWhatsappFrom = env('TWILIO_WHATSAPP_FROM');
+  readonly wahaBaseUrl = env('WAHA_BASE_URL', 'http://localhost:3001');
+  readonly wahaSession = env('WAHA_SESSION', 'default');
+  readonly wahaApiKey = env('WAHA_API_KEY');
   readonly whatsappApiUrl = env('WHATSAPP_API_URL', 'https://graph.facebook.com/v18.0');
   readonly whatsappPhoneNumberId = env('WHATSAPP_PHONE_NUMBER_ID');
   readonly whatsappToken = env('WHATSAPP_TOKEN');
   readonly whatsappAppSecret = env('WHATSAPP_APP_SECRET');
   readonly whatsappVerifyToken = env('WHATSAPP_VERIFY_TOKEN', 'activos-ms3-verify');
-  readonly whatsappProvider = env('WHATSAPP_PROVIDER', 'meta').toLowerCase();
-  readonly wahaBaseUrl = env('WAHA_BASE_URL', 'http://localhost:3001');
-  readonly wahaSession = env('WAHA_SESSION', 'default');
-  readonly wahaApiKey = env('WAHA_API_KEY');
-  readonly twilioAccountSid = env('TWILIO_ACCOUNT_SID');
-  readonly twilioAuthToken = env('TWILIO_AUTH_TOKEN');
-  readonly twilioWhatsappFrom = env('TWILIO_WHATSAPP_FROM');
+  readonly whatsappProvider = env('WHATSAPP_PROVIDER', this.detectWhatsappProvider()).toLowerCase();
 
   readonly emailProvider = env('EMAIL_PROVIDER', env('SMTP_HOST') ? 'smtp' : 'sendgrid').toLowerCase();
   readonly smtpHost = env('SMTP_HOST');
@@ -44,4 +44,16 @@ export class AppConfig {
 
   readonly fcmProjectId = env('FCM_PROJECT_ID');
   readonly fcmAccessToken = env('FCM_ACCESS_TOKEN');
+
+  private detectWhatsappProvider(): string {
+    if (this.twilioAccountSid && this.twilioAuthToken && this.twilioWhatsappFrom) {
+      return 'twilio';
+    }
+
+    if (env('WAHA_BASE_URL') || env('WAHA_API_KEY')) {
+      return 'waha';
+    }
+
+    return 'meta';
+  }
 }
