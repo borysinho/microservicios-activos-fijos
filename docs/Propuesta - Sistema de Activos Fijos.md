@@ -617,6 +617,8 @@ stop
 
 #### Flujo WhatsApp → Sistema
 
+El canal WhatsApp queda limitado a operaciones rapidas y de bajo riesgo sobre activos asociados al telefono del usuario: listar mis activos, consultar estado/ubicacion/responsable, revisar documentos, pedir enlace temporal auditado, consultar depreciacion, reportar incidentes, solicitar traslado y confirmar recepcion pendiente. Las operaciones irreversibles o administrativas, como alta de activos, baja definitiva, asignaciones directas, cambios contables, usuarios, roles y BI, se realizan desde la aplicacion web o movil con permisos completos.
+
 ```plantuml
 @startuml FlujoWhatsApp
 title Flujo WhatsApp — MS3 coordina y MS4/N8N ejecuta
@@ -627,20 +629,23 @@ start
 
 :WhatsApp Business API\nrecibe mensaje;
 
-:MS3 recibe mensaje y\ndispara MS4/N8N;
+:MS3 recibe mensaje,\nclasifica intención y valida\ntelefono asociado al activo;
 
-:MS4/N8N interpreta mensaje\n(NLP básico / regex);
-
-:MS4/N8N consulta MS1:\n¿Existe activo COD-123?;
+:MS3 consulta MS1:\n¿Existe activo COD-123\ny pertenece al WhatsApp?;
 
 if (¿Activo encontrado?) then (Sí)
+  if (¿Requiere automatización N8N?) then (Sí)
+    :MS3 dispara MS4/N8N\nsolo para flujos automatizados;
     :MS4/N8N solicita a MS3 crear ticket de\nrevisión en MS1;
     :MS4/N8N consulta MS2:\n¿Documentación asociada?;
     :MS4/N8N solicita a MS3\nenviar confirmación por email;
     :MS3 envía email:\n"Solicitud recibida para COD-123";
     :MS4/N8N solicita a MS3 responder WhatsApp:\n"Solicitud registrada. Se le notificará.";
+  else (No)
+    :MS3 atiende consulta o solicitud simple\nsin exponer MS4 al usuario;
+  endif
 else (No)
-    :MS4/N8N solicita a MS3 responder WhatsApp:\n"Activo no encontrado. Verifique el código.";
+    :MS3 responde WhatsApp:\n"Activo no encontrado o no autorizado.";
 endif
 
 stop

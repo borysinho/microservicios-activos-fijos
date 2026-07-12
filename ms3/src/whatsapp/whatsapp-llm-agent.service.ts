@@ -5,8 +5,15 @@ import { AppConfig } from '../config/app-config.service';
 
 export type IntencionWhatsapp =
   | 'AYUDA'
+  | 'LISTAR_ACTIVOS'
   | 'CONSULTAR_ACTIVO'
+  | 'CONSULTAR_DOCUMENTOS'
+  | 'SOLICITAR_ENLACE_DOCUMENTO'
+  | 'CONSULTAR_DEPRECIACION'
   | 'SOLICITAR_REVISION'
+  | 'REPORTAR_INCIDENTE'
+  | 'SOLICITAR_TRASLADO'
+  | 'CONFIRMAR_RECEPCION'
   | 'NO_PERMITIDA'
   | 'NO_ENTENDIDA';
 
@@ -55,10 +62,10 @@ export class WhatsappLlmAgentService {
                   'Tu unica tarea es clasificar la intencion del mensaje del usuario.',
                   'No ejecutes operaciones ni inventes datos.',
                   'Devuelve solo JSON valido con esta forma:',
-                  '{"intencion":"AYUDA|CONSULTAR_ACTIVO|SOLICITAR_REVISION|NO_PERMITIDA|NO_ENTENDIDA","codigoActivo":"ACT-2024-001"}',
-                  'Permitido por chat: ayuda, consultar estado/ubicacion/responsable de un activo, solicitar revision o mantenimiento correctivo.',
-                  'No permitido por chat: alta, edicion, baja, traslado, transferencia, asignacion, documentos, diagnostico con camara/foto, usuarios, roles, BI, configuracion o administracion.',
-                  'Si la operacion cambia estado formal, permisos, documentos o requiere recursos moviles, responde NO_PERMITIDA.',
+                  '{"intencion":"AYUDA|LISTAR_ACTIVOS|CONSULTAR_ACTIVO|CONSULTAR_DOCUMENTOS|SOLICITAR_ENLACE_DOCUMENTO|CONSULTAR_DEPRECIACION|SOLICITAR_REVISION|REPORTAR_INCIDENTE|SOLICITAR_TRASLADO|CONFIRMAR_RECEPCION|NO_PERMITIDA|NO_ENTENDIDA","codigoActivo":"ACT-2024-001"}',
+                  'Permitido por chat: ayuda, listar mis activos, consultar estado/ubicacion/responsable, consultar documentos, pedir enlace temporal de documento, consultar depreciacion, solicitar revision o mantenimiento, reportar incidente/perdida/dano, solicitar traslado y confirmar recepcion.',
+                  'No permitido por chat: alta, edicion directa, baja definitiva, asignacion directa, cambio de valor/vida util/categoria/metodo contable, eliminar documentos, usuarios, roles, BI, configuracion o administracion.',
+                  'Si la operacion es irreversible, contable, administrativa o cambia permisos, responde NO_PERMITIDA.',
                 ].join(' '),
               },
               {
@@ -110,8 +117,15 @@ export class WhatsappLlmAgentService {
   private esIntencionValida(intencion: unknown): intencion is IntencionWhatsapp {
     return (
       intencion === 'AYUDA' ||
+      intencion === 'LISTAR_ACTIVOS' ||
       intencion === 'CONSULTAR_ACTIVO' ||
+      intencion === 'CONSULTAR_DOCUMENTOS' ||
+      intencion === 'SOLICITAR_ENLACE_DOCUMENTO' ||
+      intencion === 'CONSULTAR_DEPRECIACION' ||
       intencion === 'SOLICITAR_REVISION' ||
+      intencion === 'REPORTAR_INCIDENTE' ||
+      intencion === 'SOLICITAR_TRASLADO' ||
+      intencion === 'CONFIRMAR_RECEPCION' ||
       intencion === 'NO_PERMITIDA' ||
       intencion === 'NO_ENTENDIDA'
     );

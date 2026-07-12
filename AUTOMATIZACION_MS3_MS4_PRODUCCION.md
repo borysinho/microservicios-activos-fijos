@@ -42,16 +42,22 @@ WhatsApp no reemplaza a la aplicacion web ni a la app movil. MS3 usa Azure OpenA
 
 | Operacion | Canal permitido | Motivo |
 | --- | --- | --- |
-| Consultar estado, ubicacion o responsable de un activo por codigo | WhatsApp | Es una consulta simple, textual y de bajo riesgo. |
+| Listar activos asociados al numero | WhatsApp | El usuario solo ve activos donde su telefono coincide con el responsable/asignacion activa en MS1. |
+| Consultar estado, ubicacion o responsable de un activo por codigo | WhatsApp | Es una consulta simple, textual y de bajo riesgo, siempre filtrada por activo asociado. |
+| Consultar documentos o pedir enlace temporal | WhatsApp | MS3 valida acceso al activo, MS2 genera URL presignada y registra auditoria documental. |
+| Consultar depreciacion | WhatsApp | Solo muestra valor original, valor en libros, vida util y metodo; no modifica datos contables. |
 | Solicitar revision o mantenimiento correctivo de un activo | WhatsApp | Es un reporte conversacional que genera ticket y notificaciones. |
+| Reportar incidente, dano, perdida o robo | WhatsApp | Genera solicitud/ticket operativo con evidencia adjunta si el proveedor la entrega. |
+| Solicitar traslado | WhatsApp | Solo crea solicitud para aprobacion posterior; no ejecuta el traslado formal. |
+| Confirmar recepcion de traslado pendiente | WhatsApp | Es una confirmacion simple sobre un activo asociado al numero solicitante. |
 | Ver ayuda/menu de comandos | WhatsApp | No modifica datos de negocio. |
 | Registrar, editar o eliminar activos | Web | Requiere formularios completos, validaciones y auditoria detallada. |
-| Asignar responsables, trasladar activos o dar de baja | Web/movil | Son transacciones formales que cambian estado y generan blockchain. |
-| Subir/descargar documentos o versiones | Web/movil | Requiere archivos, permisos y auditoria documental. |
+| Asignar responsables, ejecutar traslado formal o dar de baja | Web/movil | Son transacciones formales que cambian estado y generan blockchain. |
+| Subir documentos, crear versiones o eliminar documentos | Web/movil | Requiere archivos, permisos y auditoria documental completa. |
 | Diagnostico IA con imagen, GPS o camara | Movil | Depende de recursos nativos del dispositivo. |
 | Usuarios, roles, BI y configuracion administrativa | Web | Requiere permisos administrativos y vistas completas. |
 
-Si el mensaje pide una operacion no permitida por chat, MS3 responde por WhatsApp indicando que debe realizarse desde web o movil y no invoca MS4 ni MS1. La decision final de autorizacion no depende solo del LLM: MS3 bloquea en codigo las operaciones sensibles.
+Si el mensaje pide una operacion no permitida por chat, MS3 responde por WhatsApp indicando que debe realizarse desde web o movil y no ejecuta la transaccion. La decision final de autorizacion no depende solo del LLM: MS3 bloquea en codigo las operaciones sensibles y valida que el telefono tenga acceso al activo antes de consultar MS2 o disparar MS4.
 
 ## Endpoints usados
 

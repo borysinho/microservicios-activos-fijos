@@ -14,6 +14,8 @@ export type WhatsappMensajeEntrante = {
   from: string;
   text: string;
   timestamp?: string;
+  mediaUrls?: string[];
+  mediaTypes?: string[];
 };
 
 export type ResultadoSolicitudRevision = {

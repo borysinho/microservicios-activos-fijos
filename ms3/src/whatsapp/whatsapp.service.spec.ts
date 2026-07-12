@@ -13,11 +13,14 @@ describe('WhatsappService', () => {
   };
   const ms1Client = {
     buscarActivoPorCodigo: jest.fn(),
+    listarActivosPorTelefono: jest.fn(),
     crearTicketRevision: jest.fn(),
+    confirmarRecepcionTraslado: jest.fn(),
     telefonoTieneAccesoActivo: jest.fn().mockReturnValue(true),
   };
   const ms2Client = {
     obtenerDocumentos: jest.fn(),
+    obtenerUrlDocumento: jest.fn(),
   };
   const notificacionesService = {
     enviarEmail: jest.fn().mockResolvedValue({ enviado: false }),
@@ -30,7 +33,11 @@ describe('WhatsappService', () => {
   let service: WhatsappService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
+    flujosService.dispararN8n.mockResolvedValue(false);
+    notificacionesService.enviarEmail.mockResolvedValue({ enviado: false });
+    notificacionesService.enviarWhatsAppTexto.mockResolvedValue({ enviado: false });
+    llmAgent.clasificarMensaje.mockResolvedValue(null);
     ms1Client.telefonoTieneAccesoActivo.mockReturnValue(true);
     service = new WhatsappService(
       config,
@@ -467,6 +474,192 @@ describe('WhatsappService', () => {
       intencion: 'CONSULTAR_ACTIVO',
       codigoActivo: 'ACT-2024-001',
       mensaje: 'Consulta de activo procesada',
+    });
+  });
+
+  it('lista solo activos asociados al numero de WhatsApp', async () => {
+    ms1Client.listarActivosPorTelefono.mockResolvedValue([
+      {
+        id: '11111111-1111-1111-1111-111111111111',
+        codigo: 'ACT-2024-001',
+        nombre: 'Laptop Dell',
+        estado: 'ACTIVO',
+        areaActual: { nombre: 'Contabilidad' },
+      },
+    ]);
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'mis activos',
+    });
+
+    expect(ms1Client.listarActivosPorTelefono).toHaveBeenCalledWith('59170000000');
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.stringContaining('ACT-2024-001 - Laptop Dell'),
+    );
+    expect(result).toEqual({
+      recibido: true,
+      intencion: 'LISTAR_ACTIVOS',
+      mensaje: 'Activos asociados encontrados: 1',
+    });
+  });
+
+  it('consulta documentos del activo y exige acceso por WhatsApp', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+    });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
+    ms2Client.obtenerDocumentos.mockResolvedValue([
+      { documentoId: 'doc-1', nombre: 'Factura.pdf', tipo: 'FACTURA', version: 2, activo: true },
+    ]);
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'documentos ACT-2024-001',
+    });
+
+    expect(ms2Client.obtenerDocumentos).toHaveBeenCalledWith('11111111-1111-1111-1111-111111111111');
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.stringContaining('doc-1 | FACTURA | Factura.pdf | v2'),
+    );
+    expect(result).toEqual({
+      recibido: true,
+      intencion: 'CONSULTAR_DOCUMENTOS',
+      codigoActivo: 'ACT-2024-001',
+      documentosEncontrados: 1,
+      mensaje: 'Documentos consultados',
+    });
+  });
+
+  it('genera enlace temporal solo si el documento pertenece al activo autorizado', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+    });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
+    ms2Client.obtenerDocumentos.mockResolvedValue([
+      { documentoId: 'doc-123', nombre: 'Factura.pdf', tipo: 'FACTURA', activo: true },
+    ]);
+    ms2Client.obtenerUrlDocumento.mockResolvedValue({
+      documentoId: 'doc-123',
+      url: 'https://s3.example/doc-123',
+      expiraEn: 900,
+    });
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'enlace documento ACT-2024-001 doc-123',
+    });
+
+    expect(ms2Client.obtenerUrlDocumento).toHaveBeenCalledWith('doc-123');
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.stringContaining('https://s3.example/doc-123'),
+    );
+    expect(result).toMatchObject({
+      recibido: true,
+      intencion: 'SOLICITAR_ENLACE_DOCUMENTO',
+      codigoActivo: 'ACT-2024-001',
+      mensaje: 'Enlace temporal generado',
+    });
+  });
+
+  it('consulta depreciacion sin permitir cambios contables', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+      valorAdquisicion: 10000,
+      valorLibros: 6500,
+      vidaUtilAnios: 4,
+      categoria: { metodoDepreciacion: 'LINEAL' },
+    });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'depreciacion ACT-2024-001',
+    });
+
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.stringContaining('Valor en libros: 6500.00'),
+    );
+    expect(result).toMatchObject({
+      recibido: true,
+      intencion: 'CONSULTAR_DEPRECIACION',
+      codigoActivo: 'ACT-2024-001',
+    });
+  });
+
+  it('registra solicitud de traslado como ticket sin ejecutar traslado directo', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'ACTIVO',
+      responsableEmail: 'resp@empresa.com',
+    });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
+    ms1Client.crearTicketRevision.mockResolvedValue({
+      ticketId: 'TKT-TR-1',
+      activoId: '11111111-1111-1111-1111-111111111111',
+      estado: 'CREADO',
+    });
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'solicitar traslado ACT-2024-001 al area Contabilidad',
+    });
+
+    expect(ms1Client.crearTicketRevision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activoId: '11111111-1111-1111-1111-111111111111',
+        solicitadoPorWhatsApp: '59170000000',
+      }),
+    );
+    expect(result).toEqual({
+      recibido: true,
+      intencion: 'SOLICITAR_TRASLADO',
+      codigoActivo: 'ACT-2024-001',
+      ticketId: 'TKT-TR-1',
+      mensaje: 'Solicitud de traslado registrada',
+    });
+  });
+
+  it('confirma recepcion cuando existe traslado pendiente del activo autorizado', async () => {
+    ms1Client.buscarActivoPorCodigo.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      codigo: 'ACT-2024-001',
+      nombre: 'Laptop Dell',
+      estado: 'TRANSFERIDO',
+      traslados: [{ id: '22222222-2222-2222-2222-222222222222', recepcionConfirmada: false }],
+    });
+    ms1Client.telefonoTieneAccesoActivo = jest.fn().mockReturnValue(true);
+    ms1Client.confirmarRecepcionTraslado.mockResolvedValue({
+      id: '22222222-2222-2222-2222-222222222222',
+      recepcionConfirmada: true,
+    });
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'confirmo recepcion ACT-2024-001',
+    });
+
+    expect(ms1Client.confirmarRecepcionTraslado).toHaveBeenCalledWith('22222222-2222-2222-2222-222222222222');
+    expect(result).toEqual({
+      recibido: true,
+      intencion: 'CONFIRMAR_RECEPCION',
+      codigoActivo: 'ACT-2024-001',
+      mensaje: 'Recepcion confirmada',
     });
   });
 

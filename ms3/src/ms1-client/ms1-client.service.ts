@@ -7,9 +7,20 @@ export type ActivoMs1 = {
   id: string;
   codigo: string;
   nombre: string;
+  descripcion?: string;
+  fechaAdquisicion?: string;
+  valorAdquisicion?: number | string;
+  vidaUtilAnios?: number;
   estado?: string;
+  ubicacion?: string;
+  valorLibros?: number | string;
   responsableEmail?: string;
   responsablePhone?: string;
+  categoria?: {
+    nombre?: string;
+    metodoDepreciacion?: string;
+    tasaDepreciacion?: number;
+  };
   areaActual?: { nombre?: string };
   asignaciones?: Array<{
     activa: boolean;
@@ -20,6 +31,14 @@ export type ActivoMs1 = {
     };
     area?: { nombre?: string };
   }>;
+  traslados?: Array<{
+    id: string;
+    fecha?: string;
+    motivoTraslado?: string;
+    recepcionConfirmada: boolean;
+    areaOrigen?: { nombre?: string };
+    areaDestino?: { nombre?: string };
+  }>;
 };
 
 export type TicketRevision = {
@@ -28,12 +47,28 @@ export type TicketRevision = {
   estado: 'CREADO' | 'SIMULADO';
 };
 
+type ResponsableMs1 = {
+  id: string;
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+};
+
 const ACTIVOS_DEMO: Record<string, ActivoMs1> = {
   'ACT-2024-001': {
     id: '550e8400-e29b-41d4-a716-446655440000',
     codigo: 'ACT-2024-001',
     nombre: 'Laptop Dell Demo',
     estado: 'ACTIVO',
+    ubicacion: 'Piso 2 - Mesa TI',
+    valorAdquisicion: 8200,
+    vidaUtilAnios: 4,
+    valorLibros: 4100,
+    categoria: {
+      nombre: 'Equipos de computacion',
+      metodoDepreciacion: 'LINEAL',
+      tasaDepreciacion: 25,
+    },
     responsableEmail: 'quirogaborys@gmail.com',
     responsablePhone: '591-77685777',
     asignaciones: [{
@@ -51,6 +86,15 @@ const ACTIVOS_DEMO: Record<string, ActivoMs1> = {
     codigo: 'ACT-2024-002',
     nombre: 'Impresora HP Demo',
     estado: 'EN_MANTENIMIENTO',
+    ubicacion: 'Piso 1 - Soporte',
+    valorAdquisicion: 3500,
+    vidaUtilAnios: 5,
+    valorLibros: 2100,
+    categoria: {
+      nombre: 'Equipos de oficina',
+      metodoDepreciacion: 'LINEAL',
+      tasaDepreciacion: 20,
+    },
     responsableEmail: 'quirogaborys@gmail.com',
     responsablePhone: '591-77685777',
     asignaciones: [{
@@ -68,6 +112,15 @@ const ACTIVOS_DEMO: Record<string, ActivoMs1> = {
     codigo: 'ACT-2024-003',
     nombre: 'Router Cisco Demo',
     estado: 'ACTIVO',
+    ubicacion: 'Datacenter',
+    valorAdquisicion: 1200,
+    vidaUtilAnios: 3,
+    valorLibros: 800,
+    categoria: {
+      nombre: 'Redes',
+      metodoDepreciacion: 'ACELERADO',
+      tasaDepreciacion: 30,
+    },
     responsableEmail: 'quirogaborys@gmail.com',
     responsablePhone: '591-77685777',
     asignaciones: [{
@@ -95,23 +148,50 @@ export class Ms1ClientService {
     const query = `
       query BuscarActivoPorCodigo($codigo: String!) {
         activos(filtro: { codigo: $codigo }) {
-          id
-          codigo
+          ...ActivoWhatsappFields
+        }
+      }
+
+      fragment ActivoWhatsappFields on Activo {
+        id
+        codigo
+        nombre
+        descripcion
+        fechaAdquisicion
+        valorAdquisicion
+        vidaUtilAnios
+        estado
+        ubicacion
+        valorLibros
+        categoria {
           nombre
-          estado
-          areaActual {
+          metodoDepreciacion
+          tasaDepreciacion
+        }
+        areaActual {
+          nombre
+        }
+        asignaciones {
+          activa
+          area {
             nombre
           }
-          asignaciones {
-            activa
-            area {
-              nombre
-            }
-            responsable {
-              nombre
-              email
-              telefono
-            }
+          responsable {
+            nombre
+            email
+            telefono
+          }
+        }
+        traslados {
+          id
+          fecha
+          motivoTraslado
+          recepcionConfirmada
+          areaOrigen {
+            nombre
+          }
+          areaDestino {
+            nombre
           }
         }
       }
@@ -135,12 +215,101 @@ export class Ms1ClientService {
     const query = `
       query ActivoPorId($id: ID!) {
         activo(id: $id) {
+          ...ActivoWhatsappFields
+        }
+      }
+
+      fragment ActivoWhatsappFields on Activo {
+        id
+        codigo
+        nombre
+        descripcion
+        fechaAdquisicion
+        valorAdquisicion
+        vidaUtilAnios
+        estado
+        ubicacion
+        valorLibros
+        categoria {
+          nombre
+          metodoDepreciacion
+          tasaDepreciacion
+        }
+        areaActual {
+          nombre
+        }
+        asignaciones {
+          activa
+          area {
+            nombre
+          }
+          responsable {
+            nombre
+            email
+            telefono
+          }
+        }
+        traslados {
+          id
+          fecha
+          motivoTraslado
+          recepcionConfirmada
+          areaOrigen {
+            nombre
+          }
+          areaDestino {
+            nombre
+          }
+        }
+      }
+    `;
+
+    try {
+      const { data } = await firstValueFrom(
+        this.http.post(this.config.ms1GraphqlUrl, {
+          query,
+          variables: { id: activoId },
+        }, this.authOptions()),
+      );
+      return this.conResponsableActivo(data?.data?.activo) ?? this.activoDemoPorId(activoId);
+    } catch (error) {
+      this.logger.warn(`MS1 no respondio al obtener activo ${activoId}: ${(error as Error).message}`);
+      return this.activoDemoPorId(activoId);
+    }
+  }
+
+  async listarActivosPorTelefono(telefonoWhatsapp: string): Promise<ActivoMs1[]> {
+    const telefono = this.normalizarTelefono(telefonoWhatsapp);
+    if (!telefono) {
+      return [];
+    }
+
+    const queryResponsables = `
+      query ResponsablesWhatsapp {
+        responsables {
+          id
+          nombre
+          email
+          telefono
+        }
+      }
+    `;
+
+    const queryActivos = `
+      query ActivosPorResponsable($responsableId: ID!) {
+        activosPorResponsable(responsableId: $responsableId) {
           id
           codigo
           nombre
           estado
+          ubicacion
+          valorLibros
           areaActual {
             nombre
+          }
+          categoria {
+            nombre
+            metodoDepreciacion
           }
           asignaciones {
             activa
@@ -159,15 +328,55 @@ export class Ms1ClientService {
 
     try {
       const { data } = await firstValueFrom(
-        this.http.post(this.config.ms1GraphqlUrl, {
-          query,
-          variables: { id: activoId },
-        }, this.authOptions()),
+        this.http.post(this.config.ms1GraphqlUrl, { query: queryResponsables }, this.authOptions()),
       );
-      return this.conResponsableActivo(data?.data?.activo) ?? this.activoDemoPorId(activoId);
+      const responsables = (data?.data?.responsables ?? []) as ResponsableMs1[];
+      const responsable = responsables.find((item) => this.normalizarTelefono(item.telefono) === telefono);
+      if (!responsable) {
+        return this.activosDemoPorTelefono(telefonoWhatsapp);
+      }
+
+      const activosResponse = await firstValueFrom(
+        this.http.post(
+          this.config.ms1GraphqlUrl,
+          { query: queryActivos, variables: { responsableId: responsable.id } },
+          this.authOptions(),
+        ),
+      );
+
+      const activos = (activosResponse.data?.data?.activosPorResponsable ?? []) as ActivoMs1[];
+      return activos.map((activo) => this.conResponsableActivo(activo) ?? activo);
     } catch (error) {
-      this.logger.warn(`MS1 no respondio al obtener activo ${activoId}: ${(error as Error).message}`);
-      return this.activoDemoPorId(activoId);
+      this.logger.warn(`MS1 no respondio al listar activos por telefono: ${(error as Error).message}`);
+      return this.activosDemoPorTelefono(telefonoWhatsapp);
+    }
+  }
+
+  async confirmarRecepcionTraslado(trasladoId: string): Promise<{ id: string; recepcionConfirmada: boolean }> {
+    const mutation = `
+      mutation ConfirmarRecepcion($trasladoId: ID!) {
+        confirmarRecepcionActivo(trasladoId: $trasladoId) {
+          id
+          recepcionConfirmada
+        }
+      }
+    `;
+
+    try {
+      const { data } = await firstValueFrom(
+        this.http.post(
+          this.config.ms1GraphqlUrl,
+          { query: mutation, variables: { trasladoId } },
+          this.authOptions(),
+        ),
+      );
+      return data?.data?.confirmarRecepcionActivo ?? { id: trasladoId, recepcionConfirmada: true };
+    } catch (error) {
+      this.logger.warn(`No se pudo confirmar recepcion ${trasladoId} en MS1: ${(error as Error).message}`);
+      if (!this.config.devToolsEnabled) {
+        throw error;
+      }
+      return { id: trasladoId, recepcionConfirmada: true };
     }
   }
 
@@ -272,5 +481,15 @@ export class Ms1ClientService {
       return null;
     }
     return Object.values(ACTIVOS_DEMO).find((activo) => activo.id === activoId) ?? null;
+  }
+
+  private activosDemoPorTelefono(telefonoWhatsapp: string): ActivoMs1[] {
+    if (!this.config.devToolsEnabled) {
+      return [];
+    }
+
+    return Object.values(ACTIVOS_DEMO).filter((activo) =>
+      this.telefonoTieneAccesoActivo(activo, telefonoWhatsapp),
+    );
   }
 }

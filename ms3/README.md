@@ -120,29 +120,45 @@ MS3 usa Azure OpenAI como LLM agente antes de llamar a MS4/N8N. Cada mensaje se 
 
 | Intencion | Permitida por WhatsApp | Resultado |
 | --- | --- | --- |
-| Consultar activo | Si | Consulta informacion basica en MS1 por codigo. |
+| Listar mis activos | Si | MS3 identifica el telefono y lista solo activos asociados al responsable en MS1. |
+| Consultar activo | Si | Consulta estado, area, ubicacion y responsable en MS1 por codigo. |
+| Consultar documentos | Si | Lista metadatos documentales de MS2 si el activo pertenece al numero de WhatsApp. |
+| Enlace temporal de documento | Si | Genera URL presignada de MS2/S3 y registra auditoria documental. |
+| Consultar depreciacion | Si | Muestra valor original, valor en libros, vida util y metodo; no cambia parametros contables. |
 | Solicitar revision o mantenimiento correctivo | Si | Dispara `solicitud-revision` hacia MS4/N8N o procesa el flujo interno en desarrollo. |
+| Reportar incidente, dano, perdida o robo | Si | Crea solicitud/ticket operativo y notifica al responsable; puede incluir evidencia adjunta. |
+| Solicitar traslado | Si | Crea solicitud de traslado para aprobacion posterior; no ejecuta el traslado directamente. |
+| Confirmar recepcion | Si | Confirma una recepcion pendiente si el activo esta asociado al numero de WhatsApp. |
 | Ayuda/menu | Si | Devuelve ejemplos de comandos permitidos. |
-| Alta, edicion, baja, traslado, transferencia o asignacion | No | Responde rechazo y no llama a MS4 ni a MS1. |
-| Documentos, diagnostico con camara, usuarios, roles, BI o administracion | No | Indica que debe usarse web o movil. |
+| Alta, edicion directa, baja definitiva, asignacion directa o cambios contables | No | Responde rechazo y no ejecuta transacciones irreversibles por chat. |
+| Usuarios, roles, BI, configuracion o administracion | No | Indica que debe usarse web con permisos completos. |
+
+Todas las operaciones sobre un activo validan primero que el telefono de WhatsApp coincida con una asignacion activa o responsable registrado en MS1. Si no coincide, MS3 responde `NO_AUTORIZADA` y no consulta MS2 ni dispara MS4.
 
 Ejemplos permitidos:
 
 ```text
+mis activos
 consultar ACT-2024-001
 estado de ACT-2024-001
+documentos ACT-2024-001
+enlace documento ACT-2024-001 doc-123
+depreciacion ACT-2024-001
 revisar ACT-2024-001 no enciende
 solicito mantenimiento de EQ-2024-005 por falla electrica
+reportar dano ACT-2024-001 con foto
+solicitar traslado ACT-2024-001 al area Contabilidad
+confirmo recepcion ACT-2024-001
 ```
 
 Ejemplos rechazados:
 
 ```text
 dar de baja ACT-2024-001
-trasladar ACT-2024-001 al area Contabilidad
 asignar ACT-2024-001 a Juan Perez
 subir documento de ACT-2024-001
-diagnosticar ACT-2024-001 con foto
+cambiar valor de ACT-2024-001
+cambiar rol de usuario
 ```
 
 ## Arranque en produccion con Docker

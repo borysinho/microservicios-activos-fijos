@@ -555,7 +555,7 @@ W2 ..> W7 : <<include>>
 
 **Objetivo:** Orquestar flujos automatizados de mínimo 3 pasos que conectan los microservicios del sistema con canales externos (WhatsApp, Email) sin intervención manual. MS3 coordina los eventos y MS4 ejecuta N8N en Azure.
 
-**Funciones principales:** _Recibir solicitud por WhatsApp, identificar activo, crear ticket de revisión, verificar documentación, enviar confirmación por email, enviar alertas automáticas._
+**Funciones principales:** _Recibir solicitud por WhatsApp, validar que el telefono tenga activos asociados, consultar estado/documentos/depreciacion, crear ticket de revisión o incidente, registrar solicitud de traslado, confirmar recepción pendiente, verificar documentación, enviar confirmación por email, enviar alertas automáticas._
 
 - CU-67: Recibir mensaje de WhatsApp del responsable de área
 - CU-68: Identificar activo por código en el mensaje (MS3 + MS4/N8N + MS1)
@@ -565,6 +565,11 @@ W2 ..> W7 : <<include>>
 - CU-72: Responder por WhatsApp con estado de la solicitud (MS3 + WhatsApp API)
 - CU-73: Enviar alerta automática por vencimiento de garantía
 - CU-74: Enviar alerta de mantenimiento programado
+- CU-75: Listar activos asociados al número de WhatsApp
+- CU-76: Consultar documentos y generar enlace temporal auditado
+- CU-77: Consultar depreciación básica sin modificar parámetros contables
+- CU-78: Solicitar traslado o reportar incidente para aprobación posterior
+- CU-79: Confirmar recepción pendiente de un activo asociado
 
 ## MÓDULO 11 — Registro Blockchain y Auditoría
 
