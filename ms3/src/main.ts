@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { json } from 'express';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AppConfig } from './config/app-config.service';
 
@@ -11,6 +11,14 @@ async function bootstrap() {
 
   app.use(
     json({
+      verify: (req: any, _res, buf) => {
+        req.rawBody = Buffer.from(buf);
+      },
+    }),
+  );
+  app.use(
+    urlencoded({
+      extended: false,
       verify: (req: any, _res, buf) => {
         req.rawBody = Buffer.from(buf);
       },

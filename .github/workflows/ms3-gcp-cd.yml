@@ -21,6 +21,15 @@ env:
   MS2_BASE_URL: ${{ vars.MS2_BASE_URL }}
   SENDGRID_FROM_EMAIL: ${{ vars.SENDGRID_FROM_EMAIL || 'noreply@activos.empresa.com' }}
   MS4_N8N_WEBHOOK_URL: ${{ vars.MS4_N8N_WEBHOOK_URL }}
+  EMAIL_PROVIDER: ${{ vars.EMAIL_PROVIDER || 'smtp' }}
+  SMTP_HOST: ${{ vars.SMTP_HOST || 'smtp.gmail.com' }}
+  SMTP_PORT: ${{ vars.SMTP_PORT || '587' }}
+  SMTP_SECURE: ${{ vars.SMTP_SECURE || 'false' }}
+  SMTP_USER: ${{ vars.SMTP_USER }}
+  SMTP_FROM_EMAIL: ${{ vars.SMTP_FROM_EMAIL || vars.SMTP_USER }}
+  WHATSAPP_PROVIDER: ${{ vars.WHATSAPP_PROVIDER || 'twilio' }}
+  TWILIO_ACCOUNT_SID: ${{ vars.TWILIO_ACCOUNT_SID }}
+  TWILIO_WHATSAPP_FROM: ${{ vars.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886' }}
 
 jobs:
   test:
@@ -32,10 +41,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
           cache: npm
@@ -61,12 +70,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate deployment configuration
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
           MS2_AUTH_TOKEN: ${{ secrets.MS2_AUTH_TOKEN }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
         run: |
           test -n "$GCP_SA_KEY" || { echo "::error::GCP_SA_KEY secret is required"; exit 1; }
           test -n "$MS2_AUTH_TOKEN" || { echo "::error::MS2_AUTH_TOKEN secret is required"; exit 1; }
@@ -85,6 +96,8 @@ jobs:
       - name: Deploy MS3 to Cloud Run
         env:
           MS2_AUTH_TOKEN: ${{ secrets.MS2_AUTH_TOKEN }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
         run: |
           gcloud run deploy "$GCP_RUN_SERVICE" \
             --source ms3 \
@@ -99,7 +112,7 @@ jobs:
             --timeout=60 \
             --cpu-throttling \
             --no-cpu-boost \
-            --set-env-vars "NODE_ENV=production,MS3_DEV_TOOLS_ENABLED=false,MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL},MS2_BASE_URL=${MS2_BASE_URL},MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN},SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL},MS4_N8N_WEBHOOK_URL=${MS4_N8N_WEBHOOK_URL}"
+            --set-env-vars "NODE_ENV=production,MS3_DEV_TOOLS_ENABLED=false,MS1_GRAPHQL_URL=${MS1_GRAPHQL_URL},MS2_BASE_URL=${MS2_BASE_URL},MS2_AUTH_TOKEN=${MS2_AUTH_TOKEN},MS4_N8N_WEBHOOK_URL=${MS4_N8N_WEBHOOK_URL},EMAIL_PROVIDER=${EMAIL_PROVIDER},SMTP_HOST=${SMTP_HOST},SMTP_PORT=${SMTP_PORT},SMTP_SECURE=${SMTP_SECURE},SMTP_USER=${SMTP_USER},SMTP_PASSWORD=${SMTP_PASSWORD},SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL},WHATSAPP_PROVIDER=${WHATSAPP_PROVIDER},TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID},TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN},TWILIO_WHATSAPP_FROM=${TWILIO_WHATSAPP_FROM},SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL}"
 
       - name: Show deployed URL
         id: service-url

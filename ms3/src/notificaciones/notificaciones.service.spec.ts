@@ -9,11 +9,15 @@ describe('NotificacionesService', () => {
     whatsappApiUrl: 'https://graph.facebook.com/v18.0',
     whatsappPhoneNumberId: '',
     whatsappToken: '',
+    twilioAccountSid: '',
+    twilioAuthToken: '',
+    twilioWhatsappFrom: '',
     wahaBaseUrl: 'http://waha:3000',
     wahaSession: 'default',
     wahaApiKey: 'local-key',
     fcmProjectId: '',
     fcmAccessToken: '',
+    emailProvider: 'sendgrid',
   };
 
   it('envia texto por WAHA cuando el proveedor local esta habilitado', async () => {
@@ -83,6 +87,38 @@ describe('NotificacionesService', () => {
       canal: 'whatsapp',
       modo: 'simulado',
       destino: '59170000000',
+    });
+  });
+
+  it('envia texto por Twilio WhatsApp cuando el proveedor esta habilitado', async () => {
+    const http = {
+      post: jest.fn().mockReturnValue(of({ data: { sid: 'SM1' } })),
+    };
+    const service = new NotificacionesService(http as any, {
+      ...baseConfig,
+      whatsappProvider: 'twilio',
+      twilioAccountSid: 'AC123',
+      twilioAuthToken: 'token',
+      twilioWhatsappFrom: 'whatsapp:+14155238886',
+    });
+
+    const result = await service.enviarWhatsAppTexto('+59177685777', 'Hola');
+
+    expect(http.post).toHaveBeenCalledWith(
+      'https://api.twilio.com/2010-04-01/Accounts/AC123/Messages.json',
+      'From=whatsapp%3A%2B14155238886&To=whatsapp%3A%2B59177685777&Body=Hola',
+      {
+        headers: {
+          Authorization: `Basic ${Buffer.from('AC123:token').toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
+    );
+    expect(result).toEqual({
+      enviado: true,
+      canal: 'whatsapp',
+      modo: 'real',
+      destino: '+59177685777',
     });
   });
 });

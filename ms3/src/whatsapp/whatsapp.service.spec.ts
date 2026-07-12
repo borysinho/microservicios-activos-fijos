@@ -110,6 +110,20 @@ describe('WhatsappService', () => {
     ).toBeNull();
   });
 
+  it('extrae mensajes entrantes desde webhook Twilio', () => {
+    expect(
+      service.extraerMensaje({
+        From: 'whatsapp:+59177685777',
+        Body: 'Solicito revision de ACT-2024-001',
+        MessageSid: 'SM123',
+      }),
+    ).toEqual({
+      from: 'whatsapp:+59177685777',
+      text: 'Solicito revision de ACT-2024-001',
+      timestamp: 'SM123',
+    });
+  });
+
   it('procesa CU-67 a CU-72 para solicitud de revision', async () => {
     ms1Client.buscarActivoPorCodigo.mockResolvedValue({
       id: '11111111-1111-1111-1111-111111111111',

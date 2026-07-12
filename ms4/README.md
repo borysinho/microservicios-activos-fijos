@@ -70,8 +70,10 @@ N8N_BASIC_AUTH_USER=admin
 N8N_BASIC_AUTH_PASSWORD=<password>
 MS1_GRAPHQL_URL=https://<ms1-azure>/graphql
 MS2_BASE_URL=https://<ms2-aws>/api
-SENDGRID_FROM_EMAIL=noreply@activos.empresa.com
+MS3_BASE_URL=https://<ms3-gcp>/api
 ```
+
+El workflow usa `MS4_VM_HOST`, `MS4_VM_USER` y `MS4_VM_SSH_KEY`. Si no existen, usa como fallback `MS1_VM_HOST`, `MS1_VM_USER` y `MS1_VM_SSH_KEY`, permitiendo desplegar MS4 en la misma VM Azure usada por MS1.
 
 Despues del despliegue de MS4, configurar MS3 con:
 

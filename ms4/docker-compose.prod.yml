@@ -19,7 +19,7 @@ services:
       N8N_IMPORT_WORKFLOWS: ${N8N_IMPORT_WORKFLOWS:-true}
       MS1_GRAPHQL_URL: ${MS1_GRAPHQL_URL}
       MS2_BASE_URL: ${MS2_BASE_URL}
-      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-noreply@activos.empresa.com}
+      MS3_BASE_URL: ${MS3_BASE_URL}
     volumes:
       - n8n_data:/home/node/.n8n
 

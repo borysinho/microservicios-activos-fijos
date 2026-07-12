@@ -31,17 +31,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.sendgrid.com/v3/mail/send",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "Authorization", "value": "=Bearer {{$env.SENDGRID_API_KEY}}" }]
-        },
+        "url": "={{$env.MS3_BASE_URL}}/notificaciones/email",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"personalizations\":[{\"to\":[{\"email\":\"{{$node['Webhook MS1 Mantenimiento'].json.responsableEmail}}\"}]}],\"from\":{\"email\":\"{{$env.SENDGRID_FROM_EMAIL}}\"},\"subject\":\"Mantenimiento programado {{$node['Webhook MS1 Mantenimiento'].json.codigo}}\",\"content\":[{\"type\":\"text/plain\",\"value\":\"Coordine el mantenimiento programado del activo.\"}]}"
+        "jsonBody": "={\"to\":\"{{$node['Webhook MS1 Mantenimiento'].json.responsableEmail}}\",\"subject\":\"Mantenimiento programado {{$node['Webhook MS1 Mantenimiento'].json.codigo}}\",\"text\":\"Coordine el mantenimiento programado del activo.\"}"
       },
       "id": "email",
-      "name": "Enviar Email",
+      "name": "Enviar Email via MS3",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [560, 0]
@@ -49,14 +45,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.WAHA_BASE_URL}}/api/sendText",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [{ "name": "X-Api-Key", "value": "={{$env.WAHA_API_KEY}}" }]
-        },
+        "url": "={{$env.MS3_BASE_URL}}/whatsapp/enviar",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"session\":\"{{$env.WAHA_SESSION || 'default'}}\",\"chatId\":\"{{$node['Webhook MS1 Mantenimiento'].json.responsablePhone.includes('@') ? $node['Webhook MS1 Mantenimiento'].json.responsablePhone : $node['Webhook MS1 Mantenimiento'].json.responsablePhone.replace(/[^0-9]/g, '') + '@c.us'}}\",\"text\":\"Recordatorio: el activo {{$node['Webhook MS1 Mantenimiento'].json.codigo}} tiene mantenimiento programado para {{$node['Webhook MS1 Mantenimiento'].json.fechaMantenimiento}}.\"}"
+        "jsonBody": "={\"to\":\"{{$node['Webhook MS1 Mantenimiento'].json.responsablePhone}}\",\"mensaje\":\"Recordatorio: el activo {{$node['Webhook MS1 Mantenimiento'].json.codigo}} tiene mantenimiento programado para {{$node['Webhook MS1 Mantenimiento'].json.fechaMantenimiento}}.\"}"
       },
       "id": "whatsapp",
       "name": "Enviar WhatsApp",
@@ -70,9 +62,9 @@
       "main": [[{ "node": "Obtener Datos MS1", "type": "main", "index": 0 }]]
     },
     "Obtener Datos MS1": {
-      "main": [[{ "node": "Enviar Email", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Enviar Email via MS3", "type": "main", "index": 0 }]]
     },
-    "Enviar Email": {
+    "Enviar Email via MS3": {
       "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]]
     }
   }

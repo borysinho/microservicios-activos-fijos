@@ -28,7 +28,17 @@ export class AppConfig {
   readonly wahaBaseUrl = env('WAHA_BASE_URL', 'http://localhost:3001');
   readonly wahaSession = env('WAHA_SESSION', 'default');
   readonly wahaApiKey = env('WAHA_API_KEY');
+  readonly twilioAccountSid = env('TWILIO_ACCOUNT_SID');
+  readonly twilioAuthToken = env('TWILIO_AUTH_TOKEN');
+  readonly twilioWhatsappFrom = env('TWILIO_WHATSAPP_FROM');
 
+  readonly emailProvider = env('EMAIL_PROVIDER', env('SMTP_HOST') ? 'smtp' : 'sendgrid').toLowerCase();
+  readonly smtpHost = env('SMTP_HOST');
+  readonly smtpPort = Number(env('SMTP_PORT', '587'));
+  readonly smtpSecure = env('SMTP_SECURE', 'false') === 'true';
+  readonly smtpUser = env('SMTP_USER', env('GMAIL_USERNAME'));
+  readonly smtpPassword = env('SMTP_PASSWORD', env('GMAIL_PASSWORD'));
+  readonly smtpFromEmail = env('SMTP_FROM_EMAIL', this.smtpUser || 'noreply@activos.empresa.com');
   readonly sendgridApiKey = env('SENDGRID_API_KEY');
   readonly sendgridFromEmail = env('SENDGRID_FROM_EMAIL', 'noreply@activos.empresa.com');
 

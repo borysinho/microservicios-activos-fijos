@@ -393,7 +393,7 @@
 ### MS3 — Google Cloud Platform
 
 - [ ] Google Cloud Run con imagen Docker de MS3 (NestJS)
-- [x] Variables de entorno documentadas para despliegue: `MS1_GRAPHQL_URL`, `MS2_BASE_URL`, `MS4_N8N_WEBHOOK_URL`, `WHATSAPP_*`, `SENDGRID_API_KEY`, `FCM_*`
+- [x] Variables de entorno documentadas para despliegue: `MS1_GRAPHQL_URL`, `MS2_BASE_URL`, `MS4_N8N_WEBHOOK_URL`, `SMTP_*`, `TWILIO_*`, `FCM_*`
 - [ ] Firebase proyecto creado para FCM
 - [x] CI/CD automático configurado: `.github/workflows/ms3-gcp-cd.yml` (CU-84)
 - [ ] Secretos GitHub Actions configurados: `GCP_SA_KEY`

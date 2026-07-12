@@ -65,22 +65,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.sendgrid.com/v3/mail/send",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{$env.SENDGRID_API_KEY}}"
-            }
-          ]
-        },
+        "url": "={{$env.MS3_BASE_URL}}/notificaciones/email",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"personalizations\":[{\"to\":[{\"email\":\"{{$env.RESPONSABLE_DEFAULT_EMAIL}}\"}]}],\"from\":{\"email\":\"{{$env.SENDGRID_FROM_EMAIL}}\"},\"subject\":\"Solicitud de revision {{$node['Extraer Codigo Activo'].json.codigoActivo}}\",\"content\":[{\"type\":\"text/plain\",\"value\":\"Solicitud recibida y documentos verificados en MS2.\"}]}"
+        "jsonBody": "={\"to\":\"{{$env.RESPONSABLE_DEFAULT_EMAIL}}\",\"subject\":\"Solicitud de revision {{$node['Extraer Codigo Activo'].json.codigoActivo}}\",\"text\":\"Solicitud recibida y documentos verificados en MS2.\"}"
       },
       "id": "sendgrid-email",
-      "name": "Enviar Email SendGrid",
+      "name": "Enviar Email via MS3",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [1200, 0]
@@ -88,19 +79,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{$env.WAHA_BASE_URL}}/api/sendText",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "X-Api-Key",
-              "value": "={{$env.WAHA_API_KEY}}"
-            }
-          ]
-        },
+        "url": "={{$env.MS3_BASE_URL}}/whatsapp/enviar",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={\"session\":\"{{$env.WAHA_SESSION || 'default'}}\",\"chatId\":\"{{$node['WhatsApp Trigger'].json.from.includes('@') ? $node['WhatsApp Trigger'].json.from : $node['WhatsApp Trigger'].json.from.replace(/[^0-9]/g, '') + '@c.us'}}\",\"text\":\"Tu solicitud de revision fue recibida.\"}"
+        "jsonBody": "={\"to\":\"{{$node['WhatsApp Trigger'].json.from}}\",\"mensaje\":\"Tu solicitud de revision fue recibida.\"}"
       },
       "id": "responder-whatsapp",
       "name": "Responder WhatsApp",
@@ -123,9 +105,9 @@
       "main": [[{ "node": "Verificar Documentos MS2", "type": "main", "index": 0 }]]
     },
     "Verificar Documentos MS2": {
-      "main": [[{ "node": "Enviar Email SendGrid", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Enviar Email via MS3", "type": "main", "index": 0 }]]
     },
-    "Enviar Email SendGrid": {
+    "Enviar Email via MS3": {
       "main": [[{ "node": "Responder WhatsApp", "type": "main", "index": 0 }]]
     }
   }

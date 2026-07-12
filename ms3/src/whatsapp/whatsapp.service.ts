@@ -65,6 +65,14 @@ export class WhatsappService {
       };
     }
 
+    if (payload?.From && payload?.Body) {
+      return {
+        from: payload.From,
+        text: String(payload.Body).trim(),
+        timestamp: String(payload.MessageSid ?? payload.SmsMessageSid ?? ''),
+      };
+    }
+
     const value = payload?.entry?.[0]?.changes?.[0]?.value;
     const message = value?.messages?.[0];
     if (!message) {

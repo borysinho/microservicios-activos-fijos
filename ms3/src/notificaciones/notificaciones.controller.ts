@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { NotificacionDto, RegistrarTokenPushDto } from './dto';
+import { EnviarEmailDto, NotificacionDto, RegistrarTokenPushDto } from './dto';
 import { NotificacionesService } from './notificaciones.service';
 
 @Controller(['api/notificaciones', 'notificaciones'])
@@ -15,6 +15,11 @@ export class NotificacionesController {
   @Post()
   crear(@Body() dto: NotificacionDto) {
     return this.notificacionesService.guardarNotificacion(dto);
+  }
+
+  @Post('email')
+  enviarEmail(@Body() dto: EnviarEmailDto) {
+    return this.notificacionesService.enviarEmail(dto);
   }
 
   @Get()

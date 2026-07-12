@@ -30,3 +30,17 @@ export class NotificacionDto {
   @IsString()
   activoId?: string;
 }
+
+export class EnviarEmailDto {
+  @IsString()
+  @IsNotEmpty()
+  to!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  subject!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  text!: string;
+}

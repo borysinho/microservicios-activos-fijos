@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+import * as nodemailer from 'nodemailer';
 import { firstValueFrom } from 'rxjs';
 import { AppConfig } from '../config/app-config.service';
 
@@ -37,6 +38,10 @@ export class NotificacionesService {
     subject: string;
     text: string;
   }): Promise<ResultadoEnvio> {
+    if (this.config.emailProvider === 'smtp') {
+      return this.enviarEmailSmtp(params);
+    }
+
     if (!this.config.sendgridApiKey) {
       return { enviado: false, canal: 'email', modo: 'simulado', destino: params.to };
     }
@@ -66,9 +71,47 @@ export class NotificacionesService {
     }
   }
 
+  private async enviarEmailSmtp(params: {
+    to: string;
+    subject: string;
+    text: string;
+  }): Promise<ResultadoEnvio> {
+    if (!this.config.smtpHost || !this.config.smtpUser || !this.config.smtpPassword) {
+      return { enviado: false, canal: 'email', modo: 'simulado', destino: params.to };
+    }
+
+    try {
+      const transport = nodemailer.createTransport({
+        host: this.config.smtpHost,
+        port: this.config.smtpPort,
+        secure: this.config.smtpSecure,
+        auth: {
+          user: this.config.smtpUser,
+          pass: this.config.smtpPassword,
+        },
+      });
+
+      await transport.sendMail({
+        from: this.config.smtpFromEmail,
+        to: params.to,
+        subject: params.subject,
+        text: params.text,
+      });
+
+      return { enviado: true, canal: 'email', modo: 'real', destino: params.to };
+    } catch (error) {
+      this.logger.warn(`SMTP fallo para ${params.to}: ${(error as Error).message}`);
+      return { enviado: false, canal: 'email', modo: 'simulado', destino: params.to };
+    }
+  }
+
   async enviarWhatsAppTexto(to: string, body: string): Promise<ResultadoEnvio> {
     if (this.config.whatsappProvider === 'waha') {
       return this.enviarWhatsAppWaha(to, body);
+    }
+
+    if (this.config.whatsappProvider === 'twilio') {
+      return this.enviarWhatsAppTwilio(to, body);
     }
 
     if (!this.config.whatsappToken || !this.config.whatsappPhoneNumberId) {
@@ -97,6 +140,37 @@ export class NotificacionesService {
       return { enviado: true, canal: 'whatsapp', modo: 'real', destino: to };
     } catch (error) {
       this.logger.warn(`WhatsApp fallo para ${to}: ${(error as Error).message}`);
+      return { enviado: false, canal: 'whatsapp', modo: 'simulado', destino: to };
+    }
+  }
+
+  private async enviarWhatsAppTwilio(to: string, body: string): Promise<ResultadoEnvio> {
+    if (!this.config.twilioAccountSid || !this.config.twilioAuthToken || !this.config.twilioWhatsappFrom) {
+      return { enviado: false, canal: 'whatsapp', modo: 'simulado', destino: to };
+    }
+
+    const form = new URLSearchParams();
+    form.set('From', this.toTwilioWhatsappAddress(this.config.twilioWhatsappFrom));
+    form.set('To', this.toTwilioWhatsappAddress(to));
+    form.set('Body', body);
+
+    try {
+      await firstValueFrom(
+        this.http.post(
+          `https://api.twilio.com/2010-04-01/Accounts/${this.config.twilioAccountSid}/Messages.json`,
+          form.toString(),
+          {
+            headers: {
+              Authorization: `Basic ${Buffer.from(`${this.config.twilioAccountSid}:${this.config.twilioAuthToken}`).toString('base64')}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+          },
+        ),
+      );
+
+      return { enviado: true, canal: 'whatsapp', modo: 'real', destino: to };
+    } catch (error) {
+      this.logger.warn(`Twilio WhatsApp fallo para ${to}: ${(error as Error).message}`);
       return { enviado: false, canal: 'whatsapp', modo: 'simulado', destino: to };
     }
   }
@@ -133,6 +207,16 @@ export class NotificacionesService {
     }
 
     return `${to.replace(/\D/g, '')}@c.us`;
+  }
+
+  private toTwilioWhatsappAddress(value: string): string {
+    if (value.startsWith('whatsapp:')) {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    const phone = trimmed.startsWith('+') ? trimmed : `+${trimmed.replace(/\D/g, '')}`;
+    return `whatsapp:${phone}`;
   }
 
   async enviarWhatsAppMantenimiento(params: {

@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate N8N workflow exports
         run: |
@@ -55,23 +55,23 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Validate deployment configuration
         env:
           ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
-          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
-          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST || secrets.MS1_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER || secrets.MS1_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY || secrets.MS1_VM_SSH_KEY }}
         run: |
           test -n "$ACR_LOGIN_SERVER" || { echo "::error::ACR_LOGIN_SERVER secret is required"; exit 1; }
           test -n "$ACR_USERNAME" || { echo "::error::ACR_USERNAME secret is required"; exit 1; }
           test -n "$ACR_PASSWORD" || { echo "::error::ACR_PASSWORD secret is required"; exit 1; }
-          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST secret is required"; exit 1; }
-          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER secret is required"; exit 1; }
-          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY secret is required"; exit 1; }
+          test -n "$MS4_VM_HOST" || { echo "::error::MS4_VM_HOST or MS1_VM_HOST secret is required"; exit 1; }
+          test -n "$MS4_VM_USER" || { echo "::error::MS4_VM_USER or MS1_VM_USER secret is required"; exit 1; }
+          test -n "$MS4_VM_SSH_KEY" || { echo "::error::MS4_VM_SSH_KEY or MS1_VM_SSH_KEY secret is required"; exit 1; }
 
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
@@ -94,9 +94,9 @@ jobs:
           ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
           ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
           ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
-          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST }}
-          MS4_VM_USER: ${{ secrets.MS4_VM_USER }}
-          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY }}
+          MS4_VM_HOST: ${{ secrets.MS4_VM_HOST || secrets.MS1_VM_HOST }}
+          MS4_VM_USER: ${{ secrets.MS4_VM_USER || secrets.MS1_VM_USER }}
+          MS4_VM_SSH_KEY: ${{ secrets.MS4_VM_SSH_KEY || secrets.MS1_VM_SSH_KEY }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           install -m 700 -d ~/.ssh

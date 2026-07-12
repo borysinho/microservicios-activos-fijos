@@ -45,7 +45,10 @@ Variables clave:
 - `MS2_BASE_URL`: URL base REST de MS2 con prefijo `/api`.
 - `MS2_AUTH_TOKEN`: JWT Bearer para consultar endpoints protegidos de MS2.
 - `MS4_N8N_WEBHOOK_URL`: URL base de MS4/N8N. `N8N_WEBHOOK_URL` se mantiene solo como compatibilidad temporal.
-- `WHATSAPP_PROVIDER`: `meta` o `waha`.
+- `EMAIL_PROVIDER`: `smtp` para Gmail o `sendgrid` para SendGrid.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`: correo SMTP; Gmail usa `smtp.gmail.com:587`.
+- `WHATSAPP_PROVIDER`: `twilio`, `meta` o `waha`.
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`: sandbox/API de Twilio WhatsApp.
 - `WAHA_BASE_URL`, `WAHA_SESSION`, `WAHA_API_KEY`: WhatsApp local con WAHA.
 - `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`: email.
 - `FCM_PROJECT_ID`, `FCM_ACCESS_TOKEN`: notificaciones push opcionales.
@@ -139,11 +142,17 @@ MS1_GRAPHQL_URL=https://<ms1-azure>/graphql
 MS2_BASE_URL=https://<ms2-aws>/api
 MS2_AUTH_TOKEN=<JWT_MS2>
 MS4_N8N_WEBHOOK_URL=https://<ms4-azure>/webhook
-SENDGRID_API_KEY=<SENDGRID_API_KEY>
-SENDGRID_FROM_EMAIL=noreply@activos.empresa.com
-WHATSAPP_PROVIDER=meta
-WHATSAPP_PHONE_NUMBER_ID=<PHONE_NUMBER_ID>
-WHATSAPP_TOKEN=<WHATSAPP_TOKEN>
+EMAIL_PROVIDER=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=<gmail>
+SMTP_PASSWORD=<gmail-app-password>
+SMTP_FROM_EMAIL=<gmail>
+WHATSAPP_PROVIDER=twilio
+TWILIO_ACCOUNT_SID=<TWILIO_ACCOUNT_SID>
+TWILIO_AUTH_TOKEN=<TWILIO_AUTH_TOKEN>
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
 WHATSAPP_VERIFY_TOKEN=<VERIFY_TOKEN>
 ```
 
