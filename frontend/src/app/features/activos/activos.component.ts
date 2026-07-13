@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe, PercentPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
 import { Ms2Service } from '../../core/services/ms2.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -28,6 +29,8 @@ export class ActivosComponent implements OnInit {
   private gql = inject(ActivosGqlService);
   private ms2 = inject(Ms2Service);
   private auth = inject(AuthService);
+  private route = inject(ActivatedRoute);
+  private detalleCodigoPendiente = '';
 
   activos = signal<Activo[]>([]);
   categorias = signal<CategoriaActivo[]>([]);
@@ -108,6 +111,9 @@ export class ActivosComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const params = this.route.snapshot.queryParamMap;
+    this.searchTerm = params.get('busqueda') ?? '';
+    this.detalleCodigoPendiente = params.get('detalle') ?? '';
     this.cargar();
     this.gql.getCategorias().subscribe((data) => this.categorias.set(data));
     this.gql.getAreas().subscribe((data) => this.areas.set(data));
@@ -126,6 +132,7 @@ export class ActivosComponent implements OnInit {
       next: (data) => {
         this.activos.set(data);
         this.loading.set(false);
+        this.abrirDetallePendiente(data);
       },
       error: () => {
         this.error.set('Error al cargar activos.');
@@ -136,6 +143,16 @@ export class ActivosComponent implements OnInit {
 
   get activosFiltrados(): Activo[] {
     return this.activos();
+  }
+
+  private abrirDetallePendiente(activos: Activo[]): void {
+    if (!this.detalleCodigoPendiente) return;
+    const codigo = this.detalleCodigoPendiente.toLowerCase();
+    this.detalleCodigoPendiente = '';
+    const activo = activos.find((a) => a.codigo.toLowerCase() === codigo);
+    if (activo) {
+      this.verDetalle(activo);
+    }
   }
 
   estadoBadge(estado?: string): string {

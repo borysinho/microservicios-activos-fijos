@@ -1,6 +1,7 @@
 import { Component, OnDestroy, ViewChild, ElementRef, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, PercentPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { Ms2Service } from '../../core/services/ms2.service';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
@@ -24,7 +25,7 @@ type ChartTheme = {
 @Component({
   selector: 'app-machine-learning',
   standalone: true,
-  imports: [CommonModule, FormsModule, PercentPipe],
+  imports: [CommonModule, FormsModule, PercentPipe, RouterLink],
   templateUrl: './machine-learning.component.html',
   styleUrl: './machine-learning.component.scss',
 })
@@ -131,15 +132,17 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
     if (!this.clusterRef) return;
     this.clusterChart?.destroy();
     const theme = this.getChartTheme();
-    const colors = [theme.accent, theme.cyan, theme.success, theme.danger, theme.purple, theme.warning];
-    const datasets = (r.clusters ?? []).map((cl, i) => ({
-      label: cl.nombre || `Cluster ${i + 1}`,
-      data: this.clusterPoints(cl, i),
-      backgroundColor: this.hexToRgba(colors[i % colors.length], 0.68),
-      borderColor: colors[i % colors.length],
-      pointHoverRadius: 8,
-      pointRadius: 6,
-    }));
+    const datasets = (r.clusters ?? []).map((cl, i) => {
+      const color = this.clusterColor(cl.id, theme);
+      return {
+        label: cl.nombre || `Cluster ${i + 1}`,
+        data: this.clusterPoints(cl, i),
+        backgroundColor: this.hexToRgba(color, 0.68),
+        borderColor: color,
+        pointHoverRadius: 8,
+        pointRadius: 6,
+      };
+    });
     this.clusterChart = new Chart(this.clusterRef.nativeElement, {
       type: 'scatter',
       data: { datasets },
@@ -193,6 +196,15 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
   private stableAssetScore(assetCode: string, clusterIndex: number, activoIndex: number): number {
     const hash = [...assetCode].reduce((acc, char) => acc + char.charCodeAt(0), 0);
     return 1 + clusterIndex * 1.6 + activoIndex * 0.45 + (hash % 7) / 10;
+  }
+
+  private clusterColor(cluster: number, theme: ChartTheme): string {
+    const map: Record<number, string> = {
+      0: theme.danger,
+      1: theme.warning,
+      2: theme.success,
+    };
+    return map[cluster] ?? theme.text;
   }
 
   private getChartTheme(): ChartTheme {

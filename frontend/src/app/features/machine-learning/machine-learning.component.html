@@ -150,7 +150,14 @@
           </div>
           <div class="cluster-card__assets">
             @for (activo of cluster.activos; track activo) {
-              <span class="cluster-card__asset">{{ activo }}</span>
+              <a
+                class="cluster-card__asset"
+                routerLink="/activos"
+                [queryParams]="{ busqueda: activo, detalle: activo }"
+                title="Abrir activo en inventario"
+              >
+                {{ activo }}
+              </a>
             }
           </div>
         </div>

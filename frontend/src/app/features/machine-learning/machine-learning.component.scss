@@ -112,12 +112,23 @@
   }
 
   &__asset {
+    display: inline-flex;
+    align-items: center;
     padding: 0.3rem 0.55rem;
     border-radius: var(--radius-sm);
     background: var(--bg-raised);
     color: var(--text-secondary);
     font-family: var(--font-mono);
     font-size: 12px;
+    text-decoration: none;
+    transition:
+      background 0.15s,
+      color 0.15s;
+
+    &:hover {
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
   }
 }
 
