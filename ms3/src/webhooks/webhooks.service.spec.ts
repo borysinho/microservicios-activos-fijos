@@ -19,6 +19,10 @@ describe('WebhooksService', () => {
     enviarPush: jest.fn().mockResolvedValue({ enviado: false }),
     enviarWhatsAppMantenimiento: jest.fn().mockResolvedValue({ enviado: false }),
     guardarNotificacion: jest.fn(),
+    guardarYEnviarPush: jest.fn().mockResolvedValue({
+      notificacion: { id: 'not-1' },
+      push: { enviado: false },
+    }),
   };
 
   let service: WebhooksService;
@@ -55,11 +59,13 @@ describe('WebhooksService', () => {
     expect(notificacionesService.enviarEmail).toHaveBeenCalledWith(
       expect.objectContaining({ to: 'resp@empresa.com' }),
     );
-    expect(notificacionesService.enviarPush).toHaveBeenCalledWith(
-      'user-1',
-      'Garantia por vencer: ACT-2024-002',
-      'Vence el 2026-07-15',
-    );
+    expect(notificacionesService.guardarYEnviarPush).toHaveBeenCalledWith({
+      usuarioId: 'user-1',
+      tipo: 'alerta',
+      titulo: 'Garantia por vencer: ACT-2024-002',
+      mensaje: 'Vence el 2026-07-15',
+      activoId: '11111111-1111-1111-1111-111111111111',
+    });
     expect(result).toEqual({
       enviado: true,
       flujo: 'alerta-garantia',
@@ -92,6 +98,13 @@ describe('WebhooksService', () => {
       to: '59171111111',
       codigoActivo: 'ACT-2024-003',
       fechaMantenimiento: '2026-06-20',
+    });
+    expect(notificacionesService.guardarYEnviarPush).toHaveBeenCalledWith({
+      usuarioId: 'user-2',
+      tipo: 'mantenimiento',
+      titulo: 'Mantenimiento: ACT-2024-003',
+      mensaje: 'Programado para 2026-06-20',
+      activoId: '22222222-2222-2222-2222-222222222222',
     });
     expect(result).toEqual({
       enviado: true,

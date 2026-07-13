@@ -43,6 +43,7 @@ export class AppConfig {
   readonly sendgridFromEmail = env('MS3_SENDGRID_FROM_EMAIL', 'noreply@activos.empresa.com');
 
   readonly fcmProjectId = env('MS3_FCM_PROJECT_ID');
+  readonly fcmServiceAccountJson = env('MS3_FCM_SERVICE_ACCOUNT_JSON');
   readonly fcmAccessToken = env('MS3_FCM_ACCESS_TOKEN');
 
   readonly azureOpenAiEndpoint = env('MS3_AZURE_OPENAI_ENDPOINT');

@@ -10,6 +10,17 @@ export interface EstadoFlujo {
   ultimaEjecucion: string;
 }
 
+export interface Notificacion {
+  id: string;
+  usuarioId: string;
+  tipo: 'mantenimiento' | 'alerta' | 'info' | 'baja';
+  titulo: string;
+  mensaje: string;
+  activoId?: string;
+  leida: boolean;
+  fechaCreacion: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class Ms3Service {
   private readonly base = environment.ms3BaseUrl;
@@ -22,5 +33,22 @@ export class Ms3Service {
 
   estadoFlujo(id: string): Observable<EstadoFlujo> {
     return this.http.get<EstadoFlujo>(`${this.base}/flujos/${id}`);
+  }
+
+  listarNotificaciones(usuarioId: string): Observable<Notificacion[]> {
+    return this.http.get<Notificacion[]>(`${this.base}/notificaciones`, {
+      params: { usuarioId },
+    });
+  }
+
+  marcarNotificacionLeida(usuarioId: string, notificacionId: string): Observable<{
+    actualizada: boolean;
+    notificacion: Notificacion | null;
+  }> {
+    return this.http.patch<{ actualizada: boolean; notificacion: Notificacion | null }>(
+      `${this.base}/notificaciones/${notificacionId}/leida`,
+      {},
+      { params: { usuarioId } },
+    );
   }
 }

@@ -8,12 +8,16 @@ export class RegistrarTokenPushDto {
   @IsString()
   @IsNotEmpty()
   token!: string;
+
+  @IsOptional()
+  @IsIn(['android', 'ios', 'web'])
+  plataforma?: 'android' | 'ios' | 'web';
 }
 
 export class NotificacionDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  usuarioId!: string;
+  usuarioId?: string;
 
   @IsIn(['mantenimiento', 'alerta', 'info', 'baja'])
   tipo!: 'mantenimiento' | 'alerta' | 'info' | 'baja';

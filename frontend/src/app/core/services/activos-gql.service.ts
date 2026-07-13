@@ -112,14 +112,14 @@ export class ActivosGqlService {
 
   getHistorialBlockchain(activoId: string): Observable<RegistroBlockchain[]> {
     return this.apollo
-      .watchQuery<any>({
+      .query<any>({
         query: Q.GET_HISTORIAL_BLOCKCHAIN,
         variables: { activoId },
         fetchPolicy: 'network-only',
       })
-      .valueChanges.pipe(
-        filter((r: any) => r?.data?.historialBlockchain != null),
+      .pipe(
         map((r: any) => r.data.historialBlockchain as RegistroBlockchain[]),
+        catchError((err) => throwError(() => err)),
       );
   }
 

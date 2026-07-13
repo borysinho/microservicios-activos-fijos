@@ -60,6 +60,10 @@ describe('MS3 API (e2e)', () => {
         registrarToken: jest.fn(),
         listarNotificaciones: jest.fn().mockReturnValue([]),
         guardarNotificacion: jest.fn(),
+        guardarYEnviarPush: jest.fn().mockResolvedValue({
+          notificacion: { id: 'not-1' },
+          push: { enviado: false },
+        }),
         enviarPush: jest.fn().mockResolvedValue({ enviado: false }),
       })
       .compile();

@@ -34,18 +34,35 @@ async function reportarProblema(params: {
 async function registrarTokenPush(
   usuarioId: string,
   token: string,
+  plataforma?: "android" | "ios" | "web",
 ): Promise<void> {
-  await http.post("/notificaciones/registrar-token", { usuarioId, token });
+  await http.post("/notificaciones/registrar-token", {
+    usuarioId,
+    token,
+    plataforma,
+  });
 }
 
 /** CU-44: Consultar notificaciones del usuario desde MS3 */
 async function getNotificaciones(usuarioId: string): Promise<any[]> {
-  const { data } = await http.get(`/notificaciones?usuarioId=${usuarioId}`);
+  const { data } = await http.get("/notificaciones", {
+    params: { usuarioId },
+  });
   return data;
+}
+
+async function marcarNotificacionLeida(
+  usuarioId: string,
+  notificacionId: string,
+): Promise<void> {
+  await http.patch(`/notificaciones/${notificacionId}/leida`, {}, {
+    params: { usuarioId },
+  });
 }
 
 export const ms3Service = {
   reportarProblema,
   registrarTokenPush,
   getNotificaciones,
+  marcarNotificacionLeida,
 };

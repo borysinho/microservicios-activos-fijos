@@ -1,5 +1,6 @@
 const mockPost = jest.fn();
 const mockGet = jest.fn();
+const mockPatch = jest.fn();
 const mockInterceptorUse = jest.fn();
 
 jest.mock("axios", () => ({
@@ -8,6 +9,7 @@ jest.mock("axios", () => ({
     create: jest.fn(() => ({
       post: mockPost,
       get: mockGet,
+      patch: mockPatch,
       interceptors: {
         request: {
           use: mockInterceptorUse,
@@ -61,7 +63,22 @@ describe("ms3Service", () => {
 
     const result = await ms3Service.getNotificaciones("user-1");
 
-    expect(mockGet).toHaveBeenCalledWith("/notificaciones?usuarioId=user-1");
+    expect(mockGet).toHaveBeenCalledWith("/notificaciones", {
+      params: { usuarioId: "user-1" },
+    });
     expect(result).toEqual([{ id: "not-1", titulo: "Mantenimiento" }]);
+  });
+
+  it("marca notificaciones como leidas en MS3", async () => {
+    const { ms3Service } = require("./ms3Service");
+    mockPatch.mockResolvedValueOnce({ data: {} });
+
+    await ms3Service.marcarNotificacionLeida("user-1", "not-1");
+
+    expect(mockPatch).toHaveBeenCalledWith(
+      "/notificaciones/not-1/leida",
+      {},
+      { params: { usuarioId: "user-1" } },
+    );
   });
 });

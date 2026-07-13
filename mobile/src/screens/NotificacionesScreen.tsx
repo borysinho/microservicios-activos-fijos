@@ -6,6 +6,7 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { ms3Service } from "../services/ms3Service";
 import { offlineCache } from "../services/offlineCache";
@@ -53,14 +54,36 @@ export default function NotificacionesScreen() {
     return unsubscribe;
   }, []);
 
+  const marcarLeida = useCallback(async (notificacion: Notificacion) => {
+    if (notificacion.leida) {
+      return;
+    }
+
+    setNotificaciones((current) =>
+      current.map((item) =>
+        item.id === notificacion.id ? { ...item, leida: true } : item,
+      ),
+    );
+
+    const session = await offlineCache.loadSession();
+    if (session) {
+      await ms3Service.marcarNotificacionLeida(
+        session.usuario.id,
+        notificacion.id,
+      );
+    }
+  }, []);
+
   const renderItem = ({ item }: { item: Notificacion }) => {
     const config = TIPO_CONFIG[item.tipo] ?? TIPO_CONFIG.info;
     return (
-      <View
+      <TouchableOpacity
         style={[
           styles.tarjeta,
           { borderLeftColor: config.color, backgroundColor: config.bg },
         ]}
+        activeOpacity={0.85}
+        onPress={() => marcarLeida(item)}
       >
         <View style={styles.tarjetaHeader}>
           <Text style={styles.tarjetaEmoji}>{config.emoji}</Text>
@@ -78,7 +101,7 @@ export default function NotificacionesScreen() {
         {item.activoId && (
           <Text style={styles.activoRef}>Activo ID: {item.activoId}</Text>
         )}
-      </View>
+      </TouchableOpacity>
     );
   };
 

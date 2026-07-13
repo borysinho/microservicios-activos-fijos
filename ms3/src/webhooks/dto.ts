@@ -23,6 +23,10 @@ export class EventoActivoDto {
   @IsOptional()
   @IsString()
   responsablePhone?: string;
+
+  @IsOptional()
+  @IsString()
+  responsableUsuarioId?: string;
 }
 
 export class VencimientoGarantiaDto {
@@ -100,6 +104,10 @@ export class DiagnosticoCriticoDto {
   @IsOptional()
   @IsEmail()
   responsableEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  responsableUsuarioId?: string;
 }
 
 export class ReportarProblemaDto {

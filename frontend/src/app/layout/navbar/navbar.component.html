@@ -10,12 +10,49 @@
       </svg>
       {{ auth.currentUser()?.rol ?? '—' }}
     </div>
-    <button class="navbar__icon-btn" title="Notificaciones" aria-label="Notificaciones">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
-    </button>
+    <div class="navbar__notifications">
+      <button
+        class="navbar__icon-btn"
+        title="Notificaciones"
+        aria-label="Notificaciones"
+        (click)="togglePanelNotificaciones()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="17" height="17">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        @if (notificacionesNoLeidas > 0) {
+          <span class="navbar__notification-badge">{{ notificacionesNoLeidas }}</span>
+        }
+      </button>
+
+      @if (panelAbierto) {
+        <section class="navbar__notifications-panel" aria-label="Lista de notificaciones">
+          <div class="navbar__notifications-header">
+            <span>Notificaciones</span>
+            <small>{{ notificacionesNoLeidas }} pendientes</small>
+          </div>
+          <div class="navbar__notifications-list">
+            @for (notificacion of notificaciones; track notificacion.id) {
+              <button
+                type="button"
+                [class]="notificationClass(notificacion.tipo)"
+                (click)="marcarLeida(notificacion)"
+              >
+                <span class="navbar__notification-dot" [class.navbar__notification-dot--read]="notificacion.leida"></span>
+                <span class="navbar__notification-content">
+                  <strong>{{ notificacion.titulo }}</strong>
+                  <span>{{ notificacion.mensaje }}</span>
+                  <small>{{ formatNotificationDate(notificacion.fechaCreacion) }}</small>
+                </span>
+              </button>
+            } @empty {
+              <div class="navbar__notifications-empty">Sin notificaciones</div>
+            }
+          </div>
+        </section>
+      }
+    </div>
     <div class="navbar__divider"></div>
     <div class="navbar__user">
       <div class="navbar__avatar" [class]="avatarClass">{{ auth.currentUser()?.nombre?.charAt(0) ?? 'U' }}</div>

@@ -1,5 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Subscription, interval, of } from 'rxjs';
+import { catchError, startWith, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../core/services/auth.service';
+import { Ms3Service, Notificacion } from '../../core/services/ms3.service';
 
 const ROUTE_TITLES: Record<string, string> = {
   '/dashboard': 'Resumen ejecutivo',
@@ -38,8 +41,33 @@ const AVATAR_CLASS: Record<string, string> = {
   templateUrl: './navbar.component.html',
   styleUrl: './navbar.component.scss',
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
+  private ms3 = inject(Ms3Service);
+  private sub?: Subscription;
+
+  notificaciones: Notificacion[] = [];
+  panelAbierto = false;
+
+  ngOnInit(): void {
+    this.sub = interval(30000)
+      .pipe(
+        startWith(0),
+        switchMap(() => {
+          const user = this.auth.currentUser();
+          return user
+            ? this.ms3.listarNotificaciones(user.id).pipe(catchError(() => of([])))
+            : of([]);
+        }),
+      )
+      .subscribe((notificaciones) => {
+        this.notificaciones = notificaciones;
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.sub?.unsubscribe();
+  }
 
   get pageTitle(): string {
     return ROUTE_TITLES[location.pathname] ?? 'Sistema de Activos Fijos';
@@ -62,5 +90,41 @@ export class NavbarComponent {
   get avatarClass(): string {
     const rol = this.auth.currentUser()?.rol ?? '';
     return AVATAR_CLASS[rol] ?? 'navbar__avatar';
+  }
+
+  get notificacionesNoLeidas(): number {
+    return this.notificaciones.filter((notificacion) => !notificacion.leida).length;
+  }
+
+  togglePanelNotificaciones(): void {
+    this.panelAbierto = !this.panelAbierto;
+  }
+
+  marcarLeida(notificacion: Notificacion): void {
+    const user = this.auth.currentUser();
+    if (!user || notificacion.leida) {
+      return;
+    }
+
+    this.ms3.marcarNotificacionLeida(user.id, notificacion.id).subscribe({
+      next: () => {
+        this.notificaciones = this.notificaciones.map((item) =>
+          item.id === notificacion.id ? { ...item, leida: true } : item,
+        );
+      },
+    });
+  }
+
+  notificationClass(tipo: Notificacion['tipo']): string {
+    return `navbar__notification-item navbar__notification-item--${tipo}`;
+  }
+
+  formatNotificationDate(value: string): string {
+    return new Date(value).toLocaleString('es-BO', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 }

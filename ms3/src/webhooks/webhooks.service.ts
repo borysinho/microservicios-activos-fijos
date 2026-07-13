@@ -24,14 +24,24 @@ export class WebhooksService {
   async procesarEventoActivo(dto: EventoActivoDto) {
     const tipo = dto.tipoEvento ?? dto.tipo ?? 'MANTENIMIENTO';
     await this.flujosService.dispararN8n('evento-activo', dto);
+    const titulo = this.tituloEventoActivo(tipo, dto.codigoActivo ?? dto.activoId);
+    const mensaje = `Se registro el evento ${tipo} para el activo ${dto.codigoActivo ?? dto.activoId}.`;
 
     if (dto.responsableEmail) {
       await this.notificacionesService.enviarEmail({
         to: dto.responsableEmail,
-        subject: `Evento de activo ${dto.codigoActivo ?? dto.activoId}`,
-        text: `Se registro el evento ${tipo} para el activo ${dto.codigoActivo ?? dto.activoId}.`,
+        subject: titulo,
+        text: mensaje,
       });
     }
+
+    await this.notificacionesService.guardarYEnviarPush({
+      usuarioId: dto.responsableUsuarioId,
+      tipo: tipo === 'BAJA' ? 'baja' : 'info',
+      titulo,
+      mensaje,
+      activoId: dto.activoId,
+    });
 
     return {
       recibido: true,
@@ -61,18 +71,20 @@ export class WebhooksService {
     });
 
     if (dto.responsableUsuarioId) {
-      this.notificacionesService.guardarNotificacion({
+      await this.notificacionesService.guardarYEnviarPush({
         usuarioId: dto.responsableUsuarioId,
         tipo: 'alerta',
         titulo: `Garantia por vencer: ${dto.codigo}`,
         mensaje: `Vence el ${dto.fechaVencimientoGarantia}`,
         activoId: dto.activoId,
       });
-      await this.notificacionesService.enviarPush(
-        dto.responsableUsuarioId,
-        `Garantia por vencer: ${dto.codigo}`,
-        `Vence el ${dto.fechaVencimientoGarantia}`,
-      );
+    } else {
+      this.notificacionesService.guardarNotificacion({
+        tipo: 'alerta',
+        titulo: `Garantia por vencer: ${dto.codigo}`,
+        mensaje: `Vence el ${dto.fechaVencimientoGarantia}`,
+        activoId: dto.activoId,
+      });
     }
 
     this.flujosService.marcar('alerta-garantia', 'COMPLETADO', dto.codigo);
@@ -105,8 +117,15 @@ export class WebhooksService {
     });
 
     if (dto.responsableUsuarioId) {
-      this.notificacionesService.guardarNotificacion({
+      await this.notificacionesService.guardarYEnviarPush({
         usuarioId: dto.responsableUsuarioId,
+        tipo: 'mantenimiento',
+        titulo: `Mantenimiento: ${dto.codigo}`,
+        mensaje: `Programado para ${dto.fechaMantenimiento}`,
+        activoId: dto.activoId,
+      });
+    } else {
+      this.notificacionesService.guardarNotificacion({
         tipo: 'mantenimiento',
         titulo: `Mantenimiento: ${dto.codigo}`,
         mensaje: `Programado para ${dto.fechaMantenimiento}`,
@@ -131,6 +150,13 @@ export class WebhooksService {
         text: `El activo ${dto.codigo} fue diagnosticado como ${dto.estadoDiagnostico} con confianza ${dto.confianza}.`,
       });
     }
+    await this.notificacionesService.guardarYEnviarPush({
+      usuarioId: dto.responsableUsuarioId,
+      tipo: 'alerta',
+      titulo: `Diagnostico critico: ${dto.codigo}`,
+      mensaje: `${dto.estadoDiagnostico} con confianza ${dto.confianza}`,
+      activoId: dto.activoId,
+    });
     return { recibido: true, activoId: dto.activoId };
   }
 
@@ -220,5 +246,16 @@ export class WebhooksService {
       documentosEncontrados: documentos.length,
       mensajeOriginal: dto.text,
     };
+  }
+
+  private tituloEventoActivo(tipo: string, codigoActivo: string): string {
+    const etiquetas: Record<string, string> = {
+      ASIGNACION: 'Activo asignado',
+      TRASLADO: 'Traslado registrado',
+      BAJA: 'Baja de activo',
+      MANTENIMIENTO: 'Mantenimiento registrado',
+      GARANTIA: 'Garantia actualizada',
+    };
+    return `${etiquetas[tipo] ?? 'Evento de activo'}: ${codigoActivo}`;
   }
 }

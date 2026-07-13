@@ -1,5 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
+import { GoogleAuth } from 'google-auth-library';
 import * as nodemailer from 'nodemailer';
 import { firstValueFrom } from 'rxjs';
 import { AppConfig } from '../config/app-config.service';
@@ -22,11 +23,16 @@ export type Notificacion = {
   fechaCreacion: string;
 };
 
+export const NOTIFICACION_GLOBAL_USUARIO_ID = 'GLOBAL';
+
 @Injectable()
 export class NotificacionesService {
   private readonly logger = new Logger(NotificacionesService.name);
-  private readonly tokensPush = new Map<string, string>();
+  private readonly tokensPush = new Map<string, Set<string>>();
   private readonly notificaciones: Notificacion[] = [];
+  private readonly googleAuth = new GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+  });
 
   constructor(
     private readonly http: HttpService,
@@ -229,55 +235,170 @@ export class NotificacionesService {
   }
 
   registrarToken(usuarioId: string, token: string): void {
-    this.tokensPush.set(usuarioId, token);
+    const tokens = this.tokensPush.get(usuarioId) ?? new Set<string>();
+    tokens.add(token);
+    this.tokensPush.set(usuarioId, tokens);
   }
 
   listarNotificaciones(usuarioId: string): Notificacion[] {
     return this.notificaciones
-      .filter((notificacion) => notificacion.usuarioId === usuarioId)
+      .filter((notificacion) =>
+        notificacion.usuarioId === usuarioId ||
+        notificacion.usuarioId === NOTIFICACION_GLOBAL_USUARIO_ID,
+      )
       .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion));
   }
 
-  guardarNotificacion(params: Omit<Notificacion, 'id' | 'leida' | 'fechaCreacion'>): Notificacion {
+  guardarNotificacion(
+    params: Omit<Notificacion, 'id' | 'usuarioId' | 'leida' | 'fechaCreacion'> & { usuarioId?: string },
+  ): Notificacion {
     const notificacion: Notificacion = {
       id: `NTF-${Date.now()}-${this.notificaciones.length + 1}`,
       leida: false,
       fechaCreacion: new Date().toISOString(),
       ...params,
+      usuarioId: params.usuarioId ?? NOTIFICACION_GLOBAL_USUARIO_ID,
     };
     this.notificaciones.push(notificacion);
     return notificacion;
   }
 
-  async enviarPush(usuarioId: string, titulo: string, mensaje: string): Promise<ResultadoEnvio> {
-    const token = this.tokensPush.get(usuarioId);
-    if (!token || !this.config.fcmProjectId || !this.config.fcmAccessToken) {
-      return { enviado: false, canal: 'push', modo: 'simulado', destino: usuarioId };
+  marcarLeida(usuarioId: string, notificacionId: string): Notificacion | null {
+    const notificacion = this.notificaciones.find(
+      (item) =>
+        item.id === notificacionId &&
+        (item.usuarioId === usuarioId || item.usuarioId === NOTIFICACION_GLOBAL_USUARIO_ID),
+    );
+    if (!notificacion) {
+      return null;
+    }
+
+    notificacion.leida = true;
+    return notificacion;
+  }
+
+  async guardarYEnviarPush(params: {
+    usuarioId?: string;
+    tipo: Notificacion['tipo'];
+    titulo: string;
+    mensaje: string;
+    activoId?: string;
+  }): Promise<{ notificacion: Notificacion; push: ResultadoEnvio }> {
+    const notificacion = this.guardarNotificacion(params);
+    const push = params.usuarioId
+      ? await this.enviarPush({
+          usuarioId: params.usuarioId,
+          titulo: params.titulo,
+          mensaje: params.mensaje,
+          tipo: params.tipo,
+          activoId: params.activoId,
+          notificacionId: notificacion.id,
+        })
+      : { enviado: false, canal: 'push' as const, modo: 'simulado' as const, destino: NOTIFICACION_GLOBAL_USUARIO_ID };
+    return { notificacion, push };
+  }
+
+  async enviarPush(params: {
+    usuarioId: string;
+    titulo: string;
+    mensaje: string;
+    tipo?: Notificacion['tipo'];
+    activoId?: string;
+    notificacionId?: string;
+  }): Promise<ResultadoEnvio> {
+    const tokens = [...(this.tokensPush.get(params.usuarioId) ?? [])];
+    if (tokens.length === 0 || !this.config.fcmProjectId) {
+      return { enviado: false, canal: 'push', modo: 'simulado', destino: params.usuarioId };
+    }
+
+    const accessToken = await this.obtenerFcmAccessToken();
+    if (!accessToken) {
+      return { enviado: false, canal: 'push', modo: 'simulado', destino: params.usuarioId };
     }
 
     try {
       const url = `https://fcm.googleapis.com/v1/projects/${this.config.fcmProjectId}/messages:send`;
-      await firstValueFrom(
-        this.http.post(
-          url,
-          {
-            message: {
-              token,
-              notification: { title: titulo, body: mensaje },
-            },
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${this.config.fcmAccessToken}`,
-              'Content-Type': 'application/json',
-            },
-          },
+      const results = await Promise.allSettled(
+        tokens.map((token) =>
+          firstValueFrom(
+            this.http.post(
+              url,
+              {
+                message: {
+                  token,
+                  notification: { title: params.titulo, body: params.mensaje },
+                  data: {
+                    tipo: params.tipo ?? 'info',
+                    activoId: params.activoId ?? '',
+                    notificacionId: params.notificacionId ?? '',
+                  },
+                  android: {
+                    priority: 'HIGH',
+                    notification: {
+                      channel_id: 'activos_alertas',
+                    },
+                  },
+                  apns: {
+                    payload: {
+                      aps: {
+                        sound: 'default',
+                      },
+                    },
+                  },
+                },
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                },
+              },
+            ),
+          ),
         ),
       );
-      return { enviado: true, canal: 'push', modo: 'real', destino: usuarioId };
+      const enviados = results.filter((result) => result.status === 'fulfilled').length;
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          this.logger.warn(`FCM fallo para ${params.usuarioId}/${index + 1}: ${(result.reason as Error).message}`);
+        }
+      });
+      return {
+        enviado: enviados > 0,
+        canal: 'push',
+        modo: enviados > 0 ? 'real' : 'simulado',
+        destino: params.usuarioId,
+      };
     } catch (error) {
-      this.logger.warn(`FCM fallo para ${usuarioId}: ${(error as Error).message}`);
-      return { enviado: false, canal: 'push', modo: 'simulado', destino: usuarioId };
+      this.logger.warn(`FCM fallo para ${params.usuarioId}: ${(error as Error).message}`);
+      return { enviado: false, canal: 'push', modo: 'simulado', destino: params.usuarioId };
+    }
+  }
+
+  private async obtenerFcmAccessToken(): Promise<string | null> {
+    if (this.config.fcmAccessToken) {
+      return this.config.fcmAccessToken;
+    }
+
+    if (this.config.fcmServiceAccountJson) {
+      try {
+        const credentials = JSON.parse(this.config.fcmServiceAccountJson);
+        const auth = new GoogleAuth({
+          credentials,
+          scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+        });
+        return (await auth.getAccessToken()) ?? null;
+      } catch (error) {
+        this.logger.warn(`Credenciales FCM invalidas: ${(error as Error).message}`);
+        return null;
+      }
+    }
+
+    try {
+      return (await this.googleAuth.getAccessToken()) ?? null;
+    } catch (error) {
+      this.logger.warn(`No se pudo obtener token ADC para FCM: ${(error as Error).message}`);
+      return null;
     }
   }
 }

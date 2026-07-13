@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { EnviarEmailDto, NotificacionDto, RegistrarTokenPushDto } from './dto';
 import { NotificacionesService } from './notificaciones.service';
 
@@ -25,5 +25,11 @@ export class NotificacionesController {
   @Get()
   listar(@Query('usuarioId') usuarioId: string) {
     return this.notificacionesService.listarNotificaciones(usuarioId);
+  }
+
+  @Patch(':id/leida')
+  marcarLeida(@Param('id') id: string, @Query('usuarioId') usuarioId: string) {
+    const notificacion = this.notificacionesService.marcarLeida(usuarioId, id);
+    return { actualizada: !!notificacion, notificacion };
   }
 }

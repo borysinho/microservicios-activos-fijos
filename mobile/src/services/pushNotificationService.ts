@@ -16,16 +16,33 @@ import type { Notificacion } from "../types/activo.types";
 
 const firebaseMessaging = getMessaging(getApp());
 
+function currentPushPlatform(): "android" | "ios" | "web" {
+  if (Platform.OS === "ios") {
+    return "ios";
+  }
+  if (Platform.OS === "web") {
+    return "web";
+  }
+  return "android";
+}
+
 function mapRemoteMessage(
   message: FirebaseMessagingTypes.RemoteMessage,
 ): Notificacion {
   const tipo = message.data?.tipo;
   const activoId = message.data?.activoId;
+  const title = message.data?.titulo ?? message.notification?.title;
+  const body = message.data?.mensaje ?? message.notification?.body;
+  const notificacionId = message.data?.notificacionId;
 
   return {
-    id: message.messageId ?? `${Date.now()}`,
-    titulo: message.notification?.title ?? "Nueva alerta",
-    mensaje: message.notification?.body ?? "Tienes una notificación pendiente.",
+    id:
+      typeof notificacionId === "string" && notificacionId.length > 0
+        ? notificacionId
+        : message.messageId ?? `${Date.now()}`,
+    titulo: typeof title === "string" ? title : "Nueva alerta",
+    mensaje:
+      typeof body === "string" ? body : "Tienes una notificación pendiente.",
     tipo:
       tipo === "mantenimiento" ||
       tipo === "alerta" ||
@@ -85,7 +102,11 @@ async function registerDeviceToken(): Promise<string | null> {
 
   await registerDeviceForRemoteMessages(firebaseMessaging);
   const token = await getToken(firebaseMessaging);
-  await ms3Service.registrarTokenPush(session.usuario.id, token);
+  await ms3Service.registrarTokenPush(
+    session.usuario.id,
+    token,
+    currentPushPlatform(),
+  );
   return token;
 }
 
@@ -93,7 +114,11 @@ function listenTokenRefresh(): () => void {
   return onTokenRefresh(firebaseMessaging, async (token) => {
     const session = await offlineCache.loadSession();
     if (session) {
-      await ms3Service.registrarTokenPush(session.usuario.id, token);
+      await ms3Service.registrarTokenPush(
+        session.usuario.id,
+        token,
+        currentPushPlatform(),
+      );
     }
   });
 }
