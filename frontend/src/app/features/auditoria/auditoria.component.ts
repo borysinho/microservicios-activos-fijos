@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
 import { DocumentoMetadata, Ms2Service } from '../../core/services/ms2.service';
+import { AuthService } from '../../core/services/auth.service';
 import type { Activo, RegistroBlockchain } from '../../core/models/models';
 
 @Component({
@@ -15,6 +16,7 @@ import type { Activo, RegistroBlockchain } from '../../core/models/models';
 export class AuditoriaComponent implements OnInit {
   private gql = inject(ActivosGqlService);
   private ms2 = inject(Ms2Service);
+  private auth = inject(AuthService);
 
   tab = signal<'blockchain' | 'logs'>('blockchain');
   activoId = signal('');
@@ -27,6 +29,9 @@ export class AuditoriaComponent implements OnInit {
   loading = signal(false);
   loadingActivos = signal(false);
   loadingDocumentos = signal(false);
+  blockchainError = signal('');
+  auditError = signal('');
+  puedeVerAudit = computed(() => this.auth.hasRole('ADMINISTRADOR', 'AUDITOR'));
 
   ngOnInit(): void {
     this.loadingActivos.set(true);
@@ -41,13 +46,17 @@ export class AuditoriaComponent implements OnInit {
 
   buscarBlockchain(): void {
     if (!this.activoId()) return;
+    this.blockchainError.set('');
     this.loading.set(true);
     this.gql.getHistorialBlockchain(this.activoId()).subscribe({
       next: (h) => {
         this.historial.set(h);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.blockchainError.set('No se pudo consultar el historial blockchain del activo.');
+        this.loading.set(false);
+      },
     });
   }
 
@@ -55,6 +64,7 @@ export class AuditoriaComponent implements OnInit {
     this.docIdAudit.set('');
     this.auditLogs.set([]);
     this.documentos.set([]);
+    this.auditError.set('');
     if (!this.activoDocumentosId()) return;
     this.loadingDocumentos.set(true);
     this.ms2.listarDocumentos(this.activoDocumentosId()).subscribe({
@@ -68,13 +78,26 @@ export class AuditoriaComponent implements OnInit {
 
   buscarAuditoria(): void {
     if (!this.docIdAudit()) return;
+    if (!this.puedeVerAudit()) {
+      this.auditError.set('Solo administradores y auditores pueden ver los registros de auditoría.');
+      return;
+    }
+    this.auditError.set('');
     this.loading.set(true);
     this.ms2.logAuditoriaDocumento(this.docIdAudit()).subscribe({
       next: (d) => {
         this.auditLogs.set(d);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: (err) => {
+        this.auditLogs.set([]);
+        this.auditError.set(
+          err?.status === 403
+            ? 'Solo administradores y auditores pueden ver los registros de auditoría.'
+            : 'No se pudieron cargar los registros de auditoría del documento.',
+        );
+        this.loading.set(false);
+      },
     });
   }
 

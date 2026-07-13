@@ -15,7 +15,12 @@
 @if (tab() === 'blockchain') {
   <div class="card search-card">
     <div class="search-row">
-      <select class="form-control" [(ngModel)]="activoId" [disabled]="loadingActivos()">
+      <select
+        class="form-control"
+        [ngModel]="activoId()"
+        (ngModelChange)="activoId.set($event)"
+        [disabled]="loadingActivos()"
+      >
         <option value="">
           {{ loadingActivos() ? 'Cargando inventario...' : 'Seleccionar activo' }}
         </option>
@@ -35,10 +40,19 @@
 
   @if (loading()) {
     <div class="loading">Consultando blockchain...</div>
-  } @else if (historial().length === 0) {
+  } @else if (blockchainError()) {
+    <div class="empty-state">
+      <p>{{ blockchainError() }}</p>
+    </div>
+  } @else if (!activoId()) {
     <div class="empty-state">
       <div class="empty-icon">🔗</div>
       <p>Seleccione un activo para ver sus movimientos registrados.</p>
+    </div>
+  } @else if (historial().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">🔗</div>
+      <p>Este activo no tiene movimientos blockchain registrados.</p>
     </div>
   } @else {
     <div class="timeline">
@@ -69,8 +83,8 @@
     <div class="search-row">
       <select
         class="form-control"
-        [(ngModel)]="activoDocumentosId"
-        (ngModelChange)="cargarDocumentos()"
+        [ngModel]="activoDocumentosId()"
+        (ngModelChange)="activoDocumentosId.set($event); cargarDocumentos()"
         [disabled]="loadingActivos()"
       >
         <option value="">
@@ -82,8 +96,9 @@
       </select>
       <select
         class="form-control"
-        [(ngModel)]="docIdAudit"
-        [disabled]="!activoDocumentosId() || loadingDocumentos()"
+        [ngModel]="docIdAudit()"
+        (ngModelChange)="docIdAudit.set($event); auditError.set(''); auditLogs.set([])"
+        [disabled]="!activoDocumentosId() || loadingDocumentos() || !puedeVerAudit()"
       >
         <option value="">
           {{ loadingDocumentos() ? 'Cargando documentos...' : 'Seleccionar documento' }}
@@ -95,15 +110,25 @@
       <button
         class="btn btn--primary btn--sm"
         (click)="buscarAuditoria()"
-        [disabled]="!docIdAudit() || loading()"
+        [disabled]="!docIdAudit() || loading() || !puedeVerAudit()"
       >
         Consultar accesos
       </button>
     </div>
   </div>
 
-  @if (loading()) {
+  @if (!puedeVerAudit()) {
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>Solo administradores y auditores pueden ver accesos, descargas y cambios.</p>
+    </div>
+  } @else if (loading()) {
     <div class="loading">Cargando registros de auditoría...</div>
+  } @else if (auditError()) {
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>{{ auditError() }}</p>
+    </div>
   } @else if (!docIdAudit()) {
     <div class="empty-state">
       <div class="empty-icon">📋</div>
