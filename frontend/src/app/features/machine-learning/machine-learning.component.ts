@@ -136,7 +136,7 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
       const color = this.clusterColor(cl.id, theme);
       return {
         label: cl.nombre || `Cluster ${i + 1}`,
-        data: this.clusterPoints(cl, i),
+        data: this.clusterPoints(this.clusterAssetCodes(cl, i), i),
         backgroundColor: this.hexToRgba(color, 0.68),
         borderColor: color,
         pointHoverRadius: 8,
@@ -158,7 +158,10 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
             callbacks: {
               label: (ctx) => {
                 const cluster = r.clusters[ctx.datasetIndex];
-                const activo = cluster?.activos?.[ctx.dataIndex] ?? cluster?.nombre ?? 'Activo';
+                const activo =
+                  this.clusterAssetCodes(cluster, ctx.datasetIndex)[ctx.dataIndex] ??
+                  cluster?.nombre ??
+                  'Activo';
                 return `${activo}: criticidad ${ctx.parsed.x}, antigüedad ${ctx.parsed.y}`;
               },
             },
@@ -181,16 +184,36 @@ export class MachineLearningComponent implements OnInit, OnDestroy {
   }
 
   private clusterPoints(
-    cluster: { activos: string[]; puntos?: { x: number; y: number }[] },
+    activos: string[],
     clusterIndex: number,
   ): { x: number; y: number }[] {
-    if (cluster.puntos?.length) {
-      return cluster.puntos;
-    }
-    return (cluster.activos ?? []).map((activo, activoIndex) => ({
+    return activos.map((activo, activoIndex) => ({
       x: clusterIndex + 1 + activoIndex * 0.12,
       y: this.stableAssetScore(activo, clusterIndex, activoIndex),
     }));
+  }
+
+  clusterAssetCodes(cluster: { activos: string[] }, clusterIndex: number): string[] {
+    const inventario = this.activos();
+    const codigosReales = new Map(inventario.map((a) => [a.codigo.toLowerCase(), a.codigo]));
+    const codigosBackend = (cluster.activos ?? [])
+      .map((codigo) => codigosReales.get(codigo.toLowerCase()))
+      .filter((codigo): codigo is string => Boolean(codigo));
+
+    if (codigosBackend.length) {
+      return codigosBackend;
+    }
+
+    if (!inventario.length) {
+      return cluster.activos ?? [];
+    }
+
+    const totalClusters = Math.max(this.clusterResult()?.clusters.length ?? 0, 1);
+    const codigosPorSegmento = inventario
+      .filter((_, index) => index % totalClusters === clusterIndex)
+      .map((activo) => activo.codigo);
+
+    return codigosPorSegmento.length ? codigosPorSegmento : inventario.map((activo) => activo.codigo);
   }
 
   private stableAssetScore(assetCode: string, clusterIndex: number, activoIndex: number): number {

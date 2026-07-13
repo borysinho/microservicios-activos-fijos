@@ -142,14 +142,16 @@
     </div>
 
     <div class="cluster-list">
-      @for (cluster of clusterResult()!.clusters; track cluster.id) {
+      @for (cluster of clusterResult()!.clusters; track cluster.id; let clusterIndex = $index) {
         <div class="card cluster-card">
           <div class="cluster-card__header">
             <span [class]="clusterBadge(cluster.id)">{{ cluster.nombre }}</span>
-            <span class="cluster-card__count">{{ cluster.activos.length }} activo(s)</span>
+            <span class="cluster-card__count">
+              {{ clusterAssetCodes(cluster, clusterIndex).length }} activo(s)
+            </span>
           </div>
           <div class="cluster-card__assets">
-            @for (activo of cluster.activos; track activo) {
+            @for (activo of clusterAssetCodes(cluster, clusterIndex); track activo) {
               <a
                 class="cluster-card__asset"
                 routerLink="/activos"
