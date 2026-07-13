@@ -66,13 +66,13 @@ MS1 no lleva `/graphql` en la variable porque el servicio `ms1Service.ts` agrega
 
 ### Llave Google/Firebase
 
-La llave de Google/Firebase no se versiona. Debe vivir en `mobile/.env`:
+La app Android esta registrada en Firebase dentro del proyecto `activos-fijos-uagrm-2026` con el paquete `com.movilactivosfijos`. La llave de Google/Firebase no se versiona. Debe vivir en `mobile/.env`:
 
 ```dotenv
 GOOGLE_API_KEY=<nueva_llave_google>
 ```
 
-Antes de compilar Android, revoca en Google Cloud/Firebase la llave expuesta y crea una nueva restringida al paquete `com.movilactivosfijos`. El build genera `android/app/google-services.json` desde `android/app/google-services.json.example`; ese archivo generado queda ignorado por Git.
+El build genera `android/app/google-services.json` desde `android/app/google-services.json.example`; ese archivo generado queda ignorado por Git. Si se rota la llave en Firebase, actualiza `GOOGLE_API_KEY` en los `.env` locales y vuelve a ejecutar `./gradlew :app:generateGoogleServicesJson` desde `mobile/android`.
 
 ## Ejecutar en debug contra servicios LAN
 

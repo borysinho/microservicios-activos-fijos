@@ -8,6 +8,7 @@ describe('WebhooksService', () => {
   const ms1Client = {
     buscarActivoPorCodigo: jest.fn(),
     obtenerActivoPorId: jest.fn(),
+    obtenerUsuarioIdPorEmail: jest.fn(),
     crearTicketRevision: jest.fn(),
     telefonoTieneAccesoActivo: jest.fn().mockReturnValue(true),
   };
@@ -30,12 +31,58 @@ describe('WebhooksService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     ms1Client.telefonoTieneAccesoActivo.mockReturnValue(true);
+    ms1Client.obtenerUsuarioIdPorEmail.mockResolvedValue(null);
     service = new WebhooksService(
       flujosService as any,
       ms1Client as any,
       ms2Client as any,
       notificacionesService as any,
     );
+  });
+
+  it('enriquece eventos de activo con responsable MS1 para entregar email y push', async () => {
+    ms1Client.obtenerActivoPorId.mockResolvedValue({
+      id: '11111111-1111-1111-1111-111111111111',
+      codigo: 'ACT-2024-010',
+      responsableEmail: 'resp@empresa.com',
+      responsablePhone: '59170000000',
+    });
+    ms1Client.obtenerUsuarioIdPorEmail.mockResolvedValue('user-resp-1');
+
+    const result = await service.procesarEventoActivo({
+      tipoEvento: 'ASIGNACION',
+      activoId: '11111111-1111-1111-1111-111111111111',
+    });
+
+    expect(ms1Client.obtenerActivoPorId).toHaveBeenCalledWith('11111111-1111-1111-1111-111111111111');
+    expect(ms1Client.obtenerUsuarioIdPorEmail).toHaveBeenCalledWith('resp@empresa.com');
+    expect(flujosService.dispararN8n).toHaveBeenCalledWith(
+      'evento-activo',
+      expect.objectContaining({
+        codigoActivo: 'ACT-2024-010',
+        responsableEmail: 'resp@empresa.com',
+        responsablePhone: '59170000000',
+        responsableUsuarioId: 'user-resp-1',
+      }),
+    );
+    expect(notificacionesService.enviarEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'resp@empresa.com',
+        subject: 'Activo asignado: ACT-2024-010',
+      }),
+    );
+    expect(notificacionesService.guardarYEnviarPush).toHaveBeenCalledWith({
+      usuarioId: 'user-resp-1',
+      tipo: 'info',
+      titulo: 'Activo asignado: ACT-2024-010',
+      mensaje: 'Se registro el evento ASIGNACION para el activo ACT-2024-010.',
+      activoId: '11111111-1111-1111-1111-111111111111',
+    });
+    expect(result).toEqual({
+      recibido: true,
+      tipo: 'ASIGNACION',
+      activoId: '11111111-1111-1111-1111-111111111111',
+    });
   });
 
   it('procesa CU-73 alerta de vencimiento de garantia', async () => {

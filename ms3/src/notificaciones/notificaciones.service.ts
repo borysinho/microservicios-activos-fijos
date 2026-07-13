@@ -1,7 +1,9 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { GoogleAuth } from 'google-auth-library';
+import { readFileSync } from 'fs';
 import * as nodemailer from 'nodemailer';
+import { resolve } from 'path';
 import { firstValueFrom } from 'rxjs';
 import { AppConfig } from '../config/app-config.service';
 
@@ -30,6 +32,7 @@ export class NotificacionesService {
   private readonly logger = new Logger(NotificacionesService.name);
   private readonly tokensPush = new Map<string, Set<string>>();
   private readonly notificaciones: Notificacion[] = [];
+  private readonly lecturasGlobales = new Map<string, Set<string>>();
   private readonly googleAuth = new GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
   });
@@ -246,6 +249,7 @@ export class NotificacionesService {
         notificacion.usuarioId === usuarioId ||
         notificacion.usuarioId === NOTIFICACION_GLOBAL_USUARIO_ID,
       )
+      .map((notificacion) => this.conEstadoLecturaUsuario(notificacion, usuarioId))
       .sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion));
   }
 
@@ -271,6 +275,13 @@ export class NotificacionesService {
     );
     if (!notificacion) {
       return null;
+    }
+
+    if (notificacion.usuarioId === NOTIFICACION_GLOBAL_USUARIO_ID) {
+      const lecturas = this.lecturasGlobales.get(notificacionId) ?? new Set<string>();
+      lecturas.add(usuarioId);
+      this.lecturasGlobales.set(notificacionId, lecturas);
+      return this.conEstadoLecturaUsuario(notificacion, usuarioId);
     }
 
     notificacion.leida = true;
@@ -381,15 +392,15 @@ export class NotificacionesService {
     }
 
     if (this.config.fcmServiceAccountJson) {
+      return this.obtenerFcmAccessTokenDesdeCredenciales(this.config.fcmServiceAccountJson);
+    }
+
+    if (this.config.fcmServiceAccountFile) {
       try {
-        const credentials = JSON.parse(this.config.fcmServiceAccountJson);
-        const auth = new GoogleAuth({
-          credentials,
-          scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
-        });
-        return (await auth.getAccessToken()) ?? null;
+        const credentialsPath = resolve(process.cwd(), this.config.fcmServiceAccountFile);
+        return this.obtenerFcmAccessTokenDesdeCredenciales(readFileSync(credentialsPath, 'utf8'));
       } catch (error) {
-        this.logger.warn(`Credenciales FCM invalidas: ${(error as Error).message}`);
+        this.logger.warn(`No se pudo leer credenciales FCM desde archivo: ${(error as Error).message}`);
         return null;
       }
     }
@@ -400,5 +411,30 @@ export class NotificacionesService {
       this.logger.warn(`No se pudo obtener token ADC para FCM: ${(error as Error).message}`);
       return null;
     }
+  }
+
+  private async obtenerFcmAccessTokenDesdeCredenciales(credentialsJson: string): Promise<string | null> {
+    try {
+      const credentials = JSON.parse(credentialsJson);
+      const auth = new GoogleAuth({
+        credentials,
+        scopes: ['https://www.googleapis.com/auth/firebase.messaging'],
+      });
+      return (await auth.getAccessToken()) ?? null;
+    } catch (error) {
+      this.logger.warn(`Credenciales FCM invalidas: ${(error as Error).message}`);
+      return null;
+    }
+  }
+
+  private conEstadoLecturaUsuario(notificacion: Notificacion, usuarioId: string): Notificacion {
+    if (notificacion.usuarioId !== NOTIFICACION_GLOBAL_USUARIO_ID) {
+      return { ...notificacion };
+    }
+
+    return {
+      ...notificacion,
+      leida: this.lecturasGlobales.get(notificacion.id)?.has(usuarioId) ?? false,
+    };
   }
 }

@@ -54,6 +54,12 @@ type ResponsableMs1 = {
   telefono?: string;
 };
 
+type UsuarioMs1 = {
+  id: string;
+  email?: string;
+  activo?: boolean;
+};
+
 const ACTIVOS_DEMO: Record<string, ActivoMs1> = {
   'ACT-2024-001': {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -275,6 +281,34 @@ export class Ms1ClientService {
     } catch (error) {
       this.logger.warn(`MS1 no respondio al obtener activo ${activoId}: ${(error as Error).message}`);
       return this.activoDemoPorId(activoId);
+    }
+  }
+
+  async obtenerUsuarioIdPorEmail(email?: string): Promise<string | null> {
+    if (!email) {
+      return null;
+    }
+
+    const query = `
+      query UsuariosNotificacion {
+        usuarios {
+          id
+          email
+          activo
+        }
+      }
+    `;
+
+    try {
+      const { data } = await firstValueFrom(
+        this.http.post(this.config.ms1GraphqlUrl, { query }, this.authOptions()),
+      );
+      const usuario = ((data?.data?.usuarios ?? []) as UsuarioMs1[])
+        .find((item) => item.activo !== false && item.email?.toLowerCase() === email.toLowerCase());
+      return usuario?.id ?? null;
+    } catch (error) {
+      this.logger.warn(`MS1 no respondio al resolver usuario ${email}: ${(error as Error).message}`);
+      return null;
     }
   }
 

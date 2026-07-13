@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "19243226923",
-    "project_id": "gen-lang-client-0832526677",
-    "storage_bucket": "gen-lang-client-0832526677.firebasestorage.app"
+    "project_number": "410883538455",
+    "project_id": "activos-fijos-uagrm-2026",
+    "storage_bucket": "activos-fijos-uagrm-2026.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:19243226923:android:1887a1ce6d4727f111976e",
+        "mobilesdk_app_id": "1:410883538455:android:0e0bf03d472366ad39e652",
         "android_client_info": {
           "package_name": "com.movilactivosfijos"
         }

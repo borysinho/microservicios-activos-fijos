@@ -23,20 +23,34 @@ export class WebhooksService {
 
   async procesarEventoActivo(dto: EventoActivoDto) {
     const tipo = dto.tipoEvento ?? dto.tipo ?? 'MANTENIMIENTO';
-    await this.flujosService.dispararN8n('evento-activo', dto);
-    const titulo = this.tituloEventoActivo(tipo, dto.codigoActivo ?? dto.activoId);
-    const mensaje = `Se registro el evento ${tipo} para el activo ${dto.codigoActivo ?? dto.activoId}.`;
+    const activo = await this.ms1Client.obtenerActivoPorId(dto.activoId);
+    const codigoActivo = dto.codigoActivo ?? activo?.codigo ?? dto.activoId;
+    const responsableEmail = dto.responsableEmail ?? activo?.responsableEmail;
+    const responsablePhone = dto.responsablePhone ?? activo?.responsablePhone;
+    const responsableUsuarioId = await this.resolverUsuarioNotificacion(
+      dto.responsableUsuarioId,
+      responsableEmail,
+    );
+    await this.flujosService.dispararN8n('evento-activo', {
+      ...dto,
+      codigoActivo,
+      responsableEmail,
+      responsablePhone,
+      responsableUsuarioId,
+    });
+    const titulo = this.tituloEventoActivo(tipo, codigoActivo);
+    const mensaje = `Se registro el evento ${tipo} para el activo ${codigoActivo}.`;
 
-    if (dto.responsableEmail) {
+    if (responsableEmail) {
       await this.notificacionesService.enviarEmail({
-        to: dto.responsableEmail,
+        to: responsableEmail,
         subject: titulo,
         text: mensaje,
       });
     }
 
     await this.notificacionesService.guardarYEnviarPush({
-      usuarioId: dto.responsableUsuarioId,
+      usuarioId: responsableUsuarioId,
       tipo: tipo === 'BAJA' ? 'baja' : 'info',
       titulo,
       mensaje,
@@ -58,6 +72,10 @@ export class WebhooksService {
       this.ms1Client.obtenerActivoPorId(dto.activoId),
       this.ms2Client.obtenerDocumentos(dto.activoId),
     ]);
+    const responsableUsuarioId = await this.resolverUsuarioNotificacion(
+      dto.responsableUsuarioId,
+      dto.responsableEmail,
+    );
 
     await this.notificacionesService.enviarEmail({
       to: dto.responsableEmail,
@@ -70,22 +88,13 @@ export class WebhooksService {
       ].join('\n'),
     });
 
-    if (dto.responsableUsuarioId) {
-      await this.notificacionesService.guardarYEnviarPush({
-        usuarioId: dto.responsableUsuarioId,
-        tipo: 'alerta',
-        titulo: `Garantia por vencer: ${dto.codigo}`,
-        mensaje: `Vence el ${dto.fechaVencimientoGarantia}`,
-        activoId: dto.activoId,
-      });
-    } else {
-      this.notificacionesService.guardarNotificacion({
-        tipo: 'alerta',
-        titulo: `Garantia por vencer: ${dto.codigo}`,
-        mensaje: `Vence el ${dto.fechaVencimientoGarantia}`,
-        activoId: dto.activoId,
-      });
-    }
+    await this.notificacionesService.guardarYEnviarPush({
+      usuarioId: responsableUsuarioId,
+      tipo: 'alerta',
+      titulo: `Garantia por vencer: ${dto.codigo}`,
+      mensaje: `Vence el ${dto.fechaVencimientoGarantia}`,
+      activoId: dto.activoId,
+    });
 
     this.flujosService.marcar('alerta-garantia', 'COMPLETADO', dto.codigo);
     return {
@@ -101,6 +110,10 @@ export class WebhooksService {
     this.flujosService.marcar('alerta-mantenimiento', 'EN_PROCESO', dto.codigo);
 
     const activo = await this.ms1Client.obtenerActivoPorId(dto.activoId);
+    const responsableUsuarioId = await this.resolverUsuarioNotificacion(
+      dto.responsableUsuarioId,
+      dto.responsableEmail,
+    );
     await this.notificacionesService.enviarEmail({
       to: dto.responsableEmail,
       subject: `Mantenimiento programado: ${dto.codigo}`,
@@ -116,22 +129,13 @@ export class WebhooksService {
       fechaMantenimiento: dto.fechaMantenimiento,
     });
 
-    if (dto.responsableUsuarioId) {
-      await this.notificacionesService.guardarYEnviarPush({
-        usuarioId: dto.responsableUsuarioId,
-        tipo: 'mantenimiento',
-        titulo: `Mantenimiento: ${dto.codigo}`,
-        mensaje: `Programado para ${dto.fechaMantenimiento}`,
-        activoId: dto.activoId,
-      });
-    } else {
-      this.notificacionesService.guardarNotificacion({
-        tipo: 'mantenimiento',
-        titulo: `Mantenimiento: ${dto.codigo}`,
-        mensaje: `Programado para ${dto.fechaMantenimiento}`,
-        activoId: dto.activoId,
-      });
-    }
+    await this.notificacionesService.guardarYEnviarPush({
+      usuarioId: responsableUsuarioId,
+      tipo: 'mantenimiento',
+      titulo: `Mantenimiento: ${dto.codigo}`,
+      mensaje: `Programado para ${dto.fechaMantenimiento}`,
+      activoId: dto.activoId,
+    });
 
     this.flujosService.marcar('alerta-mantenimiento', 'COMPLETADO', dto.codigo);
     return {
@@ -143,6 +147,10 @@ export class WebhooksService {
 
   async diagnosticoCritico(dto: DiagnosticoCriticoDto) {
     await this.flujosService.dispararN8n('diagnostico-critico', dto);
+    const responsableUsuarioId = await this.resolverUsuarioNotificacion(
+      dto.responsableUsuarioId,
+      dto.responsableEmail,
+    );
     if (dto.responsableEmail) {
       await this.notificacionesService.enviarEmail({
         to: dto.responsableEmail,
@@ -151,7 +159,7 @@ export class WebhooksService {
       });
     }
     await this.notificacionesService.guardarYEnviarPush({
-      usuarioId: dto.responsableUsuarioId,
+      usuarioId: responsableUsuarioId,
       tipo: 'alerta',
       titulo: `Diagnostico critico: ${dto.codigo}`,
       mensaje: `${dto.estadoDiagnostico} con confianza ${dto.confianza}`,
@@ -257,5 +265,14 @@ export class WebhooksService {
       GARANTIA: 'Garantia actualizada',
     };
     return `${etiquetas[tipo] ?? 'Evento de activo'}: ${codigoActivo}`;
+  }
+
+  private async resolverUsuarioNotificacion(usuarioId?: string, email?: string): Promise<string | undefined> {
+    if (usuarioId) {
+      return usuarioId;
+    }
+
+    const usuarioIdPorEmail = await this.ms1Client.obtenerUsuarioIdPorEmail(email);
+    return usuarioIdPorEmail ?? undefined;
   }
 }

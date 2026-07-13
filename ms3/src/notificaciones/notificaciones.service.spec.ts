@@ -121,4 +121,34 @@ describe('NotificacionesService', () => {
       destino: '+59177685777',
     });
   });
+
+  it('mantiene lectura independiente para notificaciones globales', () => {
+    const service = new NotificacionesService({ post: jest.fn() } as any, baseConfig);
+
+    const global = service.guardarNotificacion({
+      tipo: 'alerta',
+      titulo: 'Garantia por vencer',
+      mensaje: 'Revision pendiente',
+    });
+
+    expect(service.listarNotificaciones('user-1')[0]).toMatchObject({
+      id: global.id,
+      leida: false,
+    });
+    expect(service.listarNotificaciones('user-2')[0]).toMatchObject({
+      id: global.id,
+      leida: false,
+    });
+
+    service.marcarLeida('user-1', global.id);
+
+    expect(service.listarNotificaciones('user-1')[0]).toMatchObject({
+      id: global.id,
+      leida: true,
+    });
+    expect(service.listarNotificaciones('user-2')[0]).toMatchObject({
+      id: global.id,
+      leida: false,
+    });
+  });
 });

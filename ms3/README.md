@@ -51,7 +51,10 @@ Variables clave:
 - `MS3_TWILIO_ACCOUNT_SID`, `MS3_TWILIO_AUTH_TOKEN`, `MS3_TWILIO_WHATSAPP_FROM`: sandbox/API de Twilio WhatsApp.
 - `MS3_WAHA_BASE_URL`, `MS3_WAHA_SESSION`, `MS3_WAHA_API_KEY`: WhatsApp local con WAHA.
 - `MS3_SENDGRID_API_KEY`, `MS3_SENDGRID_FROM_EMAIL`: email.
-- `MS3_FCM_PROJECT_ID`, `MS3_FCM_ACCESS_TOKEN`: notificaciones push opcionales.
+- `MS3_FCM_PROJECT_ID`: proyecto Firebase usado para push FCM; actualmente `activos-fijos-uagrm-2026`.
+- `MS3_FCM_SERVICE_ACCOUNT_FILE`: ruta local a una llave JSON de cuenta de servicio para desarrollo, por ejemplo `./secrets/fcm-service-account.json`.
+- `MS3_FCM_SERVICE_ACCOUNT_JSON`: alternativa para inyectar el JSON completo desde un secreto del entorno.
+- `MS3_FCM_ACCESS_TOKEN`: alternativa temporal para pruebas manuales.
 - `MS3_AZURE_OPENAI_ENDPOINT`, `MS3_AZURE_OPENAI_DEPLOYMENT`, `MS3_AZURE_OPENAI_API_VERSION`, `MS3_AZURE_OPENAI_API_KEY`: LLM Azure OpenAI usado como agente conversacional de WhatsApp.
 
 ## Arranque en desarrollo con Docker
@@ -235,6 +238,9 @@ Variables opcionales:
 - `MS3_CLOUD_RUN_SERVICE`
 - `MS3_SENDGRID_FROM_EMAIL`
 - `MS3_MS4_N8N_WEBHOOK_URL`
+- `MS3_FCM_PROJECT_ID`
+
+Para FCM en Cloud Run, preferir ADC: la cuenta de servicio que ejecuta MS3 debe tener `roles/firebasecloudmessaging.admin` en el proyecto Firebase `activos-fijos-uagrm-2026`. En desarrollo local se puede usar `MS3_FCM_SERVICE_ACCOUNT_FILE=./secrets/fcm-service-account.json`; `ms3/secrets/` esta ignorado por Git.
 
 El despliegue usa limites conservadores para presentacion y capa gratuita:
 `--min-instances=0`, `--max-instances=1`, `--cpu=1`, `--memory=512Mi`,
