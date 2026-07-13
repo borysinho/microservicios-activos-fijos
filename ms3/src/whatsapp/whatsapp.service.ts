@@ -14,6 +14,8 @@ const OPERACION_WEB_MOVIL_REGEX =
   /\b(?:dar\s+de\s+baja|baja\s+definitiva|asignar|reasignar|crear\s+activo|registrar\s+activo|alta\s+de\s+activo|editar|modificar|actualizar|cambiar\s+valor|cambiar\s+vida|cambiar\s+categoria|cambiar\s+metodo|subir\s+documento|cargar\s+documento|eliminar\s+documento|programar|agendar|usuario|usuarios|rol|roles|permiso|permisos|dashboard|bi|indicador|kpi|administrar|configurar)\b/i;
 const AYUDA_REGEX = /\b(?:ayuda|menu|opciones|comandos|hola|buenas)\b/i;
 const LISTAR_ACTIVOS_REGEX = /\b(?:mis\s+activos|listar\s+activos|lista\s+de\s+activos|activos\s+asignados|que\s+activos\s+tengo)\b/i;
+const LISTAR_RECEPCIONES_PENDIENTES_REGEX =
+  /\b(?:(?:activos|traslados|recepciones?)\s+)?pendientes?\s+(?:de\s+)?(?:confirmacion|recepcion)|(?:confirmacion|recepcion)\s+(?:de\s+)?(?:recepcion\s+)?pendientes?\b/i;
 const CONSULTA_REGEX =
   /\b(?:consultar|consulta|estado|ubicacion|ubicado|donde|informacion|info|ver|responsable)\b/i;
 const DOCUMENTOS_REGEX = /\b(?:documento|documentos|documentacion|factura|garantia|contrato|manual|poliza)\b/i;
@@ -165,6 +167,10 @@ export class WhatsappService {
       return this.listarActivosAsociados(mensaje);
     }
 
+    if (decision.intencion === 'LISTAR_RECEPCIONES_PENDIENTES') {
+      return this.listarRecepcionesPendientes(mensaje);
+    }
+
     if (decision.intencion === 'CONSULTAR_ACTIVO') {
       return this.consultarActivoPorChat(mensaje, decision.codigoActivo!);
     }
@@ -209,6 +215,10 @@ export class WhatsappService {
 
     if (OPERACION_WEB_MOVIL_REGEX.test(textoNormalizado)) {
       return { intencion: 'NO_PERMITIDA', codigoActivo };
+    }
+
+    if (!codigoActivo && LISTAR_RECEPCIONES_PENDIENTES_REGEX.test(textoNormalizado)) {
+      return { intencion: 'LISTAR_RECEPCIONES_PENDIENTES' };
     }
 
     const decisionLlm = await this.llmAgent.clasificarMensaje(texto ?? '');
@@ -290,6 +300,7 @@ export class WhatsappService {
     return (
       intencion === 'AYUDA' ||
       intencion === 'LISTAR_ACTIVOS' ||
+      intencion === 'LISTAR_RECEPCIONES_PENDIENTES' ||
       intencion === 'CONSULTAR_ACTIVO' ||
       intencion === 'CONSULTAR_DOCUMENTOS' ||
       intencion === 'SOLICITAR_ENLACE_DOCUMENTO' ||
@@ -439,7 +450,7 @@ export class WhatsappService {
     await this.notificacionesService.enviarWhatsAppTexto(
       mensaje.from,
       [
-        'Activos asociados a tu WhatsApp:',
+        `${this.saludoResponsable(activos)}, estos son tus activos asignados:`,
         ...lineas,
         activos.length > 10 ? `Mostrando 10 de ${activos.length}. Usa el codigo para consultar detalle.` : '',
       ].filter(Boolean).join('\n'),
@@ -450,6 +461,57 @@ export class WhatsappService {
       recibido: true,
       intencion: 'LISTAR_ACTIVOS',
       mensaje: `Activos asociados encontrados: ${activos.length}`,
+    };
+  }
+
+  async listarRecepcionesPendientes(mensaje: WhatsappMensajeEntrante): Promise<ResultadoSolicitudRevision> {
+    this.flujosService.marcar('solicitud-revision', 'EN_PROCESO', 'Listado de recepciones pendientes por chat');
+
+    const activos = await this.ms1Client.listarActivosPorTelefono(mensaje.from);
+    const pendientes = activos
+      .map((activo) => ({
+        activo,
+        traslados: (activo.traslados ?? []).filter((traslado) => !traslado.recepcionConfirmada),
+      }))
+      .filter((item) => item.traslados.length > 0);
+
+    if (pendientes.length === 0) {
+      await this.notificacionesService.enviarWhatsAppTexto(
+        mensaje.from,
+        `${this.saludoResponsable(activos)}, no tienes activos con recepcion de traslado pendiente.`,
+      );
+      this.flujosService.marcar('solicitud-revision', 'COMPLETADO', 'Sin recepciones pendientes');
+      return {
+        recibido: true,
+        intencion: 'LISTAR_RECEPCIONES_PENDIENTES',
+        mensaje: 'Sin recepciones pendientes',
+      };
+    }
+
+    const lineas = pendientes.slice(0, 10).map(({ activo, traslados }) => {
+      const traslado = traslados[0];
+      return [
+        `${activo.codigo} - ${activo.nombre}`,
+        `Estado: ${activo.estado ?? 'SIN_ESTADO'}`,
+        `Origen: ${traslado.areaOrigen?.nombre ?? 'No registrado'}`,
+        `Destino: ${traslado.areaDestino?.nombre ?? activo.areaActual?.nombre ?? 'No registrado'}`,
+      ].join(' | ');
+    });
+
+    await this.notificacionesService.enviarWhatsAppTexto(
+      mensaje.from,
+      [
+        `${this.saludoResponsable(activos)}, estos son tus activos con recepcion de traslado pendiente:`,
+        ...lineas,
+        pendientes.length > 10 ? `Mostrando 10 de ${pendientes.length}. Para confirmar escribe: confirmo recepcion <codigo>.` : '',
+      ].filter(Boolean).join('\n'),
+    );
+
+    this.flujosService.marcar('solicitud-revision', 'COMPLETADO', `Recepciones pendientes: ${pendientes.length}`);
+    return {
+      recibido: true,
+      intencion: 'LISTAR_RECEPCIONES_PENDIENTES',
+      mensaje: `Recepciones pendientes encontradas: ${pendientes.length}`,
     };
   }
 
@@ -843,6 +905,14 @@ export class WhatsappService {
     return asignacion?.responsable?.nombre ?? activo.responsableEmail ?? 'No registrado';
   }
 
+  private saludoResponsable(activos: ActivoMs1[]): string {
+    const nombre = activos
+      .map((activo) => (activo.asignaciones ?? []).find((item) => item.activa && item.responsable)?.responsable?.nombre)
+      .find((value): value is string => Boolean(value?.trim()));
+
+    return nombre ? `Hola ${nombre}` : 'Hola';
+  }
+
   private async validarAccesoActivoPorWhatsapp(
     telefonoOrigen: string,
     codigoActivo: string,
@@ -896,6 +966,7 @@ export class WhatsappService {
     return [
       'Operaciones permitidas por WhatsApp:',
       '- Mis activos: mis activos',
+      '- Recepciones pendientes: activos pendientes de confirmacion de recepcion',
       '- Consultar estado/ubicacion: consultar ACT-2024-001',
       '- Documentos: documentos ACT-2024-001',
       '- Enlace temporal: enlace documento ACT-2024-001 <documentoId>',

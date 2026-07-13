@@ -6,6 +6,7 @@ import { AppConfig } from '../config/app-config.service';
 export type IntencionWhatsapp =
   | 'AYUDA'
   | 'LISTAR_ACTIVOS'
+  | 'LISTAR_RECEPCIONES_PENDIENTES'
   | 'CONSULTAR_ACTIVO'
   | 'CONSULTAR_DOCUMENTOS'
   | 'SOLICITAR_ENLACE_DOCUMENTO'
@@ -62,8 +63,9 @@ export class WhatsappLlmAgentService {
                   'Tu unica tarea es clasificar la intencion del mensaje del usuario.',
                   'No ejecutes operaciones ni inventes datos.',
                   'Devuelve solo JSON valido con esta forma:',
-                  '{"intencion":"AYUDA|LISTAR_ACTIVOS|CONSULTAR_ACTIVO|CONSULTAR_DOCUMENTOS|SOLICITAR_ENLACE_DOCUMENTO|CONSULTAR_DEPRECIACION|SOLICITAR_REVISION|REPORTAR_INCIDENTE|SOLICITAR_TRASLADO|CONFIRMAR_RECEPCION|NO_PERMITIDA|NO_ENTENDIDA","codigoActivo":"ACT-2024-001"}',
-                  'Permitido por chat: ayuda, listar mis activos, consultar estado/ubicacion/responsable, consultar documentos, pedir enlace temporal de documento, consultar depreciacion, solicitar revision o mantenimiento, reportar incidente/perdida/dano, solicitar traslado y confirmar recepcion.',
+                  '{"intencion":"AYUDA|LISTAR_ACTIVOS|LISTAR_RECEPCIONES_PENDIENTES|CONSULTAR_ACTIVO|CONSULTAR_DOCUMENTOS|SOLICITAR_ENLACE_DOCUMENTO|CONSULTAR_DEPRECIACION|SOLICITAR_REVISION|REPORTAR_INCIDENTE|SOLICITAR_TRASLADO|CONFIRMAR_RECEPCION|NO_PERMITIDA|NO_ENTENDIDA","codigoActivo":"ACT-2024-001"}',
+                  'Permitido por chat: ayuda, listar mis activos, listar activos con recepcion de traslado pendiente, consultar estado/ubicacion/responsable, consultar documentos, pedir enlace temporal de documento, consultar depreciacion, solicitar revision o mantenimiento, reportar incidente/perdida/dano, solicitar traslado y confirmar recepcion.',
+                  'Si el usuario pide activos pendientes de confirmacion o recepcion pendiente sin indicar codigo, responde LISTAR_RECEPCIONES_PENDIENTES, no LISTAR_ACTIVOS.',
                   'No permitido por chat: alta, edicion directa, baja definitiva, asignacion directa, cambio de valor/vida util/categoria/metodo contable, eliminar documentos, usuarios, roles, BI, configuracion o administracion.',
                   'Si la operacion es irreversible, contable, administrativa o cambia permisos, responde NO_PERMITIDA.',
                 ].join(' '),
@@ -118,6 +120,7 @@ export class WhatsappLlmAgentService {
     return (
       intencion === 'AYUDA' ||
       intencion === 'LISTAR_ACTIVOS' ||
+      intencion === 'LISTAR_RECEPCIONES_PENDIENTES' ||
       intencion === 'CONSULTAR_ACTIVO' ||
       intencion === 'CONSULTAR_DOCUMENTOS' ||
       intencion === 'SOLICITAR_ENLACE_DOCUMENTO' ||

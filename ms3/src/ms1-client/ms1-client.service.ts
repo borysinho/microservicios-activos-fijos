@@ -322,6 +322,18 @@ export class Ms1ClientService {
               telefono
             }
           }
+          traslados {
+            id
+            fecha
+            motivoTraslado
+            recepcionConfirmada
+            areaOrigen {
+              nombre
+            }
+            areaDestino {
+              nombre
+            }
+          }
         }
       }
     `;

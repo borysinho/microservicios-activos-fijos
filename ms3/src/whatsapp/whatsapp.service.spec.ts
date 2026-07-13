@@ -498,10 +498,108 @@ describe('WhatsappService', () => {
       '59170000000',
       expect.stringContaining('ACT-2024-001 - Laptop Dell'),
     );
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.stringContaining('estos son tus activos asignados'),
+    );
     expect(result).toEqual({
       recibido: true,
       intencion: 'LISTAR_ACTIVOS',
       mensaje: 'Activos asociados encontrados: 1',
+    });
+  });
+
+  it('lista solo activos con recepcion de traslado pendiente y saluda por nombre', async () => {
+    ms1Client.listarActivosPorTelefono.mockResolvedValue([
+      {
+        id: '11111111-1111-1111-1111-111111111111',
+        codigo: 'ACT-2024-001',
+        nombre: 'Laptop Dell',
+        estado: 'ACTIVO',
+        areaActual: { nombre: 'Tecnologias de Informacion' },
+        asignaciones: [{
+          activa: true,
+          responsable: { nombre: 'Borys Quiroga', telefono: '59170000000' },
+        }],
+        traslados: [{ id: 'tr-1', recepcionConfirmada: true }],
+      },
+      {
+        id: '22222222-2222-2222-2222-222222222222',
+        codigo: 'ACT-2024-002',
+        nombre: 'Monitor Dell',
+        estado: 'TRANSFERIDO',
+        areaActual: { nombre: 'Contabilidad' },
+        asignaciones: [{
+          activa: true,
+          responsable: { nombre: 'Borys Quiroga', telefono: '59170000000' },
+        }],
+        traslados: [{
+          id: 'tr-2',
+          recepcionConfirmada: false,
+          areaOrigen: { nombre: 'Tecnologias de Informacion' },
+          areaDestino: { nombre: 'Contabilidad' },
+        }],
+      },
+    ]);
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'Dame un listado de los activos pendientes de confirmacion de recepcion',
+    });
+
+    expect(llmAgent.clasificarMensaje).not.toHaveBeenCalled();
+    expect(ms1Client.listarActivosPorTelefono).toHaveBeenCalledWith('59170000000');
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.stringContaining('Hola Borys Quiroga, estos son tus activos con recepcion de traslado pendiente'),
+    );
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.stringContaining('ACT-2024-002 - Monitor Dell'),
+    );
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.not.stringContaining('ACT-2024-001 - Laptop Dell'),
+    );
+    expect(result).toEqual({
+      recibido: true,
+      intencion: 'LISTAR_RECEPCIONES_PENDIENTES',
+      mensaje: 'Recepciones pendientes encontradas: 1',
+    });
+  });
+
+  it('no responde con activos asociados cuando no hay recepciones pendientes', async () => {
+    ms1Client.listarActivosPorTelefono.mockResolvedValue([
+      {
+        id: '11111111-1111-1111-1111-111111111111',
+        codigo: 'ACT-2024-001',
+        nombre: 'Laptop Dell',
+        estado: 'ACTIVO',
+        asignaciones: [{
+          activa: true,
+          responsable: { nombre: 'Borys Quiroga', telefono: '59170000000' },
+        }],
+        traslados: [{ id: 'tr-1', recepcionConfirmada: true }],
+      },
+    ]);
+
+    const result = await service.procesarMensajeAgente({
+      from: '59170000000',
+      text: 'activos pendientes de recepcion',
+    });
+
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      'Hola Borys Quiroga, no tienes activos con recepcion de traslado pendiente.',
+    );
+    expect(notificacionesService.enviarWhatsAppTexto).toHaveBeenCalledWith(
+      '59170000000',
+      expect.not.stringContaining('Activos asociados a tu WhatsApp'),
+    );
+    expect(result).toEqual({
+      recibido: true,
+      intencion: 'LISTAR_RECEPCIONES_PENDIENTES',
+      mensaje: 'Sin recepciones pendientes',
     });
   });
 
