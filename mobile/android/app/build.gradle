@@ -57,6 +57,58 @@ react {
 apply from: new File(["node", "--print", "require.resolve('react-native-config/package.json')"].execute(null, rootDir).text.trim()).getParentFile().absolutePath + "/android/dotenv.gradle"
 apply from: new File(["node", "--print", "require.resolve('react-native-vector-icons/package.json')"].execute(null, rootDir).text.trim()).getParentFile().absolutePath + "/fonts.gradle"
 
+def readDotEnvValue(File envFile, String key) {
+    if (!envFile.exists()) {
+        return null
+    }
+
+    def prefix = "${key}="
+    def value = null
+    envFile.eachLine { line ->
+        def trimmed = line.trim()
+        if (!trimmed || trimmed.startsWith("#") || !trimmed.startsWith(prefix)) {
+            return
+        }
+
+        value = trimmed.substring(prefix.length()).trim()
+        if (
+            (value.startsWith("\"") && value.endsWith("\"")) ||
+            (value.startsWith("'") && value.endsWith("'"))
+        ) {
+            value = value.substring(1, value.length() - 1)
+        }
+    }
+
+    return value
+}
+
+def mobileEnvFile = new File(rootDir.parentFile, ".env")
+
+def googleApiKey = {
+    def value = readDotEnvValue(mobileEnvFile, "GOOGLE_API_KEY")
+    if (!value && project.hasProperty("env")) {
+        value = project.env.get("GOOGLE_API_KEY")
+    }
+    return value ?: System.getenv("GOOGLE_API_KEY") ?: ""
+}
+
+def googleServicesTemplate = file("google-services.json.example")
+def googleServicesOutput = file("google-services.json")
+
+tasks.register("generateGoogleServicesJson") {
+    inputs.file(googleServicesTemplate)
+    outputs.file(googleServicesOutput)
+
+    doLast {
+        def apiKey = googleApiKey()
+        if (!apiKey) {
+            throw new GradleException("Falta GOOGLE_API_KEY. Define la nueva llave en mobile/.env antes de compilar Android.")
+        }
+
+        googleServicesOutput.text = googleServicesTemplate.text.replace("__GOOGLE_API_KEY__", apiKey)
+    }
+}
+
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
@@ -93,6 +145,7 @@ android {
         versionCode 1
         versionName "1.0"
         resValue "string", "build_config_package", "com.movilactivosfijos"
+        manifestPlaceholders = [googleApiKey: googleApiKey()]
         ndk {
             abiFilters (*reactNativeArchitectures())
         }
@@ -120,6 +173,12 @@ android {
 }
 
 apply plugin: "com.google.gms.google-services"
+
+tasks.matching { task ->
+    task.name.startsWith("process") && task.name.endsWith("GoogleServices")
+}.configureEach {
+    dependsOn("generateGoogleServicesJson")
+}
 
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin

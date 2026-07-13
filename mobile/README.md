@@ -64,6 +64,16 @@ MS3_BASE_URL=https://<ms3-gcp>/api
 
 MS1 no lleva `/graphql` en la variable porque el servicio `ms1Service.ts` agrega ese path internamente. MS2 y MS3 si deben incluir `/api`.
 
+### Llave Google/Firebase
+
+La llave de Google/Firebase no se versiona. Debe vivir en `mobile/.env`:
+
+```dotenv
+GOOGLE_API_KEY=<nueva_llave_google>
+```
+
+Antes de compilar Android, revoca en Google Cloud/Firebase la llave expuesta y crea una nueva restringida al paquete `com.movilactivosfijos`. El build genera `android/app/google-services.json` desde `android/app/google-services.json.example`; ese archivo generado queda ignorado por Git.
+
 ## Ejecutar en debug contra servicios LAN
 
 Con el emulador o dispositivo conectado, ejecuta desde `mobile/`:
