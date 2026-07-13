@@ -12,8 +12,8 @@
 <div class="filter-bar card">
   <select
     class="form-control filter-bar__select"
-    [(ngModel)]="selectedActivoId"
-    (ngModelChange)="cargar()"
+    [ngModel]="selectedActivoId()"
+    (ngModelChange)="selectedActivoId.set($event); cargar()"
   >
     <option value="">— Seleccionar activo —</option>
     @for (a of activos(); track a.id) {
