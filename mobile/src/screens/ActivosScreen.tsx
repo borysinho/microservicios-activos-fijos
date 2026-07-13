@@ -34,6 +34,10 @@ export default function ActivosScreen() {
     });
   }, []);
 
+  const handleSessionExpired = useCallback(() => {
+    navigation.replace("Login");
+  }, [navigation]);
+
   const {
     activos,
     isOffline,
@@ -41,7 +45,9 @@ export default function ActivosScreen() {
     error,
     refrescar,
     pendientesSincronizacion,
-  } = useOfflineActivos(usuarioId);
+  } = useOfflineActivos(usuarioId, {
+    onSessionExpired: handleSessionExpired,
+  });
 
   const renderActivo = useCallback(
     ({ item }: { item: Activo }) => (

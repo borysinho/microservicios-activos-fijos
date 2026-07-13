@@ -14,13 +14,36 @@ interface UseOfflineActivosReturn {
   pendientesSincronizacion: number;
 }
 
+type UseOfflineActivosOptions = {
+  onSessionExpired?: () => void;
+};
+
+function isAuthError(err: unknown): boolean {
+  const maybeHttpError = err as {
+    response?: { status?: number };
+    message?: string;
+  };
+  const status = maybeHttpError.response?.status;
+  const message = maybeHttpError.message ?? "";
+
+  return (
+    status === 401 ||
+    status === 403 ||
+    /unauthorized|forbidden|access denied/i.test(message)
+  );
+}
+
 /**
  * Hook principal de la app móvil (CU-40, CU-45):
  * - Online: descarga activos de MS1 y actualiza caché
  * - Offline: carga activos desde AsyncStorage
  * - Detecta recuperación de conexión para sincronizar
  */
-export function useOfflineActivos(usuarioId: string): UseOfflineActivosReturn {
+export function useOfflineActivos(
+  usuarioId: string,
+  options: UseOfflineActivosOptions = {},
+): UseOfflineActivosReturn {
+  const { onSessionExpired } = options;
   const [activos, setActivos] = useState<Activo[]>([]);
   const [isOffline, setIsOffline] = useState(false);
   const [cargando, setCargando] = useState(true);
@@ -46,16 +69,22 @@ export function useOfflineActivos(usuarioId: string): UseOfflineActivosReturn {
         // Fallback a caché si falla la red
         const cached = await offlineCache.loadActivos();
         setActivos(cached);
-        setError(
-          offline
-            ? "Sin conexión — usando datos en caché"
-            : "Error de red — mostrando datos en caché",
-        );
+        if (isAuthError(err)) {
+          await offlineCache.clearSession();
+          setError("Sesión expirada — vuelve a iniciar sesión");
+          onSessionExpired?.();
+        } else {
+          setError(
+            offline
+              ? "Sin conexión — usando datos en caché"
+              : "No se pudo conectar con MS1 — mostrando datos en caché",
+          );
+        }
       } finally {
         setCargando(false);
       }
     },
-    [usuarioId],
+    [onSessionExpired, usuarioId],
   );
 
   const sincronizarPendientes = useCallback(async () => {

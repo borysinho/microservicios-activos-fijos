@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
+  Linking,
 } from "react-native";
 import { Camera } from "react-native-vision-camera";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -35,10 +36,26 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
   } = useCamera();
   const { obtenerUbicacion } = useGPS();
   const [enviando, setEnviando] = useState(false);
+  const [solicitandoPermiso, setSolicitandoPermiso] = useState(!hasPermission);
+
+  const solicitarPermisoCamara = useCallback(async () => {
+    setSolicitandoPermiso(true);
+    try {
+      return await requestPermission();
+    } finally {
+      setSolicitandoPermiso(false);
+    }
+  }, [requestPermission]);
+
+  useEffect(() => {
+    if (!hasPermission) {
+      solicitarPermisoCamara().catch(() => setSolicitandoPermiso(false));
+    }
+  }, [hasPermission, solicitarPermisoCamara]);
 
   const handleCapturar = async () => {
     if (!hasPermission) {
-      const granted = await requestPermission();
+      const granted = await solicitarPermisoCamara();
       if (!granted) {
         Alert.alert(
           "Permiso requerido",
@@ -90,6 +107,51 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
         <Text style={styles.textoError}>
           Cámara no disponible en este dispositivo.
         </Text>
+      </View>
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <View style={styles.centrado}>
+        <StatusBar barStyle="light-content" backgroundColor="#212121" />
+        <Text style={styles.tituloPermiso}>Permiso de cámara requerido</Text>
+        <Text style={styles.textoError}>
+          Para verificar el activo con IA, la aplicación necesita acceder a la
+          cámara del dispositivo.
+        </Text>
+
+        {solicitandoPermiso ? (
+          <View style={styles.permisoCargando}>
+            <ActivityIndicator color="#FFFFFF" />
+            <Text style={styles.textoPermiso}>Solicitando permiso…</Text>
+          </View>
+        ) : (
+          <View style={styles.permisoAcciones}>
+            <TouchableOpacity
+              style={styles.btnPermisoPrimario}
+              onPress={solicitarPermisoCamara}
+            >
+              <Text style={styles.btnPermisoPrimarioTexto}>
+                Permitir cámara
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnPermisoSecundario}
+              onPress={() => Linking.openSettings()}
+            >
+              <Text style={styles.btnPermisoSecundarioTexto}>
+                Abrir configuración
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.btnPermisoSecundario}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.btnPermisoSecundarioTexto}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   }
@@ -159,6 +221,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     padding: 24,
+  },
+  tituloPermiso: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  permisoCargando: {
+    alignItems: "center",
+    gap: 12,
+  },
+  textoPermiso: {
+    color: "#FFFFFF",
+    fontSize: 14,
+  },
+  permisoAcciones: {
+    width: "100%",
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  btnPermisoPrimario: {
+    minHeight: 48,
+    borderRadius: 8,
+    backgroundColor: "#1565C0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  btnPermisoPrimarioTexto: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  btnPermisoSecundario: {
+    minHeight: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  btnPermisoSecundarioTexto: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
   },
   camara: { flex: 1 },
   overlay: {
