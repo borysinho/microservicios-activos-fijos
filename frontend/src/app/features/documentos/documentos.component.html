@@ -94,13 +94,15 @@
                     i
                   </button>
                 }
-                <button
-                  class="btn btn--ghost btn--icon btn--danger"
-                  title="Eliminar"
-                  (click)="eliminar(doc)"
-                >
-                  ✕
-                </button>
+                @if (puedeEliminarDocumento()) {
+                  <button
+                    class="btn btn--ghost btn--icon btn--danger"
+                    title="Eliminar"
+                    (click)="eliminar(doc)"
+                  >
+                    ✕
+                  </button>
+                }
               </div>
             </div>
           }
@@ -138,17 +140,19 @@
                 </div>
               }
             </div>
-            <div class="nueva-version">
-              <h5>Subir nueva versión</h5>
-              <input type="file" class="form-control" (change)="onArchivoNuevaVersion($event)" />
-              <button
-                class="btn btn--secondary btn--sm"
-                [disabled]="!archivoNuevaVersion || subiendo()"
-                (click)="subirNuevaVersion()"
-              >
-                {{ subiendo() ? 'Subiendo...' : 'Publicar versión' }}
-              </button>
-            </div>
+            @if (puedeVersionarDocumento()) {
+              <div class="nueva-version">
+                <h5>Subir nueva versión</h5>
+                <input type="file" class="form-control" (change)="onArchivoNuevaVersion($event)" />
+                <button
+                  class="btn btn--secondary btn--sm"
+                  [disabled]="!archivoNuevaVersion || subiendo()"
+                  (click)="subirNuevaVersion()"
+                >
+                  {{ subiendo() ? 'Subiendo...' : 'Publicar versión' }}
+                </button>
+              </div>
+            }
           }
         }
 
@@ -178,6 +182,7 @@
   <!-- ══ Panel derecho: subir + IA ══════════════════════════════════════════ -->
   <div class="docs-panel">
     <!-- Upload ────────────────────────────────────────────────────────────── -->
+    @if (puedeSubirDocumento() || puedeDiagnosticar()) {
     <div class="card">
       <h3 class="section-title">Agregar al expediente</h3>
 
@@ -235,20 +240,24 @@
       </div>
 
       <div class="upload-actions">
-        <button
-          class="btn btn--secondary"
-          (click)="subir()"
-          [disabled]="!selectedFile || !activoId() || uploading()"
-        >
-          {{ uploading() ? 'Guardando...' : 'Guardar documento' }}
-        </button>
-        <button
-          class="btn btn--primary"
-          (click)="diagnosticar()"
-          [disabled]="!selectedFile || diagnosing()"
-        >
-          {{ diagnosing() ? 'Analizando...' : 'Analizar imagen' }}
-        </button>
+        @if (puedeSubirDocumento()) {
+          <button
+            class="btn btn--secondary"
+            (click)="subir()"
+            [disabled]="!selectedFile || !activoId() || uploading()"
+          >
+            {{ uploading() ? 'Guardando...' : 'Guardar documento' }}
+          </button>
+        }
+        @if (puedeDiagnosticar()) {
+          <button
+            class="btn btn--primary"
+            (click)="diagnosticar()"
+            [disabled]="!selectedFile || diagnosing()"
+          >
+            {{ diagnosing() ? 'Analizando...' : 'Analizar imagen' }}
+          </button>
+        }
       </div>
 
       @if (resultado(); as r) {
@@ -281,6 +290,7 @@
         </div>
       }
     </div>
+    }
     <!-- /card upload -->
   </div>
   <!-- /docs-panel derecho -->

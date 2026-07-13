@@ -359,6 +359,20 @@ table {
   color: var(--cyan);
 }
 
+// ─── Alerts ──────────────────────────────────────────────────────────────────
+.alert {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-bottom: 1rem;
+
+  &--error {
+    background: var(--danger-dim);
+    border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+    color: var(--danger);
+  }
+}
+
 // ─── Overlay / Modal ─────────────────────────────────────────────────────────
 .overlay {
   position: fixed;

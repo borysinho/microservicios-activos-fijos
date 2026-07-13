@@ -35,13 +35,13 @@ public class AsignacionResolver {
     }
 
     @MutationMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RESPONSABLE_AREA')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public Asignacion asignarActivo(@Argument @Valid AsignacionInput input) {
         return asignacionService.asignar(input);
     }
 
     @MutationMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RESPONSABLE_AREA')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public Asignacion devolverActivo(@Argument String asignacionId) {
         return asignacionService.devolver(UUID.fromString(asignacionId));
     }

@@ -688,7 +688,9 @@ title Frontend Web (Angular) — Casos de Uso
 left to right direction
 
 actor "Administrador" as admin
+actor "Responsable de Área" as responsable
 actor "Auditor" as auditor
+actor "Solo Lectura" as lector
 
 rectangle "Frontend Web — Angular" {
     usecase "Registrar activo" as W1
@@ -714,11 +716,21 @@ admin --> W7
 admin --> W8
 admin --> W11
 
+responsable --> W5
+responsable --> W6
+responsable --> W8
+
 auditor --> W5
+auditor --> W6
 auditor --> W9
 auditor --> W10
 auditor --> W8
 auditor --> W7
+
+lector --> W5
+lector --> W6
+lector --> W10
+lector --> W8
 
 W1 ..> W8 : <<extend>>
 W4 ..> W10 : <<include>>
@@ -728,6 +740,12 @@ W3 ..> W10 : <<include>>
 ```
 
 Interfaz web única que consume MS1, MS2 y MS3. La comunicación con MS1 usa exclusivamente **GraphQL**; con MS2 y MS3 usa REST. MS4 no se consume directamente desde el frontend.
+
+### Autorización web por roles
+
+La separación de roles de la web se define con control por ruta, por acción visible y por API. El `ADMINISTRADOR` conserva acceso total. `RESPONSABLE_AREA` opera solo activos, documentos y traslados asociados a su área o responsable. `AUDITOR` accede a evidencia, reportes, auditoría, bajas y trazabilidad sin ejecutar mutaciones de negocio. `SOLO_LECTURA` consulta inventario, dashboard, documentos descargables y blockchain sin modificaciones.
+
+La matriz detallada de páginas, acciones permitidas y tareas pendientes de implementación se mantiene en [`docs/frontend/matriz_roles_permisos.md`](frontend/matriz_roles_permisos.md).
 
 ### Módulos principales
 

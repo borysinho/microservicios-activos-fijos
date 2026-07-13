@@ -3,20 +3,22 @@
     <h1>Movimientos de activos</h1>
     <p>Registre traslados, autorizaciones y confirmaciones de recepción entre áreas.</p>
   </div>
-  <button class="btn btn--primary" (click)="openModal()">
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      width="16"
-      height="16"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-    Nuevo traslado
-  </button>
+  @if (puedeRegistrarTraslado) {
+    <button class="btn btn--primary" (click)="openModal()">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        width="16"
+        height="16"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Nuevo traslado
+    </button>
+  }
 </div>
 
 @if (success()) {
@@ -68,7 +70,9 @@
           <th>Motivo</th>
           <th>Autorizado Por</th>
           <th>Recepción</th>
-          <th>Acciones</th>
+          @if (puedeConfirmarRecepcion) {
+            <th>Acciones</th>
+          }
         </tr>
       </thead>
       <tbody>
@@ -86,17 +90,19 @@
                 {{ t.recepcionConfirmada ? 'Confirmada' : 'Pendiente' }}
               </span>
             </td>
-            <td class="action-btns">
-              @if (!t.recepcionConfirmada) {
-                <button
-                  class="btn btn--sm btn--primary-ghost"
-                  (click)="confirmar(t)"
-                  [disabled]="confirmingTrasladoId() === t.id"
-                >
-                  {{ confirmingTrasladoId() === t.id ? 'Confirmando...' : 'Confirmar' }}
-                </button>
-              }
-            </td>
+            @if (puedeConfirmarRecepcion) {
+              <td class="action-btns">
+                @if (!t.recepcionConfirmada) {
+                  <button
+                    class="btn btn--sm btn--primary-ghost"
+                    (click)="confirmar(t)"
+                    [disabled]="confirmingTrasladoId() === t.id"
+                  >
+                    {{ confirmingTrasladoId() === t.id ? 'Confirmando...' : 'Confirmar' }}
+                  </button>
+                }
+              </td>
+            }
           </tr>
         }
       </tbody>

@@ -3,21 +3,27 @@
     <h1>Gestión de Activos</h1>
     <p>Consulte, registre y mantenga actualizado el inventario institucional.</p>
   </div>
-  <button class="btn btn--primary" (click)="openModal()">
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      width="16"
-      height="16"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-    Registrar activo
-  </button>
+  @if (puedeCrearActivo) {
+    <button class="btn btn--primary" (click)="openModal()">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        width="16"
+        height="16"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Registrar activo
+    </button>
+  }
 </div>
+
+@if (success()) {
+  <div class="alert alert--success">{{ success() }}</div>
+}
 
 <!-- Filtros -->
 <div class="filter-bar card">
@@ -96,7 +102,7 @@
                 class="form-control form-control--xs"
                 [ngModel]="a.estado"
                 (ngModelChange)="cambiarEstado(a, $event)"
-                [disabled]="a.estado === 'DADO_DE_BAJA'"
+                [disabled]="!puedeCambiarEstado || a.estado === 'DADO_DE_BAJA'"
               >
                 @for (e of estadoCambioOpts; track e) {
                   <option [value]="e">{{ estadoLabel(e) }}</option>
@@ -125,19 +131,21 @@
                     <circle cx="12" cy="12" r="3" />
                   </svg>
                 </button>
-                <button class="btn btn--ghost btn--sm" title="Editar activo" (click)="openModal(a)">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    width="14"
-                    height="14"
-                  >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </button>
+                @if (puedeEditarActivo) {
+                  <button class="btn btn--ghost btn--sm" title="Editar activo" (click)="openModal(a)">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      width="14"
+                      height="14"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                }
                 @if (canAsignar(a)) {
                   <button
                     class="btn btn--ghost btn--sm"
@@ -223,6 +231,9 @@
         <button class="btn btn--ghost btn--icon" (click)="showModal.set(false)">✕</button>
       </div>
       <div class="modal__body">
+        @if (modalError()) {
+          <div class="alert alert--error alert--modal">{{ modalError() }}</div>
+        }
         <div class="form-grid">
           <div class="form-group">
             <label>Código de Inventario *</label>
@@ -314,6 +325,9 @@
         <button class="btn btn--ghost btn--icon" (click)="showAsignarModal.set(false)">✕</button>
       </div>
       <div class="modal__body">
+        @if (modalError()) {
+          <div class="alert alert--error alert--modal">{{ modalError() }}</div>
+        }
         <div class="form-grid">
           <div class="form-group form-group--full">
             <label>Responsable *</label>
@@ -370,6 +384,9 @@
         <button class="btn btn--ghost btn--icon" (click)="showTrasladarModal.set(false)">✕</button>
       </div>
       <div class="modal__body">
+        @if (modalError()) {
+          <div class="alert alert--error alert--modal">{{ modalError() }}</div>
+        }
         <div class="form-grid">
           <div class="form-group form-group--full">
             <label>Área Destino *</label>
@@ -426,6 +443,9 @@
         <button class="btn btn--ghost btn--icon" (click)="showBajaModal.set(false)">✕</button>
       </div>
       <div class="modal__body">
+        @if (modalError()) {
+          <div class="alert alert--error alert--modal">{{ modalError() }}</div>
+        }
         <p class="modal__warning">
           Esta acción es <strong>irreversible</strong>. El activo quedará dado de baja
           definitivamente.

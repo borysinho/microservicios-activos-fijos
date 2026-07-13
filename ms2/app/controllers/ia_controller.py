@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 
-from app.auth.jwt_middleware import get_current_user
+from app.auth.jwt_middleware import get_current_user, require_roles
 from app.infrastructure.dynamodb_adapter import DynamoDBAdapter
 from app.infrastructure.s3_adapter import S3Adapter
 from app.modelos.model_loader import model_loader
@@ -74,7 +74,7 @@ async def diagnostico_imagen(
     imagenReferenciaS3Key: Optional[str] = Form(None, description="Imagen histórica S3 para comparación (opcional)"),
     latitud: Optional[float] = Form(None, description="Latitud GPS enviada por mobile (opcional)"),
     longitud: Optional[float] = Form(None, description="Longitud GPS enviada por mobile (opcional)"),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_roles("ROLE_ADMINISTRADOR", "ROLE_RESPONSABLE_AREA")),
 ):
     """
     Recibe una imagen del activo y genera una verificación visual auditable.

@@ -11,6 +11,31 @@
   }
 }
 
+.alert {
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+
+  &--success {
+    background: var(--success-dim);
+    border-color: color-mix(in srgb, var(--success) 45%, transparent);
+    color: var(--success);
+  }
+
+  &--error {
+    background: var(--danger-dim);
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+    color: var(--danger);
+  }
+
+  &--modal {
+    margin-bottom: 0.85rem;
+  }
+}
+
 .action-btns {
   display: flex;
   gap: 0.35rem;

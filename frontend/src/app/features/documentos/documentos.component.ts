@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Ms2Service, DocumentoMetadata, EventoAuditoria } from '../../core/services/ms2.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
+import { canPerform } from '../../core/auth/permissions';
 import type { Activo } from '../../core/models/models';
 
 @Component({
@@ -51,7 +52,11 @@ export class DocumentosComponent implements OnInit {
   resultado = signal<any>(null);
 
   // ── Permisos ──────────────────────────────────────────────────────────────
-  puedeVerAudit = computed(() => this.auth.hasRole('ADMINISTRADOR', 'AUDITOR'));
+  puedeSubirDocumento = computed(() => this.can('documento.subir'));
+  puedeVersionarDocumento = computed(() => this.can('documento.versionar'));
+  puedeEliminarDocumento = computed(() => this.can('documento.eliminar'));
+  puedeVerAudit = computed(() => this.can('documento.verAuditoria'));
+  puedeDiagnosticar = computed(() => this.can('ia.diagnosticar'));
 
   readonly tiposDocumento = ['CONTRATO', 'FACTURA', 'POLIZA', 'MANUAL', 'ACTA', 'OTRO'];
 
@@ -90,17 +95,20 @@ export class DocumentosComponent implements OnInit {
   onDrop(e: DragEvent): void {
     e.preventDefault();
     this.dragOver.set(false);
+    if (!this.puedeSubirDocumento() && !this.puedeDiagnosticar()) return;
     const file = e.dataTransfer?.files[0];
     if (file) this.selectedFile = file;
   }
 
   onFileSelect(e: Event): void {
+    if (!this.puedeSubirDocumento() && !this.puedeDiagnosticar()) return;
     const input = e.target as HTMLInputElement;
     if (input.files?.[0]) this.selectedFile = input.files[0];
   }
 
   // ── CU-26: Subir documento ────────────────────────────────────────────────
   subir(): void {
+    if (!this.puedeSubirDocumento()) return;
     if (!this.selectedFile || !this.activoId()) return;
     this.uploading.set(true);
     this.ms2.subirDocumento(this.activoId(), this.selectedFile, this.tipoDocumento()).subscribe({
@@ -141,6 +149,7 @@ export class DocumentosComponent implements OnInit {
 
   // ── CU-28: Subir nueva versión ────────────────────────────────────────────
   subirNuevaVersion(): void {
+    if (!this.puedeVersionarDocumento()) return;
     const doc = this.docSeleccionado();
     if (!doc || !this.archivoNuevaVersion) return;
     this.subiendo.set(true);
@@ -157,6 +166,7 @@ export class DocumentosComponent implements OnInit {
 
   // ── CU-30: Eliminar documento ─────────────────────────────────────────────
   eliminar(doc: DocumentoMetadata): void {
+    if (!this.puedeEliminarDocumento()) return;
     if (!confirm(`¿Eliminar "${doc.nombre}"? El registro de auditoría se conservará.`)) return;
     this.ms2.eliminarDocumento(doc.documentoId).subscribe({
       next: () => this.buscar(),
@@ -165,6 +175,7 @@ export class DocumentosComponent implements OnInit {
 
   // ── CU-31: Log de auditoría ───────────────────────────────────────────────
   verAuditoria(doc: DocumentoMetadata): void {
+    if (!this.puedeVerAudit()) return;
     this.docSeleccionado.set(doc);
     this.mostrarAudit.set(true);
     this.versiones.set([]);
@@ -187,6 +198,7 @@ export class DocumentosComponent implements OnInit {
 
   // ── IA ────────────────────────────────────────────────────────────────────
   diagnosticar(): void {
+    if (!this.puedeDiagnosticar()) return;
     if (!this.selectedFile) return;
     this.diagnosing.set(true);
     this.ms2.diagnosticarImagen(this.selectedFile, this.activoId() || undefined).subscribe({
@@ -196,5 +208,9 @@ export class DocumentosComponent implements OnInit {
       },
       error: () => this.diagnosing.set(false),
     });
+  }
+
+  private can(action: Parameters<typeof canPerform>[1]): boolean {
+    return canPerform(this.auth.currentUser()?.rol, action);
   }
 }

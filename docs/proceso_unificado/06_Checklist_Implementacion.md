@@ -297,11 +297,26 @@
 
 - [ ] `auth.service.ts` — login, logout, isAuthenticated() con validación JWT exp
 - [ ] `auth.guard.ts` — proteger rutas privadas
+- [x] `permissions.ts` — fuente única de permisos por rol, ruta y acción según `docs/frontend/matriz_roles_permisos.md`
 - [ ] `activos-gql.service.ts` — todas las queries/mutations de MS1
 - [ ] `ms2.service.ts` — llamadas REST a MS2 (documentos + IA + ML)
 - [ ] `ms3.service.ts` — llamadas REST a MS3 si aplica (opcional)
 - [ ] Apollo Client configurado con authLink y httpLink
 - [ ] HTTP Interceptor para añadir token a requests a MS2/MS3
+- [x] `role.guard.ts` aplicado a rutas restringidas: asignaciones, traslados, bajas, depreciación, catálogos, organización y usuarios
+- [x] Sidebar sincronizado con la matriz de permisos; no duplicar reglas divergentes por componente
+- [x] Botones, formularios y modales sensibles ocultos/deshabilitados por acción: crear, editar, eliminar, asignar, trasladar, dar de baja, autorizar, subir documentos, versionar, ejecutar IA y ver auditoría
+- [ ] Pruebas unitarias por rol para rutas y visibilidad de acciones críticas en Angular
+
+#### Permisos por Rol
+
+- [ ] `ADMINISTRADOR` conserva acceso completo a todas las páginas y acciones
+- [ ] `RESPONSABLE_AREA` opera solo activos/asignaciones/documentos/traslados de su área o responsable vinculado
+- [ ] `AUDITOR` consulta inventario, bajas, depreciación, documentos, auditoría, BI y blockchain sin mutaciones
+- [ ] `SOLO_LECTURA` consulta inventario, dashboard, documentos descargables, ML y blockchain sin mutaciones
+- [ ] MS1 valida en backend la misma matriz: revisar `asignarActivo`, `devolverActivo`, `cambiarEstadoActivo`, `actualizarUbicacionActivo`, `trasladarActivo`, `confirmarRecepcionActivo` y bajas
+- [x] Backend MS2 valida roles en upload, nueva versión, eliminación documental y diagnóstico IA
+- [ ] MS1/MS2 registran o devuelven errores claros ante intentos sin permiso
 
 ### App Móvil — React Native
 

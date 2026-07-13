@@ -58,7 +58,7 @@ export interface PrediccionVidaUtil {
 }
 
 export interface ClusteringResult {
-  clusters: { id: number; nombre: string; activos: string[] }[];
+  clusters: { id: number; nombre: string; activos: string[]; puntos?: { x: number; y: number }[] }[];
 }
 
 // ── Servicio ──────────────────────────────────────────────────────────────────

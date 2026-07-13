@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
 import { AuthService } from '../../core/services/auth.service';
+import { canPerform } from '../../core/auth/permissions';
 import type { Activo, Asignacion, Area, Responsable } from '../../core/models/models';
 
 @Component({
@@ -108,7 +109,7 @@ export class AsignacionesComponent implements OnInit {
   }
 
   get puedeGestionarAsignaciones(): boolean {
-    return this.auth.hasRole('ADMINISTRADOR');
+    return canPerform(this.auth.currentUser()?.rol, 'asignacion.gestionar');
   }
 
   openModal(): void {

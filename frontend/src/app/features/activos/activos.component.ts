@@ -3,6 +3,8 @@ import { CommonModule, CurrencyPipe, DatePipe, PercentPipe } from '@angular/comm
 import { FormsModule } from '@angular/forms';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
 import { Ms2Service } from '../../core/services/ms2.service';
+import { AuthService } from '../../core/services/auth.service';
+import { canPerform } from '../../core/auth/permissions';
 import type {
   Activo,
   ActivoInput,
@@ -25,6 +27,7 @@ import type { PrediccionVidaUtil } from '../../core/services/ms2.service';
 export class ActivosComponent implements OnInit {
   private gql = inject(ActivosGqlService);
   private ms2 = inject(Ms2Service);
+  private auth = inject(AuthService);
 
   activos = signal<Activo[]>([]);
   categorias = signal<CategoriaActivo[]>([]);
@@ -33,6 +36,8 @@ export class ActivosComponent implements OnInit {
   usuarios = signal<Usuario[]>([]);
   loading = signal(true);
   error = signal('');
+  success = signal('');
+  modalError = signal('');
   saving = signal(false);
 
   // Modales
@@ -90,6 +95,18 @@ export class ActivosComponent implements OnInit {
   readonly estadoOpts = ['ACTIVO', 'EN_MANTENIMIENTO', 'TRANSFERIDO', 'DADO_DE_BAJA'];
   readonly estadoCambioOpts = ['ACTIVO', 'EN_MANTENIMIENTO', 'TRANSFERIDO'];
 
+  get puedeCrearActivo(): boolean {
+    return this.can('activo.crear');
+  }
+
+  get puedeEditarActivo(): boolean {
+    return this.can('activo.editar');
+  }
+
+  get puedeCambiarEstado(): boolean {
+    return this.can('activo.cambiarEstado');
+  }
+
   ngOnInit(): void {
     this.cargar();
     this.gql.getCategorias().subscribe((data) => this.categorias.set(data));
@@ -100,6 +117,7 @@ export class ActivosComponent implements OnInit {
 
   cargar(): void {
     this.loading.set(true);
+    this.error.set('');
     this.filtro = {
       ...this.filtro,
       busqueda: this.searchTerm.trim() || undefined,
@@ -194,6 +212,9 @@ export class ActivosComponent implements OnInit {
 
   // ── Registrar activo ─────────────────────────────────────────────────────
   openModal(activo?: Activo): void {
+    if (activo && !this.puedeEditarActivo) return;
+    if (!activo && !this.puedeCrearActivo) return;
+    this.modalError.set('');
     this.editingActivoId.set(activo?.id ?? null);
     this.form = {
       codigo: activo?.codigo ?? '',
@@ -210,6 +231,9 @@ export class ActivosComponent implements OnInit {
   }
 
   guardar(): void {
+    const editingId = this.editingActivoId();
+    if (editingId && !this.puedeEditarActivo) return;
+    if (!editingId && !this.puedeCrearActivo) return;
     if (
       !this.form.codigo ||
       !this.form.nombre ||
@@ -220,7 +244,7 @@ export class ActivosComponent implements OnInit {
       return;
     }
     this.saving.set(true);
-    const editingId = this.editingActivoId();
+    this.modalError.set('');
     const request = editingId
       ? this.gql.actualizarActivo(editingId, this.form)
       : this.gql.registrarActivo(this.form);
@@ -229,26 +253,37 @@ export class ActivosComponent implements OnInit {
         this.saving.set(false);
         this.showModal.set(false);
         this.editingActivoId.set(null);
+        this.success.set(
+          editingId ? 'Activo actualizado correctamente.' : 'Activo registrado correctamente.',
+        );
+        setTimeout(() => this.success.set(''), 3000);
         this.cargar();
       },
-      error: () => {
+      error: (e) => {
         this.saving.set(false);
+        this.modalError.set(this.errorMessage(e, 'No se pudo guardar el activo.'));
       },
     });
   }
 
   cambiarEstado(activo: Activo, nuevoEstado: string): void {
+    if (!this.puedeCambiarEstado) return;
     if (nuevoEstado === activo.estado) return;
     this.error.set('');
     this.gql.cambiarEstadoActivo(activo.id, nuevoEstado).subscribe({
       next: () => this.cargar(),
       error: (e) =>
-        this.error.set(e?.graphQLErrors?.[0]?.message ?? e?.message ?? 'No se pudo cambiar el estado.'),
+        this.error.set(
+          e?.graphQLErrors?.[0]?.message ?? e?.message ?? 'No se pudo cambiar el estado.',
+        ),
     });
   }
 
   // ── Asignar activo ───────────────────────────────────────────────────────
   openAsignar(activo: Activo): void {
+    if (!this.canAsignar(activo)) return;
+    this.modalError.set('');
+    this.success.set('');
     this.formAsignar = {
       activoId: activo.id,
       responsableId: '',
@@ -260,6 +295,7 @@ export class ActivosComponent implements OnInit {
   }
 
   guardarAsignacion(): void {
+    if (!this.can('activo.asignar')) return;
     if (
       !this.formAsignar.responsableId ||
       !this.formAsignar.areaId ||
@@ -267,20 +303,26 @@ export class ActivosComponent implements OnInit {
     )
       return;
     this.saving.set(true);
+    this.modalError.set('');
     this.gql.asignarActivo(this.formAsignar).subscribe({
       next: () => {
         this.saving.set(false);
         this.showAsignarModal.set(false);
+        this.success.set('Activo asignado correctamente.');
+        setTimeout(() => this.success.set(''), 3000);
         this.cargar();
       },
-      error: () => {
+      error: (e) => {
         this.saving.set(false);
+        this.modalError.set(this.errorMessage(e, 'No se pudo asignar el activo.'));
       },
     });
   }
 
   // ── Trasladar activo ─────────────────────────────────────────────────────
   openTrasladar(activo: Activo): void {
+    if (!this.canTrasladar(activo)) return;
+    this.modalError.set('');
     this.formTrasladar = {
       activoId: activo.id,
       areaDestinoId: '',
@@ -292,6 +334,7 @@ export class ActivosComponent implements OnInit {
   }
 
   guardarTraslado(): void {
+    if (!this.can('activo.trasladar')) return;
     if (
       !this.formTrasladar.areaDestinoId ||
       !this.formTrasladar.autorizadoPorId ||
@@ -299,20 +342,26 @@ export class ActivosComponent implements OnInit {
     )
       return;
     this.saving.set(true);
+    this.modalError.set('');
     this.gql.trasladarActivo(this.formTrasladar).subscribe({
       next: () => {
         this.saving.set(false);
         this.showTrasladarModal.set(false);
+        this.success.set('Traslado registrado correctamente.');
+        setTimeout(() => this.success.set(''), 3000);
         this.cargar();
       },
-      error: () => {
+      error: (e) => {
         this.saving.set(false);
+        this.modalError.set(this.errorMessage(e, 'No se pudo registrar el traslado.'));
       },
     });
   }
 
   // ── Dar de baja ──────────────────────────────────────────────────────────
   openBaja(activo: Activo): void {
+    if (!this.canBaja(activo)) return;
+    this.modalError.set('');
     this.formBaja = {
       activoId: activo.id,
       autorizadoPorId: '',
@@ -324,29 +373,49 @@ export class ActivosComponent implements OnInit {
   }
 
   guardarBaja(): void {
+    if (!this.can('activo.baja')) return;
     if (!this.formBaja.autorizadoPorId || !this.formBaja.motivo) return;
     this.saving.set(true);
+    this.modalError.set('');
     this.gql.darDeBaja(this.formBaja).subscribe({
       next: () => {
         this.saving.set(false);
         this.showBajaModal.set(false);
+        this.success.set('Activo dado de baja correctamente.');
+        setTimeout(() => this.success.set(''), 3000);
         this.cargar();
       },
-      error: () => {
+      error: (e) => {
         this.saving.set(false);
+        this.modalError.set(this.errorMessage(e, 'No se pudo dar de baja el activo.'));
       },
     });
   }
 
   canAsignar(activo: Activo): boolean {
-    return activo.estado === 'ACTIVO';
+    return this.can('activo.asignar') && activo.estado === 'ACTIVO';
   }
 
   canTrasladar(activo: Activo): boolean {
-    return activo.estado === 'ACTIVO' || activo.estado === 'TRANSFERIDO';
+    return this.can('activo.trasladar') && (activo.estado === 'ACTIVO' || activo.estado === 'TRANSFERIDO');
   }
 
   canBaja(activo: Activo): boolean {
-    return activo.estado !== 'DADO_DE_BAJA';
+    return this.can('activo.baja') && activo.estado !== 'DADO_DE_BAJA';
+  }
+
+  private can(action: Parameters<typeof canPerform>[1]): boolean {
+    return canPerform(this.auth.currentUser()?.rol, action);
+  }
+
+  private errorMessage(error: unknown, fallback: string): string {
+    const err = error as {
+      graphQLErrors?: { message?: string }[];
+      networkError?: { message?: string };
+      message?: string;
+    };
+    return (
+      err?.graphQLErrors?.[0]?.message ?? err?.networkError?.message ?? err?.message ?? fallback
+    );
   }
 }

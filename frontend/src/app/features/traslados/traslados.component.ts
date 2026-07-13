@@ -2,6 +2,8 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
+import { AuthService } from '../../core/services/auth.service';
+import { canPerform } from '../../core/auth/permissions';
 import type { Activo, Traslado, Area, Usuario } from '../../core/models/models';
 
 @Component({
@@ -13,6 +15,7 @@ import type { Activo, Traslado, Area, Usuario } from '../../core/models/models';
 })
 export class TrasladosComponent implements OnInit {
   private gql = inject(ActivosGqlService);
+  private auth = inject(AuthService);
 
   activos = signal<Activo[]>([]);
   areas = signal<Area[]>([]);
@@ -93,7 +96,16 @@ export class TrasladosComponent implements OnInit {
     return activo?.areaActual?.nombre ?? '—';
   }
 
+  get puedeRegistrarTraslado(): boolean {
+    return canPerform(this.auth.currentUser()?.rol, 'traslado.registrar');
+  }
+
+  get puedeConfirmarRecepcion(): boolean {
+    return canPerform(this.auth.currentUser()?.rol, 'traslado.confirmar');
+  }
+
   openModal(): void {
+    if (!this.puedeRegistrarTraslado) return;
     this.form = {
       activoId: this.selectedActivoId() || '',
       areaDestinoId: '',
@@ -105,6 +117,7 @@ export class TrasladosComponent implements OnInit {
   }
 
   guardar(): void {
+    if (!this.puedeRegistrarTraslado) return;
     const motivoTraslado = this.form.motivoTraslado.trim();
     if (!this.form.activoId || !this.form.areaDestinoId || !this.form.autorizadoPorId || !motivoTraslado) {
       this.error.set('Complete los campos obligatorios del traslado.');
@@ -131,6 +144,7 @@ export class TrasladosComponent implements OnInit {
   }
 
   confirmar(traslado: Traslado): void {
+    if (!this.puedeConfirmarRecepcion) return;
     if (this.confirmingTrasladoId()) return;
     if (!confirm(`¿Confirmar recepción del traslado hacia "${traslado.areaDestino?.nombre}"?`))
       return;

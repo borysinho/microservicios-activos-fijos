@@ -131,12 +131,34 @@
 
   @if (clusterLoading()) {
     <div class="loading">Analizando segmentos del inventario...</div>
-  } @else if (clusterResult()) {
+  } @else if (clusterError()) {
+    <div class="alert alert--error">{{ clusterError() }}</div>
+  } @else if (clusterResult()?.clusters?.length) {
     <div class="card">
       <h3 class="chart-title">Mapa de segmentos</h3>
       <div style="height: 400px; position: relative">
         <canvas #clusterCanvas></canvas>
       </div>
+    </div>
+
+    <div class="cluster-list">
+      @for (cluster of clusterResult()!.clusters; track cluster.id) {
+        <div class="card cluster-card">
+          <div class="cluster-card__header">
+            <span [class]="clusterBadge(cluster.id)">{{ cluster.nombre }}</span>
+            <span class="cluster-card__count">{{ cluster.activos.length }} activo(s)</span>
+          </div>
+          <div class="cluster-card__assets">
+            @for (activo of cluster.activos; track activo) {
+              <span class="cluster-card__asset">{{ activo }}</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (clusterResult()) {
+    <div class="empty-state">
+      <p>No se encontraron segmentos de inventario para analizar.</p>
     </div>
   }
 }

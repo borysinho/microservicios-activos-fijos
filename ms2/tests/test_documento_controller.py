@@ -66,6 +66,16 @@ class TestUploadEndpoint:
         )
         assert resp.status_code == 401
 
+    async def test_upload_403_para_auditor(self, aws_mock, client):
+        token = _make_token("auditor", ["ROLE_AUDITOR"])
+        resp = await client.post(
+            "/api/documentos/upload",
+            files={"file": ("test.pdf", io.BytesIO(PDF_BYTES), "application/pdf")},
+            data={"activoId": "activo-001", "tipo": "FACTURA"},
+            headers=_auth(token),
+        )
+        assert resp.status_code == 403
+
     async def test_upload_400_tipo_no_permitido(self, aws_mock, client):
         token = _make_token()
         resp = await client.post(
@@ -129,6 +139,24 @@ class TestVersiones:
         assert resp.status_code == 200
         assert resp.json()["version"] == 2
 
+    async def test_nueva_version_403_para_solo_lectura(self, aws_mock, client):
+        token_admin = _make_token()
+        token_lector = _make_token("lector", ["ROLE_SOLO_LECTURA"])
+        upload = await client.post(
+            "/api/documentos/upload",
+            files={"file": ("v1.pdf", io.BytesIO(PDF_BYTES), "application/pdf")},
+            data={"activoId": "activo-v-forbidden", "tipo": "MANUAL"},
+            headers=_auth(token_admin),
+        )
+        doc_id = upload.json()["documentoId"]
+
+        resp = await client.put(
+            f"/api/documentos/{doc_id}/version",
+            files={"file": ("v2.pdf", io.BytesIO(b"%PDF v2"), "application/pdf")},
+            headers=_auth(token_lector),
+        )
+        assert resp.status_code == 403
+
     async def test_historial_versiones(self, aws_mock, client):
         token = _make_token()
         upload = await client.post(
@@ -162,6 +190,20 @@ class TestSoftDelete:
 
         resp = await client.delete(f"/api/documentos/{doc_id}", headers=_auth(token))
         assert resp.status_code == 200
+
+    async def test_delete_403_para_responsable(self, aws_mock, client):
+        token_admin = _make_token()
+        token_responsable = _make_token("responsable", ["ROLE_RESPONSABLE_AREA"])
+        upload = await client.post(
+            "/api/documentos/upload",
+            files={"file": ("del.pdf", io.BytesIO(PDF_BYTES), "application/pdf")},
+            data={"activoId": "activo-del-forbidden", "tipo": "FACTURA"},
+            headers=_auth(token_admin),
+        )
+        doc_id = upload.json()["documentoId"]
+
+        resp = await client.delete(f"/api/documentos/{doc_id}", headers=_auth(token_responsable))
+        assert resp.status_code == 403
 
     async def test_documento_eliminado_no_aparece_en_lista(self, aws_mock, client):
         token = _make_token()

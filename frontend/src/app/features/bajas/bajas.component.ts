@@ -2,6 +2,8 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
+import { AuthService } from '../../core/services/auth.service';
+import { canPerform } from '../../core/auth/permissions';
 import type { Activo, Baja, Usuario } from '../../core/models/models';
 
 @Component({
@@ -13,6 +15,7 @@ import type { Activo, Baja, Usuario } from '../../core/models/models';
 })
 export class BajasComponent implements OnInit {
   private gql = inject(ActivosGqlService);
+  private auth = inject(AuthService);
 
   activos = signal<Activo[]>([]);
   usuarios = signal<Usuario[]>([]);
@@ -68,7 +71,16 @@ export class BajasComponent implements OnInit {
     return this.activos().filter((a) => a.estado !== 'DADO_DE_BAJA');
   }
 
+  get puedeGestionarBajas(): boolean {
+    return canPerform(this.auth.currentUser()?.rol, 'baja.gestionar');
+  }
+
+  get puedeGenerarActa(): boolean {
+    return canPerform(this.auth.currentUser()?.rol, 'baja.generarActa');
+  }
+
   openModal(): void {
+    if (!this.puedeGestionarBajas) return;
     this.form = {
       activoId: '',
       autorizadoPorId: '',
@@ -80,6 +92,7 @@ export class BajasComponent implements OnInit {
   }
 
   guardar(): void {
+    if (!this.puedeGestionarBajas) return;
     if (!this.form.activoId || !this.form.autorizadoPorId || !this.form.motivo) return;
     this.saving.set(true);
     this.error.set('');
@@ -99,6 +112,7 @@ export class BajasComponent implements OnInit {
   }
 
   autorizar(baja: Baja): void {
+    if (!this.puedeGestionarBajas) return;
     if (!baja.autorizadoPor?.id) return;
     this.saving.set(true);
     this.error.set('');
@@ -118,6 +132,7 @@ export class BajasComponent implements OnInit {
 
   // ── CU-25: Generación de Acta de Baja en PDF ─────────────────────────────
   generarActaPDF(baja: Baja): void {
+    if (!this.puedeGenerarActa) return;
     const fecha = baja.fecha
       ? new Date(baja.fecha).toLocaleDateString('es-BO', {
           day: '2-digit',

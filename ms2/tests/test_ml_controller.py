@@ -1,5 +1,6 @@
 """Tests de endpoints ML y auditoria de predicciones."""
 
+import io
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -70,3 +71,15 @@ async def test_clustering_registra_auditoria_ml(aws_mock, client):
     assert len(eventos) == 1
     assert eventos[0]["accion"] == "CLUSTERING_KMEANS"
     assert eventos[0]["usuario"] == "auditor"
+
+
+async def test_diagnostico_imagen_403_para_solo_lectura(aws_mock, client):
+    token = _make_token("lector", ["ROLE_SOLO_LECTURA"])
+
+    resp = await client.post(
+        "/api/ia/diagnostico",
+        files={"imagen": ("evidencia.png", io.BytesIO(b"not-an-image"), "image/png")},
+        headers=_auth(token),
+    )
+
+    assert resp.status_code == 403

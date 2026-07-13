@@ -4,7 +4,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 
-from app.auth.jwt_middleware import get_current_user
+from app.auth.jwt_middleware import get_current_user, require_roles
 from app.infrastructure.dynamodb_adapter import DynamoDBAdapter
 from app.infrastructure.s3_adapter import S3Adapter
 from app.services.auditoria_service import AuditoriaService
@@ -31,7 +31,7 @@ async def upload_documento(
     activoId: str = Form(...),
     tipo: str = Form(...),
     nombre: Optional[str] = Form(None),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_roles("ROLE_ADMINISTRADOR", "ROLE_RESPONSABLE_AREA")),
     service: DocumentoService = Depends(_get_service),
 ):
     """CU-26 — Subir un documento a S3 y registrar metadatos en DynamoDB."""
@@ -78,7 +78,7 @@ async def nueva_version(
     request: Request,
     file: UploadFile = File(...),
     nombre: Optional[str] = Form(None),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_roles("ROLE_ADMINISTRADOR", "ROLE_RESPONSABLE_AREA")),
     service: DocumentoService = Depends(_get_service),
 ):
     """CU-28 — Sube una nueva versión del documento."""
@@ -122,7 +122,7 @@ async def get_versiones(
 async def eliminar_documento(
     documento_id: str,
     request: Request,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_roles("ROLE_ADMINISTRADOR")),
     service: DocumentoService = Depends(_get_service),
 ):
     """CU-30 — Elimina (soft delete) el documento. El log de auditoría persiste."""
