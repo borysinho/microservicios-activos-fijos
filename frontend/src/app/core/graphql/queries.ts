@@ -583,7 +583,14 @@ export const GET_ASIGNACIONES_POR_RESPONSABLE = gql`
       id
       activa
       fechaAsignacion
+      fechaDevolucion
       observaciones
+      responsable {
+        id
+        nombre
+        cargo
+        email
+      }
       activo {
         id
         codigo

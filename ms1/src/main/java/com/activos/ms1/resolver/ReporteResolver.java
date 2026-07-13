@@ -31,7 +31,7 @@ public class ReporteResolver {
     }
 
     @QueryMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'AUDITOR')")
+    @PreAuthorize("isAuthenticated()")
     public DashboardMetricasDTO dashboardBI() {
         return dashboardService.obtenerMetricas();
     }

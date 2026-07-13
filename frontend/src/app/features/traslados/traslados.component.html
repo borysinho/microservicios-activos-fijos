@@ -29,8 +29,8 @@
 <div class="filter-bar card">
   <select
     class="form-control filter-bar__search"
-    [(ngModel)]="selectedActivoId"
-    (ngModelChange)="cargar()"
+    [ngModel]="selectedActivoId()"
+    (ngModelChange)="onActivoChange($event)"
   >
     <option value="">— Seleccionar activo —</option>
     @for (a of activos(); track a.id) {
@@ -88,8 +88,12 @@
             </td>
             <td class="action-btns">
               @if (!t.recepcionConfirmada) {
-                <button class="btn btn--sm btn--primary-ghost" (click)="confirmar(t)">
-                  Confirmar
+                <button
+                  class="btn btn--sm btn--primary-ghost"
+                  (click)="confirmar(t)"
+                  [disabled]="confirmingTrasladoId() === t.id"
+                >
+                  {{ confirmingTrasladoId() === t.id ? 'Confirmando...' : 'Confirmar' }}
                 </button>
               }
             </td>
@@ -152,8 +156,8 @@
         <input class="form-control" type="date" [(ngModel)]="form.fecha" required />
       </div>
       <div class="form-group">
-        <label>Motivo del Traslado</label>
-        <textarea class="form-control" [(ngModel)]="form.motivoTraslado" rows="3"></textarea>
+        <label>Motivo del Traslado *</label>
+        <textarea class="form-control" [(ngModel)]="form.motivoTraslado" rows="3" required></textarea>
       </div>
     </div>
     <div class="modal__footer">
@@ -161,7 +165,13 @@
       <button
         class="btn btn--primary"
         (click)="guardar()"
-        [disabled]="saving() || !form.activoId || !form.areaDestinoId || !form.autorizadoPorId"
+        [disabled]="
+          saving() ||
+          !form.activoId ||
+          !form.areaDestinoId ||
+          !form.autorizadoPorId ||
+          !form.motivoTraslado.trim()
+        "
       >
         {{ saving() ? 'Guardando...' : 'Registrar' }}
       </button>

@@ -144,6 +144,18 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const isForbidden = err?.graphQLErrors?.some(
+      (e: any) =>
+        e?.extensions?.classification === 'FORBIDDEN' ||
+        e?.message?.toLowerCase().includes('forbidden') ||
+        e?.message?.toLowerCase().includes('permisos'),
+    );
+
+    if (isForbidden) {
+      this.error.set('No tienes permisos para consultar las métricas del dashboard.');
+      return;
+    }
+
     const msg = err?.networkError
       ? `Error de red: no se pudo alcanzar MS1 (${environment.ms1GraphqlUrl})`
       : (err?.graphQLErrors?.[0]?.message ?? 'Error desconocido al cargar métricas');

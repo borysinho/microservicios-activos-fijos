@@ -1,6 +1,7 @@
 package com.activos.ms1.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -11,6 +12,7 @@ import com.activos.ms1.dto.output.DashboardMetricasDTO;
 import com.activos.ms1.dto.output.ParAnioConteo;
 import com.activos.ms1.dto.output.ParAreaConteo;
 import com.activos.ms1.dto.output.ParCategoriaConteo;
+import com.activos.ms1.entity.Activo;
 import com.activos.ms1.entity.enums.EstadoActivo;
 import com.activos.ms1.repository.ActivoRepository;
 import com.activos.ms1.repository.AsignacionRepository;
@@ -36,15 +38,12 @@ public class DashboardService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         var depreciacionTotal = todosActivos.stream()
-                .map(a -> {
-                    int aniosTranscurridos = java.time.LocalDate.now().getYear() - a.getFechaAdquisicion().getYear();
-                    return depreciacionService.calcularDepreciacionActivo(a, Math.max(aniosTranscurridos, 0));
-                })
+                .map(this::calcularDepreciacionAcumulada)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<ParCategoriaConteo> porCategoria = todosActivos.stream()
                 .collect(Collectors.groupingBy(
-                        a -> a.getCategoria().getNombre(),
+                        a -> a.getCategoria() != null ? a.getCategoria().getNombre() : "Sin categoría",
                         Collectors.counting()
                 ))
                 .entrySet().stream()
@@ -86,5 +85,19 @@ public class DashboardService {
                 trasladoRepository.findByRecepcionConfirmadaFalse().size(),
                 adquisicionesPorAnio
         );
+    }
+
+    private BigDecimal calcularDepreciacionAcumulada(Activo activo) {
+        if (activo.getFechaAdquisicion() == null
+                || activo.getValorAdquisicion() == null
+                || activo.getCategoria() == null
+                || activo.getCategoria().getMetodoDepreciacion() == null
+                || activo.getVidaUtilAnios() == null
+                || activo.getVidaUtilAnios() <= 0) {
+            return BigDecimal.ZERO;
+        }
+
+        int aniosTranscurridos = LocalDate.now().getYear() - activo.getFechaAdquisicion().getYear();
+        return depreciacionService.calcularDepreciacionActivo(activo, Math.max(aniosTranscurridos, 0));
     }
 }

@@ -1,22 +1,30 @@
 <div class="page-header">
   <div>
-    <h1>Responsables asignados</h1>
-    <p>Controle quién tiene cada activo, desde cuándo y en qué área se encuentra.</p>
+    <h1>{{ muestraVistaPorActivo ? 'Responsables asignados' : 'Mis equipos asignados' }}</h1>
+    <p>
+      {{
+        muestraVistaPorActivo
+          ? 'Controle quién tiene cada activo, desde cuándo y en qué área se encuentra.'
+          : 'Consulte los activos que actualmente están bajo su responsabilidad.'
+      }}
+    </p>
   </div>
-  <button class="btn btn--primary" (click)="openModal()">
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      width="16"
-      height="16"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-    Asignar activo
-  </button>
+  @if (puedeGestionarAsignaciones) {
+    <button class="btn btn--primary" (click)="openModal()">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        width="16"
+        height="16"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Asignar activo
+    </button>
+  }
 </div>
 
 @if (success()) {
@@ -28,28 +36,34 @@
 
 <!-- Filtro por activo -->
 <div class="filter-bar card">
-  <select
-    class="form-control filter-bar__search"
-    [(ngModel)]="selectedActivoId"
-    (ngModelChange)="onActivoChange()"
-  >
-    <option value="">— Seleccionar activo —</option>
-    @for (a of activos(); track a.id) {
-      <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
-    }
-  </select>
+  @if (muestraVistaPorActivo) {
+    <select
+      class="form-control filter-bar__search"
+      [(ngModel)]="selectedActivoId"
+      (ngModelChange)="onActivoChange()"
+    >
+      <option value="">— Seleccionar activo —</option>
+      @for (a of activos(); track a.id) {
+        <option [value]="a.id">{{ a.codigo }} — {{ a.nombre }}</option>
+      }
+    </select>
+  }
   <input
     class="form-control"
     type="text"
     [(ngModel)]="searchTerm"
-    placeholder="Buscar por responsable o área..."
+    [placeholder]="
+      muestraVistaPorActivo
+        ? 'Buscar por responsable o área...'
+        : 'Buscar por equipo, código o área...'
+    "
   />
 </div>
 
 <!-- Tabla -->
 @if (loading()) {
   <div class="loading">Cargando asignaciones...</div>
-} @else if (!selectedActivoId()) {
+} @else if (muestraVistaPorActivo && !selectedActivoId()) {
   <div class="empty-state">
     <div class="empty-icon">📋</div>
     <p>Selecciona un activo para ver sus asignaciones.</p>
@@ -57,28 +71,45 @@
 } @else if (asignacionesFiltradas.length === 0) {
   <div class="empty-state">
     <div class="empty-icon">📋</div>
-    <p>No hay asignaciones para este activo.</p>
+    <p>
+      {{
+        muestraVistaPorActivo
+          ? 'No hay asignaciones para este activo.'
+          : 'No tiene equipos asignados actualmente.'
+      }}
+    </p>
   </div>
 } @else {
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>Responsable</th>
+          @if (muestraVistaPorActivo) {
+            <th>Responsable</th>
+          } @else {
+            <th>Equipo</th>
+          }
           <th>Área</th>
           <th>F. Asignación</th>
           <th>F. Devolución</th>
           <th>Estado</th>
           <th>Observaciones</th>
-          <th>Acciones</th>
+          @if (puedeGestionarAsignaciones) {
+            <th>Acciones</th>
+          }
         </tr>
       </thead>
       <tbody>
         @for (a of asignacionesFiltradas; track a.id) {
           <tr>
             <td>
-              <strong>{{ a.responsable.nombre }}</strong
-              ><br /><small>{{ a.responsable.cargo }}</small>
+              @if (muestraVistaPorActivo) {
+                <strong>{{ a.responsable.nombre }}</strong
+                ><br /><small>{{ a.responsable.cargo }}</small>
+              } @else {
+                <strong>{{ a.activo.codigo }}</strong
+                ><br /><small>{{ a.activo.nombre }}</small>
+              }
             </td>
             <td>{{ a.area.nombre }}</td>
             <td>{{ a.fechaAsignacion | date: 'dd/MM/yyyy' }}</td>
@@ -89,17 +120,19 @@
               </span>
             </td>
             <td>{{ a.observaciones || '—' }}</td>
-            <td class="action-btns">
-              @if (a.activa) {
-                <button
-                  class="btn btn--sm btn--danger-ghost"
-                  (click)="devolver(a)"
-                  title="Devolver activo"
-                >
-                  Devolver
-                </button>
-              }
-            </td>
+            @if (puedeGestionarAsignaciones) {
+              <td class="action-btns">
+                @if (a.activa) {
+                  <button
+                    class="btn btn--sm btn--danger-ghost"
+                    (click)="devolver(a)"
+                    title="Devolver activo"
+                  >
+                    Devolver
+                  </button>
+                }
+              </td>
+            }
           </tr>
         }
       </tbody>

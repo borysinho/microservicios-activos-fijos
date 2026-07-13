@@ -21,6 +21,7 @@ export class TrasladosComponent implements OnInit {
 
   loading = signal(true);
   saving = signal(false);
+  confirmingTrasladoId = signal<string | null>(null);
   error = signal('');
   success = signal('');
 
@@ -44,8 +45,10 @@ export class TrasladosComponent implements OnInit {
   }
 
   cargar(): void {
+    this.error.set('');
     if (!this.selectedActivoId()) {
       this.traslados.set([]);
+      this.loading.set(false);
       return;
     }
     this.loading.set(true);
@@ -59,6 +62,12 @@ export class TrasladosComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  onActivoChange(activoId: string): void {
+    this.selectedActivoId.set(activoId);
+    this.searchTerm = '';
+    this.cargar();
   }
 
   get trasladosFiltrados(): Traslado[] {
@@ -96,14 +105,19 @@ export class TrasladosComponent implements OnInit {
   }
 
   guardar(): void {
-    if (!this.form.activoId || !this.form.areaDestinoId || !this.form.autorizadoPorId) return;
+    const motivoTraslado = this.form.motivoTraslado.trim();
+    if (!this.form.activoId || !this.form.areaDestinoId || !this.form.autorizadoPorId || !motivoTraslado) {
+      this.error.set('Complete los campos obligatorios del traslado.');
+      return;
+    }
     this.saving.set(true);
     this.error.set('');
-    this.gql.trasladarActivo(this.form).subscribe({
+    this.gql.trasladarActivo({ ...this.form, motivoTraslado }).subscribe({
       next: () => {
         this.saving.set(false);
         this.showModal.set(false);
         this.success.set('Traslado registrado.');
+        this.selectedActivoId.set(this.form.activoId);
         this.cargar();
         setTimeout(() => this.success.set(''), 3000);
       },
@@ -117,16 +131,28 @@ export class TrasladosComponent implements OnInit {
   }
 
   confirmar(traslado: Traslado): void {
+    if (this.confirmingTrasladoId()) return;
     if (!confirm(`¿Confirmar recepción del traslado hacia "${traslado.areaDestino?.nombre}"?`))
       return;
+    this.confirmingTrasladoId.set(traslado.id);
+    this.error.set('');
+    this.success.set('');
     this.gql.confirmarRecepcion(traslado.id).subscribe({
       next: () => {
+        this.confirmingTrasladoId.set(null);
+        this.traslados.update((items) =>
+          items.map((item) =>
+            item.id === traslado.id ? { ...item, recepcionConfirmada: true } : item,
+          ),
+        );
         this.success.set('Recepción confirmada.');
         this.cargar();
         setTimeout(() => this.success.set(''), 3000);
       },
-      error: (e) =>
-        this.error.set(e?.graphQLErrors?.[0]?.message ?? e?.message ?? 'Error al confirmar.'),
+      error: (e) => {
+        this.confirmingTrasladoId.set(null);
+        this.error.set(e?.graphQLErrors?.[0]?.message ?? e?.message ?? 'Error al confirmar.');
+      },
     });
   }
 }
