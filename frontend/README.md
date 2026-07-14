@@ -1,59 +1,53 @@
-# Frontend
+# Frontend Web — Sistema de Activos Fijos
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.13.
+Aplicación Angular para la gestión web del sistema de activos fijos. Consume MS1 por GraphQL y MS2/MS3 por REST mediante servicios centralizados de Angular.
 
-## Development server
+## Secciones principales
 
-To start a local development server, run:
+| Ruta | Propósito |
+| --- | --- |
+| `/dashboard` | Indicadores BI de inventario, mantenimiento, depreciación y actividad |
+| `/activos` | Inventario, ficha de activo y acciones operativas permitidas por rol |
+| `/incidencias` | Seguimiento de activos en mantenimiento, alertas y casos pendientes |
+| `/asignaciones` | Responsables y asignaciones activas |
+| `/traslados` | Movimientos entre áreas y recepción |
+| `/bajas` | Retiro de activos y actas |
+| `/documentos` | Expedientes, versiones y auditoría documental |
+| `/auditoria` | Trazabilidad documental |
+| `/machine-learning` | Predicción y clustering de activos |
+| `/blockchain` | Historial inmutable de transacciones |
 
-```bash
-ng serve
-```
+## Incidencias
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+La sección `/incidencias` consolida información relevante para el negocio:
 
-## Code scaffolding
+- activos actualmente en mantenimiento,
+- alertas y avisos operativos recientes,
+- filtros por estado, prioridad, área y activo,
+- acceso directo a la ficha del activo relacionado,
+- acción de marcar como atendida solo para `ADMINISTRADOR` y `RESPONSABLE_AREA`.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+La pantalla no expone nombres de microservicios ni detalles internos de automatización al usuario final.
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Desarrollo
 
 ```bash
-ng test
+npm install
+npm start
 ```
 
-## Running end-to-end tests
+Luego abrir `http://localhost:4200/`.
 
-For end-to-end (e2e) testing, run:
+## Build
 
 ```bash
-ng e2e
+npm run build
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Pruebas
 
-## Additional Resources
+```bash
+npm test -- --watch=false
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+El proyecto no define script `lint` en `package.json`.

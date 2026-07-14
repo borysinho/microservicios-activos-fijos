@@ -30,6 +30,15 @@ export const routes: Routes = [
           import('./features/activos/activos.component').then((m) => m.ActivosComponent),
       },
       {
+        path: 'incidencias',
+        canActivate: [roleGuard],
+        data: { roles: routeRoles('incidencias') },
+        loadComponent: () =>
+          import('./features/incidencias/incidencias.component').then(
+            (m) => m.IncidenciasComponent,
+          ),
+      },
+      {
         path: 'depreciacion',
         canActivate: [roleGuard],
         data: { roles: routeRoles('depreciacion') },

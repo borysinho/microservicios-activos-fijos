@@ -3,6 +3,7 @@ import type { UserRole } from '../services/auth.service';
 export type AppRoutePath =
   | 'dashboard'
   | 'activos'
+  | 'incidencias'
   | 'asignaciones'
   | 'traslados'
   | 'bajas'
@@ -32,6 +33,7 @@ export type PermissionAction =
   | 'documento.eliminar'
   | 'documento.verAuditoria'
   | 'ia.diagnosticar'
+  | 'incidencia.gestionar'
   | 'reporte.exportar';
 
 export interface NavItem {
@@ -47,6 +49,7 @@ const OPERATIVE_ROLES: UserRole[] = ['ADMINISTRADOR', 'RESPONSABLE_AREA', 'AUDIT
 export const ROUTE_ROLES: Record<AppRoutePath, UserRole[]> = {
   dashboard: ALL_ROLES,
   activos: ALL_ROLES,
+  incidencias: ALL_ROLES,
   asignaciones: OPERATIVE_ROLES,
   traslados: OPERATIVE_ROLES,
   bajas: ADMIN_AUDITOR,
@@ -77,12 +80,14 @@ export const ACTION_ROLES: Record<PermissionAction, UserRole[]> = {
   'documento.eliminar': ['ADMINISTRADOR'],
   'documento.verAuditoria': ADMIN_AUDITOR,
   'ia.diagnosticar': ['ADMINISTRADOR', 'RESPONSABLE_AREA'],
+  'incidencia.gestionar': ['ADMINISTRADOR', 'RESPONSABLE_AREA'],
   'reporte.exportar': ADMIN_AUDITOR,
 };
 
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', route: '/dashboard', icon: 'dashboard' },
   { label: 'Inventario', route: '/activos', icon: 'activos' },
+  { label: 'Incidencias', route: '/incidencias', icon: 'incidencias' },
   { label: 'Responsables', route: '/asignaciones', icon: 'asignaciones' },
   { label: 'Movimientos', route: '/traslados', icon: 'traslados' },
   { label: 'Retiro de activos', route: '/bajas', icon: 'bajas' },
@@ -113,4 +118,3 @@ export function canAccessRoute(role: UserRole | undefined | null, route: string)
 export function canPerform(role: UserRole | undefined | null, action: PermissionAction): boolean {
   return hasAnyRole(role, ACTION_ROLES[action]);
 }
-

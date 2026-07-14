@@ -1,0 +1,164 @@
+<div class="page-header">
+  <div>
+    <h1>Incidencias</h1>
+    <p>Seguimiento operativo de activos con mantenimiento, alertas y casos pendientes.</p>
+  </div>
+  <button class="btn btn--secondary btn--sm" (click)="refresh()" [disabled]="refreshing()">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      width="14"
+      height="14"
+      [class.spin]="refreshing()"
+    >
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+    {{ refreshing() ? 'Actualizando...' : 'Actualizar' }}
+  </button>
+</div>
+
+@if (success()) {
+  <div class="alert alert--success">{{ success() }}</div>
+}
+
+@if (loading()) {
+  <div class="loading">Cargando incidencias...</div>
+} @else if (error()) {
+  <div class="empty-state">
+    <div class="empty-icon">⚠</div>
+    <p>{{ error() }}</p>
+  </div>
+} @else {
+  <div class="incidencias-kpis">
+    <section class="incidencia-kpi incidencia-kpi--danger">
+      <span class="incidencia-kpi__label">Casos abiertos</span>
+      <strong class="incidencia-kpi__value">{{ abiertas }}</strong>
+      <span class="incidencia-kpi__hint">Nuevas o en seguimiento</span>
+    </section>
+    <section class="incidencia-kpi incidencia-kpi--warning">
+      <span class="incidencia-kpi__label">Alta prioridad</span>
+      <strong class="incidencia-kpi__value">{{ altaPrioridad }}</strong>
+      <span class="incidencia-kpi__hint">Requieren atención primero</span>
+    </section>
+    <section class="incidencia-kpi incidencia-kpi--info">
+      <span class="incidencia-kpi__label">En mantenimiento</span>
+      <strong class="incidencia-kpi__value">{{ enMantenimiento }}</strong>
+      <span class="incidencia-kpi__hint">Activos fuera de operación</span>
+    </section>
+  </div>
+
+  <div class="filter-bar card">
+    <input
+      class="form-control filter-bar__search"
+      type="text"
+      [(ngModel)]="searchTerm"
+      placeholder="Buscar por activo, código, área o detalle..."
+    />
+    <select class="form-control" [(ngModel)]="filtroEstado">
+      @for (estado of estados; track estado) {
+        <option [value]="estado">{{ estadoLabel(estado) }}</option>
+      }
+    </select>
+    <select class="form-control" [(ngModel)]="filtroPrioridad">
+      @for (prioridad of prioridades; track prioridad) {
+        <option [value]="prioridad">{{ prioridadLabel(prioridad) }}</option>
+      }
+    </select>
+    <select class="form-control" [(ngModel)]="filtroArea">
+      <option value="TODAS">Todas las áreas</option>
+      @for (area of areas; track area) {
+        <option [value]="area">{{ area }}</option>
+      }
+    </select>
+  </div>
+
+  @if (incidenciasFiltradas.length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon">✓</div>
+      <p>No hay incidencias con los filtros seleccionados.</p>
+    </div>
+  } @else {
+    <div class="incidencias-layout">
+      <section class="card incidencias-list">
+        <div class="section-heading">
+          <div>
+            <h2>Casos de seguimiento</h2>
+            <p>{{ incidenciasFiltradas.length }} incidencia(s) encontrada(s)</p>
+          </div>
+        </div>
+
+        @for (incidencia of incidenciasFiltradas; track incidencia.id) {
+          <article class="incidencia-row">
+            <div class="incidencia-row__main">
+              <div class="incidencia-row__title">
+                <span class="mono">{{ incidencia.codigo }}</span>
+                <strong>{{ incidencia.activo }}</strong>
+              </div>
+              <p>{{ incidencia.detalle }}</p>
+              <div class="incidencia-row__meta">
+                <span>{{ incidencia.area }}</span>
+                <span>{{ incidencia.tipo }}</span>
+                <span>{{ incidencia.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            </div>
+            <div class="incidencia-row__side">
+              <span [class]="prioridadClass(incidencia.prioridad)">
+                {{ prioridadLabel(incidencia.prioridad) }}
+              </span>
+              <span [class]="estadoClass(incidencia.estado)">
+                {{ estadoLabel(incidencia.estado) }}
+              </span>
+              <div class="incidencia-row__actions">
+                <button class="btn btn--ghost btn--sm" (click)="verActivo(incidencia)">
+                  Ver ficha
+                </button>
+                @if (puedeGestionar && incidencia.estado !== 'REVISADA') {
+                  <button
+                    class="btn btn--primary btn--sm"
+                    (click)="atender(incidencia)"
+                    [disabled]="atendiendoId() === incidencia.id"
+                  >
+                    {{ atendiendoId() === incidencia.id ? 'Guardando...' : 'Marcar atendida' }}
+                  </button>
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </section>
+
+      <aside class="card seguimiento-panel">
+        <h2>Orden de atención</h2>
+        <p>
+          Priorice los casos de alta criticidad, revise el activo y deje el estado actualizado
+          cuando el mantenimiento haya concluido.
+        </p>
+        <div class="seguimiento-step">
+          <span>1</span>
+          <div>
+            <strong>Identificar</strong>
+            <p>Filtre por prioridad, área o activo para ubicar el caso.</p>
+          </div>
+        </div>
+        <div class="seguimiento-step">
+          <span>2</span>
+          <div>
+            <strong>Revisar ficha</strong>
+            <p>Consulte historial, ubicación, responsable y trazabilidad.</p>
+          </div>
+        </div>
+        <div class="seguimiento-step">
+          <span>3</span>
+          <div>
+            <strong>Cerrar seguimiento</strong>
+            <p>Solo roles operativos pueden marcar casos como atendidos.</p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  }
+}
