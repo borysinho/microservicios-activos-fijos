@@ -37,6 +37,7 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
   const { obtenerUbicacion } = useGPS();
   const [enviando, setEnviando] = useState(false);
   const [solicitandoPermiso, setSolicitandoPermiso] = useState(!hasPermission);
+  const procesando = enviando || isTakingPhoto;
 
   const solicitarPermisoCamara = useCallback(async () => {
     setSolicitandoPermiso(true);
@@ -65,10 +66,11 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
       }
     }
 
-    setEnviando(true);
     try {
       // 1. Capturar foto (CU-34)
       const photo = await takePhoto();
+
+      setEnviando(true);
 
       // 2. Obtener coordenadas GPS (CU-42)
       let latitud = 0;
@@ -182,20 +184,22 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
         <TouchableOpacity
           style={styles.btnVolver}
           onPress={() => navigation.goBack()}
-          disabled={enviando}
+          disabled={procesando}
         >
           <Text style={styles.btnVolverTexto}>✕ Cancelar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.btnCaptura, enviando && styles.btnDeshabilitado]}
+          style={[styles.btnCaptura, procesando && styles.btnDeshabilitado]}
           onPress={handleCapturar}
-          disabled={enviando || isTakingPhoto}
+          disabled={procesando}
         >
-          {enviando ? (
+          {procesando ? (
             <View style={styles.capturandoContainer}>
               <ActivityIndicator color="#FFFFFF" />
-              <Text style={styles.capturandoTexto}>Analizando…</Text>
+              <Text style={styles.capturandoTexto}>
+                {isTakingPhoto ? "Capturando..." : "Analizando..."}
+              </Text>
             </View>
           ) : (
             <View style={styles.botonCaptura} />

@@ -74,6 +74,15 @@ GOOGLE_API_KEY=<nueva_llave_google>
 
 El build genera `android/app/google-services.json` desde `android/app/google-services.json.example`; ese archivo generado queda ignorado por Git. Si se rota la llave en Firebase, actualiza `GOOGLE_API_KEY` en los `.env` locales y vuelve a ejecutar `./gradlew :app:generateGoogleServicesJson` desde `mobile/android`.
 
+Para que `react-native-maps` pueda cargar los tiles de Google Maps en debug, la API key debe tener habilitada la API **Maps SDK for Android** y permitir esta aplicacion Android:
+
+```text
+Package name: com.movilactivosfijos
+SHA-1 debug: 5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25
+```
+
+Si Google Cloud Console rechaza la llave, el mapa se monta pero queda en blanco o beige con el logo de Google y `logcat` muestra `Google Android Maps SDK: Authorization failure`.
+
 ## Ejecutar en debug contra servicios LAN
 
 Con el emulador o dispositivo conectado, ejecuta desde `mobile/`:

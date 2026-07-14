@@ -3,6 +3,86 @@ import { env } from "../config/env";
 import type { DiagnosticoIA } from "../types/activo.types";
 
 const BASE_URL = env.MS2_BASE_URL;
+const DIAGNOSTICO_URL = `${BASE_URL}/ia/diagnostico-imagen`;
+const HEALTH_URL = BASE_URL.replace(/\/api\/?$/, "/health");
+
+type HttpResponse = {
+  ok: boolean;
+  status: number;
+  text: () => Promise<string>;
+  json: () => Promise<any>;
+};
+
+function imageUriForUpload(imagePath: string): string {
+  if (imagePath.startsWith("file://") || imagePath.startsWith("content://")) {
+    return imagePath;
+  }
+  return `file://${imagePath}`;
+}
+
+function alternateImageUri(imagePath: string): string | null {
+  if (imagePath.startsWith("file://")) {
+    return imagePath.replace(/^file:\/\//, "");
+  }
+  if (imagePath.startsWith("content://")) {
+    return null;
+  }
+  return imagePath;
+}
+
+function buildDiagnosticoFormData(params: {
+  imagePath: string;
+  activoId: string;
+  latitud: number;
+  longitud: number;
+  imageUri: string;
+}): FormData {
+  const formData = new FormData();
+  formData.append("imagen", {
+    uri: params.imageUri,
+    type: "image/jpeg",
+    name: "diagnostico.jpg",
+  } as any);
+  formData.append("activoId", params.activoId);
+  formData.append("latitud", String(params.latitud));
+  formData.append("longitud", String(params.longitud));
+  return formData;
+}
+
+async function assertMs2Reachable(): Promise<void> {
+  const response = await fetch(HEALTH_URL);
+  if (!response.ok) {
+    throw new Error(`MS2 respondió ${response.status} en ${HEALTH_URL}`);
+  }
+}
+
+async function postDiagnostico(
+  formData: FormData,
+  token: string | null,
+): Promise<HttpResponse> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", DIAGNOSTICO_URL);
+    xhr.timeout = 60000;
+
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+
+    xhr.onload = () => {
+      const responseText = xhr.responseText ?? "";
+      resolve({
+        ok: xhr.status >= 200 && xhr.status < 300,
+        status: xhr.status,
+        text: async () => responseText,
+        json: async () => JSON.parse(responseText),
+      });
+    };
+    xhr.onerror = () => reject(new Error("Network request failed"));
+    xhr.ontimeout = () => reject(new Error("Tiempo de espera agotado"));
+    xhr.send(formData);
+  });
+}
 
 /** CU-35, CU-36: Enviar imagen al MS2 para verificación visual IA */
 async function diagnosticarImagen(params: {
@@ -12,29 +92,39 @@ async function diagnosticarImagen(params: {
   longitud: number;
 }): Promise<DiagnosticoIA> {
   const token = await AsyncStorage.getItem("auth_token");
+  const primaryImageUri = imageUriForUpload(params.imagePath);
+  const fallbackImageUri = alternateImageUri(params.imagePath);
 
-  const formData = new FormData();
-  formData.append("imagen", {
-    uri: `file://${params.imagePath}`,
-    type: "image/jpeg",
-    name: "diagnostico.jpg",
-  } as any);
-  formData.append("activoId", params.activoId);
-  formData.append("latitud", String(params.latitud));
-  formData.append("longitud", String(params.longitud));
-
-  const response = await fetch(`${BASE_URL}/ia/diagnostico-imagen`, {
-    method: "POST",
-    body: formData,
-    headers: {
-      "Content-Type": "multipart/form-data",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
+  let response: HttpResponse;
+  try {
+    response = await postDiagnostico(
+      buildDiagnosticoFormData({ ...params, imageUri: primaryImageUri }),
+      token,
+    );
+  } catch (err: any) {
+    try {
+      await assertMs2Reachable();
+      if (fallbackImageUri && fallbackImageUri !== primaryImageUri) {
+        response = await postDiagnostico(
+          buildDiagnosticoFormData({ ...params, imageUri: fallbackImageUri }),
+          token,
+        );
+      } else {
+        throw err;
+      }
+    } catch (retryErr: any) {
+      const reason = retryErr?.message ?? err?.message ?? "";
+      throw new Error(
+        `No se pudo conectar con MS2 (${DIAGNOSTICO_URL}). Verifica que el celular/emulador tenga acceso a esa URL. ${reason}`.trim(),
+      );
+    }
+  }
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Error en verificación IA: ${response.status} — ${error}`);
+    throw new Error(
+      `Error en verificación IA: ${response.status} — ${error}`,
+    );
   }
 
   const resultado = await response.json();
