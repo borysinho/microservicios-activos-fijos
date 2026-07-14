@@ -49,7 +49,7 @@ Los exports estan en `n8n-workflows/`:
 
 La imagen importa estos workflows al iniciar cuando `MS4_N8N_IMPORT_WORKFLOWS=true`. El import es idempotente por volumen: despues del primer seed crea el marcador `/home/node/.n8n/.ms4-workflows-imported` y los siguientes reinicios no vuelven a importar los mismos JSON, evitando duplicados en N8N. Si el volumen ya tenia estos workflows antes de crear el marcador, el arranque los detecta por nombre, marca el seed como completado e importa solo los faltantes.
 
-Los duplicados ya existentes en una instancia previa deben eliminarse desde la UI de N8N o recreando el volumen si no se necesita conservar historial/credenciales. `MS4_N8N_FORCE_IMPORT_WORKFLOWS=true` fuerza el import aunque exista el marcador, por lo que debe usarse solo con una base de datos limpia o despues de eliminar las copias anteriores.
+Antes de iniciar N8N, el contenedor tambien sanea el volumen persistente y deja una sola instancia por cada workflow semilla versionado. Esto corrige duplicados creados por arranques anteriores sin borrar otros workflows que no pertenezcan a MS4. `MS4_N8N_FORCE_IMPORT_WORKFLOWS=true` elimina primero las semillas existentes y luego las importa otra vez desde `n8n-workflows/`, evitando que el modo forzado cree copias adicionales.
 
 ### Flujo 01 - Solicitud de revision por WhatsApp
 
