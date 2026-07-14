@@ -73,21 +73,21 @@ export default function HerramientasScreen() {
 
     if (canMobile(role, "activos.diagnosticarIA")) {
       disponibles.push({
-        color: "#6A1B9A",
+        color: "#1565C0",
         emoji: "🔍",
         titulo: "Verificacion IA",
         detalle: "Captura fotografica y diagnostico visual del activo",
-        onPress: () => navigation.navigate("Activos"),
+        onPress: () => navigation.navigate("VerificacionIAInicio"),
       });
     }
 
     if (canMobile(role, "activos.registrarGPS")) {
       disponibles.push({
-        color: "#2E7D32",
+        color: "#1565C0",
         emoji: "📍",
         titulo: "Ubicacion GPS",
         detalle: "Registro de coordenadas desde la ficha del activo",
-        onPress: () => navigation.navigate("Activos"),
+        onPress: () => navigation.navigate("UbicacionGPSInicio"),
       });
     }
 

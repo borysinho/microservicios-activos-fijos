@@ -136,7 +136,9 @@ export type RootStackParamList = {
   Login: undefined;
   Main: undefined;
   ActivoDetalle: { activoId: string };
+  VerificacionIAInicio: undefined;
   DiagnosticoIA: { activoId: string };
+  UbicacionGPSInicio: undefined;
   Incidencias: undefined;
   Mapa: { activoId?: string; latitud?: number; longitud?: number };
   ResultadoDiagnostico: { resultado: DiagnosticoIA };

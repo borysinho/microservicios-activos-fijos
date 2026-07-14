@@ -21,6 +21,8 @@ import IncidenciasScreen from "../screens/IncidenciasScreen";
 import MapaScreen from "../screens/MapaScreen";
 import NotificacionesScreen from "../screens/NotificacionesScreen";
 import ResultadoDiagnosticoScreen from "../screens/ResultadoDiagnosticoScreen";
+import UbicacionGPSInicioScreen from "../screens/UbicacionGPSInicioScreen";
+import VerificacionIAInicioScreen from "../screens/VerificacionIAInicioScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<BottomTabParamList>();
@@ -119,9 +121,19 @@ export function AppNavigator({ initialRouteName }: AppNavigatorProps) {
           options={{ title: "Detalle del Activo" }}
         />
         <Stack.Screen
+          name="VerificacionIAInicio"
+          component={VerificacionIAInicioScreen}
+          options={{ title: "Verificación IA" }}
+        />
+        <Stack.Screen
           name="DiagnosticoIA"
           component={DiagnosticoIAScreen}
           options={{ title: "Verificación IA", headerShown: false }}
+        />
+        <Stack.Screen
+          name="UbicacionGPSInicio"
+          component={UbicacionGPSInicioScreen}
+          options={{ title: "Ubicación GPS" }}
         />
         <Stack.Screen
           name="Incidencias"
