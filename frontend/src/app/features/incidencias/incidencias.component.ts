@@ -10,7 +10,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { Ms3Service, type Notificacion } from '../../core/services/ms3.service';
 
 type PrioridadIncidencia = 'ALTA' | 'MEDIA' | 'BAJA';
-type EstadoIncidencia = 'ABIERTA' | 'NUEVA' | 'REVISADA';
+type EstadoIncidencia = 'NUEVA' | 'ABIERTA' | 'EN_PROCESO' | 'REVISADA';
 
 interface IncidenciaView {
   id: string;
@@ -25,6 +25,23 @@ interface IncidenciaView {
   estado: EstadoIncidencia;
   fecha: string;
   detalle: string;
+}
+
+interface GestionIncidencia {
+  estado: EstadoIncidencia;
+  responsable: string;
+  diagnostico: string;
+  accion: string;
+  proximaAccion: string;
+  fechaCompromiso: string;
+  historial: GestionEvento[];
+}
+
+interface GestionEvento {
+  fecha: string;
+  usuario: string;
+  estado: EstadoIncidencia;
+  accion: string;
 }
 
 const PRIORIDAD_ORDEN: Record<PrioridadIncidencia, number> = {
@@ -53,13 +70,22 @@ export class IncidenciasComponent implements OnInit {
   error = signal('');
   success = signal('');
   atendiendoId = signal('');
+  selectedIncidenciaId = signal('');
+  gestionPorIncidencia = signal<Record<string, GestionIncidencia>>({});
 
   searchTerm = '';
   filtroEstado: EstadoIncidencia | 'TODAS' = 'TODAS';
   filtroPrioridad: PrioridadIncidencia | 'TODAS' = 'TODAS';
   filtroArea = 'TODAS';
+  gestionForm = this.crearGestionForm();
 
-  readonly estados: Array<EstadoIncidencia | 'TODAS'> = ['TODAS', 'ABIERTA', 'NUEVA', 'REVISADA'];
+  readonly estados: Array<EstadoIncidencia | 'TODAS'> = [
+    'TODAS',
+    'NUEVA',
+    'ABIERTA',
+    'EN_PROCESO',
+    'REVISADA',
+  ];
   readonly prioridades: Array<PrioridadIncidencia | 'TODAS'> = ['TODAS', 'ALTA', 'MEDIA', 'BAJA'];
 
   ngOnInit(): void {
@@ -116,14 +142,19 @@ export class IncidenciasComponent implements OnInit {
     const incidenciasAlertas = this.notificaciones()
       .filter((notificacion) => ['mantenimiento', 'alerta', 'baja'].includes(notificacion.tipo))
       .map((notificacion) =>
-        this.incidenciaDesdeNotificacion(notificacion, activoPorId.get(notificacion.activoId ?? '')),
+        this.incidenciaDesdeNotificacion(
+          notificacion,
+          activoPorId.get(notificacion.activoId ?? ''),
+        ),
       );
 
-    return [...incidenciasActivos, ...incidenciasAlertas].sort(
-      (a, b) =>
-        PRIORIDAD_ORDEN[a.prioridad] - PRIORIDAD_ORDEN[b.prioridad] ||
-        new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-    );
+    return [...incidenciasActivos, ...incidenciasAlertas]
+      .map((incidencia) => this.aplicarGestion(incidencia))
+      .sort(
+        (a, b) =>
+          PRIORIDAD_ORDEN[a.prioridad] - PRIORIDAD_ORDEN[b.prioridad] ||
+          new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+      );
   }
 
   get incidenciasFiltradas(): IncidenciaView[] {
@@ -148,6 +179,30 @@ export class IncidenciasComponent implements OnInit {
     return Array.from(new Set(this.incidencias.map((incidencia) => incidencia.area))).sort();
   }
 
+  get incidenciaSeleccionada(): IncidenciaView | null {
+    const selectedId = this.selectedIncidenciaId();
+    return this.incidencias.find((incidencia) => incidencia.id === selectedId) ?? null;
+  }
+
+  get gestionSeleccionada(): GestionIncidencia | null {
+    const selected = this.incidenciaSeleccionada;
+    return selected ? (this.gestionPorIncidencia()[selected.id] ?? null) : null;
+  }
+
+  get puedeGuardarGestion(): boolean {
+    return (
+      this.puedeGestionar &&
+      !!this.incidenciaSeleccionada &&
+      !!this.gestionForm.diagnostico.trim() &&
+      !!this.gestionForm.accion.trim()
+    );
+  }
+
+  get puedeCerrarGestion(): boolean {
+    const selected = this.incidenciaSeleccionada;
+    return !!selected && selected.estado !== 'REVISADA' && this.puedeGuardarGestion;
+  }
+
   get abiertas(): number {
     return this.incidencias.filter((incidencia) => incidencia.estado !== 'REVISADA').length;
   }
@@ -165,6 +220,7 @@ export class IncidenciasComponent implements OnInit {
       TODAS: 'Todos los estados',
       ABIERTA: 'Abierta',
       NUEVA: 'Nueva',
+      EN_PROCESO: 'En proceso',
       REVISADA: 'Revisada',
     };
     return map[estado];
@@ -184,6 +240,7 @@ export class IncidenciasComponent implements OnInit {
     const map: Record<EstadoIncidencia, string> = {
       ABIERTA: 'badge badge--warning',
       NUEVA: 'badge badge--danger',
+      EN_PROCESO: 'badge badge--info',
       REVISADA: 'badge badge--default',
     };
     return map[estado];
@@ -203,6 +260,41 @@ export class IncidenciasComponent implements OnInit {
     this.router.navigate(['/activos'], { queryParams: { detalle: incidencia.codigo } });
   }
 
+  seleccionar(incidencia: IncidenciaView): void {
+    this.selectedIncidenciaId.set(incidencia.id);
+    this.error.set('');
+    this.success.set('');
+
+    const gestion = this.gestionPorIncidencia()[incidencia.id];
+    this.gestionForm = {
+      estado: gestion?.estado ?? (incidencia.estado === 'NUEVA' ? 'ABIERTA' : incidencia.estado),
+      responsable:
+        gestion?.responsable ??
+        this.auth.currentUser()?.nombre ??
+        this.auth.currentUser()?.email ??
+        '',
+      diagnostico: gestion?.diagnostico ?? '',
+      accion: gestion?.accion ?? '',
+      proximaAccion: gestion?.proximaAccion ?? '',
+      fechaCompromiso: gestion?.fechaCompromiso ?? '',
+    };
+  }
+
+  guardarGestion(): void {
+    const incidencia = this.incidenciaSeleccionada;
+    if (!incidencia || !this.puedeGuardarGestion) return;
+
+    this.registrarGestionLocal(incidencia, this.gestionForm.estado);
+    this.success.set('Seguimiento de incidencia actualizado.');
+  }
+
+  cerrarGestion(): void {
+    const incidencia = this.incidenciaSeleccionada;
+    if (!incidencia || !this.puedeCerrarGestion) return;
+
+    this.atender(incidencia);
+  }
+
   atender(incidencia: IncidenciaView): void {
     if (!this.puedeGestionar) return;
     this.atendiendoId.set(incidencia.id);
@@ -219,8 +311,10 @@ export class IncidenciasComponent implements OnInit {
 
     request.subscribe({
       next: () => {
+        this.registrarGestionLocal(incidencia, 'REVISADA');
         this.success.set('La incidencia fue marcada como atendida.');
         this.atendiendoId.set('');
+        this.gestionForm.estado = 'REVISADA';
         this.cargar();
       },
       error: () => {
@@ -246,10 +340,53 @@ export class IncidenciasComponent implements OnInit {
     };
   }
 
-  private incidenciaDesdeNotificacion(
-    notificacion: Notificacion,
-    activo?: Activo,
-  ): IncidenciaView {
+  private aplicarGestion(incidencia: IncidenciaView): IncidenciaView {
+    const gestion = this.gestionPorIncidencia()[incidencia.id];
+    if (!gestion) return incidencia;
+
+    return {
+      ...incidencia,
+      estado: gestion.estado,
+      detalle: gestion.diagnostico || incidencia.detalle,
+    };
+  }
+
+  private registrarGestionLocal(incidencia: IncidenciaView, estado: EstadoIncidencia): void {
+    const usuario = this.auth.currentUser()?.nombre ?? this.auth.currentUser()?.email ?? 'Usuario';
+    const actual = this.gestionPorIncidencia()[incidencia.id];
+    const evento: GestionEvento = {
+      fecha: new Date().toISOString(),
+      usuario,
+      estado,
+      accion: this.gestionForm.accion.trim(),
+    };
+
+    this.gestionPorIncidencia.update((gestion) => ({
+      ...gestion,
+      [incidencia.id]: {
+        estado,
+        responsable: this.gestionForm.responsable.trim(),
+        diagnostico: this.gestionForm.diagnostico.trim(),
+        accion: this.gestionForm.accion.trim(),
+        proximaAccion: this.gestionForm.proximaAccion.trim(),
+        fechaCompromiso: this.gestionForm.fechaCompromiso,
+        historial: [...(actual?.historial ?? []), evento],
+      },
+    }));
+  }
+
+  private crearGestionForm() {
+    return {
+      estado: 'EN_PROCESO' as EstadoIncidencia,
+      responsable: '',
+      diagnostico: '',
+      accion: '',
+      proximaAccion: '',
+      fechaCompromiso: '',
+    };
+  }
+
+  private incidenciaDesdeNotificacion(notificacion: Notificacion, activo?: Activo): IncidenciaView {
     return {
       id: `alerta-${notificacion.id}`,
       origen: 'alerta',

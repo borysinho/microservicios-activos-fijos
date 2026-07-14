@@ -92,7 +92,10 @@
         </div>
 
         @for (incidencia of incidenciasFiltradas; track incidencia.id) {
-          <article class="incidencia-row">
+          <article
+            class="incidencia-row"
+            [class.incidencia-row--selected]="incidenciaSeleccionada?.id === incidencia.id"
+          >
             <div class="incidencia-row__main">
               <div class="incidencia-row__title">
                 <span class="mono">{{ incidencia.codigo }}</span>
@@ -116,13 +119,13 @@
                 <button class="btn btn--ghost btn--sm" (click)="verActivo(incidencia)">
                   Ver ficha
                 </button>
-                @if (puedeGestionar && incidencia.estado !== 'REVISADA') {
+                @if (puedeGestionar) {
                   <button
                     class="btn btn--primary btn--sm"
-                    (click)="atender(incidencia)"
+                    (click)="seleccionar(incidencia)"
                     [disabled]="atendiendoId() === incidencia.id"
                   >
-                    {{ atendiendoId() === incidencia.id ? 'Guardando...' : 'Marcar atendida' }}
+                    {{ incidenciaSeleccionada?.id === incidencia.id ? 'Editando' : 'Gestionar' }}
                   </button>
                 }
               </div>
@@ -132,32 +135,149 @@
       </section>
 
       <aside class="card seguimiento-panel">
-        <h2>Orden de atención</h2>
-        <p>
-          Priorice los casos de alta criticidad, revise el activo y deje el estado actualizado
-          cuando el mantenimiento haya concluido.
-        </p>
-        <div class="seguimiento-step">
-          <span>1</span>
-          <div>
-            <strong>Identificar</strong>
-            <p>Filtre por prioridad, área o activo para ubicar el caso.</p>
+        @if (incidenciaSeleccionada; as incidenciaActual) {
+          <div class="section-heading">
+            <div>
+              <h2>Gestión del caso</h2>
+              <p>{{ incidenciaActual.codigo }} — {{ incidenciaActual.activo }}</p>
+            </div>
+            <span [class]="estadoClass(incidenciaActual.estado)">
+              {{ estadoLabel(incidenciaActual.estado) }}
+            </span>
           </div>
-        </div>
-        <div class="seguimiento-step">
-          <span>2</span>
-          <div>
-            <strong>Revisar ficha</strong>
-            <p>Consulte historial, ubicación, responsable y trazabilidad.</p>
+
+          <div class="caso-resumen">
+            <span>{{ incidenciaActual.area }}</span>
+            <span>{{ incidenciaActual.tipo }}</span>
+            <span>{{ incidenciaActual.fecha | date: 'dd/MM/yyyy HH:mm' }}</span>
           </div>
-        </div>
-        <div class="seguimiento-step">
-          <span>3</span>
-          <div>
-            <strong>Cerrar seguimiento</strong>
-            <p>Solo roles operativos pueden marcar casos como atendidos.</p>
+
+          @if (puedeGestionar) {
+            <div class="gestion-form">
+              <div class="form-group">
+                <label>Estado de seguimiento</label>
+                <select class="form-control" [(ngModel)]="gestionForm.estado">
+                  <option value="ABIERTA">Abierta</option>
+                  <option value="EN_PROCESO">En proceso</option>
+                  <option value="REVISADA">Revisada</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Responsable operativo</label>
+                <input
+                  class="form-control"
+                  type="text"
+                  [(ngModel)]="gestionForm.responsable"
+                  placeholder="Nombre o correo del responsable"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Diagnóstico</label>
+                <textarea
+                  class="form-control"
+                  rows="4"
+                  [(ngModel)]="gestionForm.diagnostico"
+                  placeholder="Hallazgo, causa probable o impacto operativo"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Acción realizada</label>
+                <textarea
+                  class="form-control"
+                  rows="3"
+                  [(ngModel)]="gestionForm.accion"
+                  placeholder="Trabajo ejecutado o decisión tomada"
+                ></textarea>
+              </div>
+
+              <div class="form-grid gestion-form__grid">
+                <div class="form-group">
+                  <label>Próxima acción</label>
+                  <input
+                    class="form-control"
+                    type="text"
+                    [(ngModel)]="gestionForm.proximaAccion"
+                    placeholder="Seguimiento requerido"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Fecha compromiso</label>
+                  <input
+                    class="form-control"
+                    type="date"
+                    [(ngModel)]="gestionForm.fechaCompromiso"
+                  />
+                </div>
+              </div>
+
+              <div class="gestion-actions">
+                <button
+                  class="btn btn--secondary btn--sm"
+                  (click)="guardarGestion()"
+                  [disabled]="!puedeGuardarGestion || atendiendoId() === incidenciaActual.id"
+                >
+                  Guardar seguimiento
+                </button>
+                <button
+                  class="btn btn--primary btn--sm"
+                  (click)="cerrarGestion()"
+                  [disabled]="!puedeCerrarGestion || atendiendoId() === incidenciaActual.id"
+                >
+                  {{ atendiendoId() === incidenciaActual.id ? 'Cerrando...' : 'Cerrar incidencia' }}
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (gestionSeleccionada; as gestionActual) {
+            @if (gestionActual.historial.length) {
+              <div class="bitacora">
+                <h3>Bitácora</h3>
+                @for (evento of gestionActual.historial; track evento.fecha) {
+                  <div class="bitacora__item">
+                    <span [class]="estadoClass(evento.estado)">{{
+                      estadoLabel(evento.estado)
+                    }}</span>
+                    <strong>{{ evento.accion }}</strong>
+                    <small
+                      >{{ evento.usuario }} · {{ evento.fecha | date: 'dd/MM/yyyy HH:mm' }}</small
+                    >
+                  </div>
+                }
+              </div>
+            }
+          }
+        } @else {
+          <h2>Orden de atención</h2>
+          <p>
+            Priorice los casos de alta criticidad, revise el activo y deje el estado actualizado
+            cuando el mantenimiento haya concluido.
+          </p>
+          <div class="seguimiento-step">
+            <span>1</span>
+            <div>
+              <strong>Identificar</strong>
+              <p>Filtre por prioridad, área o activo para ubicar el caso.</p>
+            </div>
           </div>
-        </div>
+          <div class="seguimiento-step">
+            <span>2</span>
+            <div>
+              <strong>Gestionar</strong>
+              <p>Registre diagnóstico, acción ejecutada, responsable y fecha compromiso.</p>
+            </div>
+          </div>
+          <div class="seguimiento-step">
+            <span>3</span>
+            <div>
+              <strong>Cerrar seguimiento</strong>
+              <p>El cierre actualiza el estado del activo o marca la alerta como revisada.</p>
+            </div>
+          </div>
+        }
       </aside>
     </div>
   }
