@@ -32,14 +32,14 @@ La app movil ya no expone todas las opciones a todos los usuarios. La navegació
 | --- | --- | --- |
 | `ADMINISTRADOR` | Inicio de supervisión, activos, IA, GPS, incidencias, alertas, estado offline | Ninguna acción móvil operativa |
 | `RESPONSABLE_AREA` | Inicio de trabajo de campo, activos asignados, IA, GPS, incidencias, alertas, estado offline | Funciones administrativas que pertenecen a la web |
-| `AUDITOR` | Inicio de revisión, consulta de activos, evidencia IA, predicción ML, mapa registrado, alertas | Diagnóstico IA, registro GPS, mantenimiento y reportes MS3 |
+| `AUDITOR` | Inicio de revisión, consulta de activos, evidencia IA, predicción ML, mapa registrado, alertas | Diagnóstico IA, registro GPS, mantenimiento y reportes operativos |
 | `SOLO_LECTURA` | Inicio de consulta, activos, predicción ML, mapa registrado, alertas | Toda acción que cambie estado, GPS, reportes o mantenimiento |
 
 La restricción se aplica en tres niveles:
 
 - Menú principal: el panel de inicio solo muestra accesos permitidos para el rol.
 - Listas y detalle: los botones de acción se ocultan cuando el perfil no puede usarlos.
-- Pantallas directas: cámara IA y mapa validan permisos antes de ejecutar cámara, GPS o llamadas a MS1/MS2/MS3.
+- Pantallas directas: cámara IA, mapa e incidencias validan permisos antes de ejecutar acciones.
 
 ## Estructura funcional orientada al cliente final
 
@@ -48,8 +48,9 @@ El flujo principal queda organizado así:
 1. **Inicio**: panel por perfil con estado de sincronización, accesos relevantes y cierre de sesión.
 2. **Activos**: lista con búsqueda por código, nombre, categoría o área; filtros por estado; indicadores offline/sync.
 3. **Detalle**: ficha del activo con información general, última evidencia IA, predicción de vida útil y ubicación registrada.
-4. **Acciones de campo**: IA, GPS, mantenimiento y reporte MS3 aparecen solo para administrador/responsable de área.
-5. **Alertas**: notificaciones push y avisos generados por MS3/N8N.
+4. **Incidencias**: seguimiento de casos activos, pendientes por sincronizar y registro de nuevos reportes o solicitudes de mantenimiento.
+5. **Acciones de campo**: IA, GPS e incidencias aparecen solo para administrador/responsable de área.
+6. **Alertas**: notificaciones push y avisos generados por automatizaciones del sistema.
 
 ## Instalación
 

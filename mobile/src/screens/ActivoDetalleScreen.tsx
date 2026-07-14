@@ -189,7 +189,7 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
     }
   };
 
-  /** CU-43: Reportar problema vía MS3 para disparar el flujo N8N */
+  /** CU-43: Reportar problema operativo desde campo */
   const handleReportarProblema = () => {
     if (!puedeReportarProblema) {
       Alert.alert(
@@ -222,13 +222,13 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
       Alert.alert(
         "Reporte enviado",
         respuesta.mensaje ??
-          "MS3 recibio el reporte y activara el flujo WhatsApp/N8N/email.",
+          "El reporte fue registrado y se notificara al equipo correspondiente.",
       );
     } catch {
       await guardarReportePendiente(payload);
       Alert.alert(
         "Sin conexión",
-        "El reporte se sincronizara con MS3 al recuperar la conexion.",
+        "El reporte se sincronizara al recuperar la conexion.",
       );
     } finally {
       setEnviandoReporte(false);
@@ -391,7 +391,7 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
                 }}
                 disabled={enviandoReporte}
               >
-                <Text style={styles.modalBtnEnviarTexto}>Enviar a MS3</Text>
+                <Text style={styles.modalBtnEnviarTexto}>Enviar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -559,7 +559,7 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
               style={[styles.btnAccion, styles.btnAccionVerde]}
               onPress={handleReportarProblema}
             >
-              <Text style={styles.btnAccionTexto}>📲 Reportar problema MS3</Text>
+              <Text style={styles.btnAccionTexto}>📲 Reportar problema</Text>
             </TouchableOpacity>
           )}
         </View>

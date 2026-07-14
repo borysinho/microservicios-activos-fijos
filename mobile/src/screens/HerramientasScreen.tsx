@@ -99,8 +99,8 @@ export default function HerramientasScreen() {
         color: "#E65100",
         emoji: "🔧",
         titulo: "Incidencias",
-        detalle: "Reportes a MS3 y solicitudes de mantenimiento",
-        onPress: () => navigation.navigate("Activos"),
+        detalle: "Reportes y solicitudes de mantenimiento",
+        onPress: () => navigation.navigate("Incidencias"),
       });
     }
 

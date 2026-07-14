@@ -17,6 +17,7 @@ import ActivosScreen from "../screens/ActivosScreen";
 import ActivoDetalleScreen from "../screens/ActivoDetalleScreen";
 import DiagnosticoIAScreen from "../screens/DiagnosticoIAScreen";
 import HerramientasScreen from "../screens/HerramientasScreen";
+import IncidenciasScreen from "../screens/IncidenciasScreen";
 import MapaScreen from "../screens/MapaScreen";
 import NotificacionesScreen from "../screens/NotificacionesScreen";
 import ResultadoDiagnosticoScreen from "../screens/ResultadoDiagnosticoScreen";
@@ -121,6 +122,11 @@ export function AppNavigator({ initialRouteName }: AppNavigatorProps) {
           name="DiagnosticoIA"
           component={DiagnosticoIAScreen}
           options={{ title: "Verificación IA", headerShown: false }}
+        />
+        <Stack.Screen
+          name="Incidencias"
+          component={IncidenciasScreen}
+          options={{ title: "Incidencias" }}
         />
         <Stack.Screen
           name="Mapa"
