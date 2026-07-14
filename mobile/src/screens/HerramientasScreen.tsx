@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,37 +6,49 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { offlineCache } from "../services/offlineCache";
+import { useSession } from "../hooks/useSession";
+import {
+  canMobile,
+  getRoleHomeTitle,
+  getRoleLabel,
+} from "../auth/mobilePermissions";
 
 type EstadoOffline = {
   activosCacheados: number;
   pendientes: number;
-  usuario: string;
+};
+
+type AccionInicio = {
+  color: string;
+  emoji: string;
+  titulo: string;
+  detalle: string;
+  onPress: () => void;
 };
 
 export default function HerramientasScreen() {
   const navigation = useNavigation<any>();
+  const { usuario, clearSession } = useSession();
   const [estado, setEstado] = useState<EstadoOffline>({
     activosCacheados: 0,
     pendientes: 0,
-    usuario: "Sin sesion",
   });
   const [refrescando, setRefrescando] = useState(false);
 
   const cargarEstado = useCallback(async () => {
     setRefrescando(true);
     try {
-      const [activos, pendientes, session] = await Promise.all([
+      const [activos, pendientes] = await Promise.all([
         offlineCache.loadActivos(),
         offlineCache.loadPendingOps(),
-        offlineCache.loadSession(),
       ]);
       setEstado({
         activosCacheados: activos.length,
         pendientes: pendientes.length,
-        usuario: session?.usuario.nombre ?? "Sin sesion",
       });
     } finally {
       setRefrescando(false);
@@ -46,6 +58,78 @@ export default function HerramientasScreen() {
   useEffect(() => {
     cargarEstado();
   }, [cargarEstado]);
+
+  const acciones = useMemo<AccionInicio[]>(() => {
+    const role = usuario?.rol;
+    const disponibles: AccionInicio[] = [
+      {
+        color: "#1565C0",
+        emoji: "📋",
+        titulo: "Revisar activos",
+        detalle: "Inventario asignado, ficha tecnica y evidencia disponible",
+        onPress: () => navigation.navigate("Activos"),
+      },
+    ];
+
+    if (canMobile(role, "activos.diagnosticarIA")) {
+      disponibles.push({
+        color: "#6A1B9A",
+        emoji: "🔍",
+        titulo: "Verificacion IA",
+        detalle: "Captura fotografica y diagnostico visual del activo",
+        onPress: () => navigation.navigate("Activos"),
+      });
+    }
+
+    if (canMobile(role, "activos.registrarGPS")) {
+      disponibles.push({
+        color: "#2E7D32",
+        emoji: "📍",
+        titulo: "Ubicacion GPS",
+        detalle: "Registro de coordenadas desde la ficha del activo",
+        onPress: () => navigation.navigate("Activos"),
+      });
+    }
+
+    if (
+      canMobile(role, "activos.reportarProblema") ||
+      canMobile(role, "activos.solicitarMantenimiento")
+    ) {
+      disponibles.push({
+        color: "#E65100",
+        emoji: "🔧",
+        titulo: "Incidencias",
+        detalle: "Reportes a MS3 y solicitudes de mantenimiento",
+        onPress: () => navigation.navigate("Activos"),
+      });
+    }
+
+    if (canMobile(role, "notificaciones.ver")) {
+      disponibles.push({
+        color: "#0288D1",
+        emoji: "🔔",
+        titulo: "Alertas",
+        detalle: "Avisos de mantenimiento, garantia y automatizaciones",
+        onPress: () => navigation.navigate("Notificaciones"),
+      });
+    }
+
+    return disponibles;
+  }, [navigation, usuario?.rol]);
+
+  const cerrarSesion = useCallback(() => {
+    Alert.alert("Cerrar sesion", "Se cerrara la sesion en este dispositivo.", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Cerrar sesion",
+        style: "destructive",
+        onPress: async () => {
+          await clearSession();
+          navigation.getParent()?.replace("Login");
+        },
+      },
+    ]);
+  }, [clearSession, navigation]);
 
   return (
     <ScrollView
@@ -59,11 +143,19 @@ export default function HerramientasScreen() {
         />
       }
     >
+      <View style={styles.encabezado}>
+        <View style={styles.perfilBadge}>
+          <Text style={styles.perfilTexto}>{getRoleLabel(usuario?.rol)}</Text>
+        </View>
+        <Text style={styles.titulo}>{getRoleHomeTitle(usuario?.rol)}</Text>
+        <Text style={styles.usuario}>{usuario?.nombre ?? "Usuario movil"}</Text>
+      </View>
+
       <View style={[styles.tarjeta, styles.tarjetaEstado]}>
         <View style={styles.tarjetaHeader}>
           <View>
-            <Text style={styles.codigo}>ESTADO DE SINCRONIZACIÓN</Text>
-            <Text style={styles.nombre}>{estado.usuario}</Text>
+            <Text style={styles.codigo}>SINCRONIZACION</Text>
+            <Text style={styles.nombre}>Datos disponibles en el dispositivo</Text>
           </View>
           <View
             style={[
@@ -83,46 +175,18 @@ export default function HerramientasScreen() {
           </View>
           <View style={styles.estadoItem}>
             <Text style={styles.estadoNumero}>{estado.pendientes}</Text>
-            <Text style={styles.estadoLabel}>Pendientes sync</Text>
+            <Text style={styles.estadoLabel}>Pendientes</Text>
           </View>
         </View>
       </View>
 
-      <AccionCampo
-        color="#1565C0"
-        emoji="📋"
-        titulo="Mis activos asignados"
-        detalle="Lista, cache local, detalle y acciones por activo"
-        onPress={() => navigation.navigate("Activos")}
-      />
-      <AccionCampo
-        color="#6A1B9A"
-        emoji="🔍"
-        titulo="Verificación IA por cámara"
-        detalle="Valida evidencia visual de un activo"
-        onPress={() => navigation.navigate("Activos")}
-      />
-      <AccionCampo
-        color="#2E7D32"
-        emoji="📍"
-        titulo="Mapa y GPS"
-        detalle="Ver ubicación actual o registrar coordenadas de un activo"
-        onPress={() => navigation.navigate("Mapa", {})}
-      />
-      <AccionCampo
-        color="#E65100"
-        emoji="🔧"
-        titulo="Reportes y mantenimiento"
-        detalle="Formulario MS3, WhatsApp/N8N y solicitud a MS1"
-        onPress={() => navigation.navigate("Activos")}
-      />
-      <AccionCampo
-        color="#0288D1"
-        emoji="🔔"
-        titulo="Notificaciones"
-        detalle="Alertas push y avisos generados por MS3"
-        onPress={() => navigation.navigate("Notificaciones")}
-      />
+      {acciones.map((accion) => (
+        <AccionCampo key={accion.titulo} {...accion} />
+      ))}
+
+      <TouchableOpacity style={styles.btnCerrarSesion} onPress={cerrarSesion}>
+        <Text style={styles.btnCerrarSesionTexto}>Cerrar sesion</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -133,13 +197,7 @@ function AccionCampo({
   titulo,
   detalle,
   onPress,
-}: {
-  color: string;
-  emoji: string;
-  titulo: string;
-  detalle: string;
-  onPress: () => void;
-}) {
+}: AccionInicio) {
   return (
     <TouchableOpacity style={styles.tarjeta} onPress={onPress}>
       <Text style={styles.accionEmoji}>{emoji}</Text>
@@ -153,8 +211,30 @@ function AccionCampo({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F5" },
+  container: { flex: 1, backgroundColor: "#F5F7FA" },
   content: { padding: 12, paddingBottom: 32 },
+  encabezado: {
+    backgroundColor: "#1565C0",
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 12,
+  },
+  perfilBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 12,
+  },
+  perfilTexto: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
+  titulo: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  usuario: { color: "#BBDEFB", fontSize: 14, fontWeight: "600" },
   tarjeta: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -218,4 +298,18 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   accionChevron: { fontSize: 26, fontWeight: "300", marginLeft: 8 },
+  btnCerrarSesion: {
+    minHeight: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#C62828",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  btnCerrarSesionTexto: {
+    color: "#C62828",
+    fontWeight: "700",
+    fontSize: 15,
+  },
 });

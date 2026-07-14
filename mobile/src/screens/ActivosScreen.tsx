@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
+  TextInput,
   FlatList,
   TouchableOpacity,
   StyleSheet,
@@ -10,9 +11,10 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { RootStackParamList, Activo } from "../types/activo.types";
+import type { RootStackParamList, Activo, EstadoActivo } from "../types/activo.types";
 import { useOfflineActivos } from "../hooks/useOfflineActivos";
-import { offlineCache } from "../services/offlineCache";
+import { useSession } from "../hooks/useSession";
+import { canMobile, getRoleLabel } from "../auth/mobilePermissions";
 
 const ESTADO_COLORES: Record<string, string> = {
   ACTIVO: "#43A047",
@@ -24,15 +26,11 @@ const ESTADO_COLORES: Record<string, string> = {
 export default function ActivosScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [usuarioId, setUsuarioId] = useState("");
-
-  useEffect(() => {
-    offlineCache.loadSession().then((session) => {
-      if (session) {
-        setUsuarioId(session.usuario.id);
-      }
-    });
-  }, []);
+  const { usuario } = useSession();
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<EstadoActivo | "TODOS">(
+    "TODOS",
+  );
 
   const handleSessionExpired = useCallback(() => {
     navigation.replace("Login");
@@ -45,9 +43,25 @@ export default function ActivosScreen() {
     error,
     refrescar,
     pendientesSincronizacion,
-  } = useOfflineActivos(usuarioId, {
+  } = useOfflineActivos(usuario?.id ?? "", {
     onSessionExpired: handleSessionExpired,
   });
+  const puedeDiagnosticar = canMobile(usuario?.rol, "activos.diagnosticarIA");
+
+  const activosFiltrados = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+    return activos.filter((activo) => {
+      const coincideEstado =
+        filtroEstado === "TODOS" || activo.estado === filtroEstado;
+      const coincideTexto =
+        !texto ||
+        activo.codigo.toLowerCase().includes(texto) ||
+        activo.nombre.toLowerCase().includes(texto) ||
+        activo.categoria?.nombre.toLowerCase().includes(texto) ||
+        activo.area?.nombre.toLowerCase().includes(texto);
+      return coincideEstado && coincideTexto;
+    });
+  }, [activos, busqueda, filtroEstado]);
 
   const renderActivo = useCallback(
     ({ item }: { item: Activo }) => (
@@ -77,18 +91,20 @@ export default function ActivosScreen() {
           <Text style={styles.valor}>
             Valor: ${item.valorLibros.toLocaleString("es-BO")}
           </Text>
-          <TouchableOpacity
-            style={styles.btnDiagnostico}
-            onPress={() =>
-              navigation.navigate("DiagnosticoIA", { activoId: item.id })
-            }
-          >
-            <Text style={styles.btnDiagnosticoTexto}>🔍 Verificación IA</Text>
-          </TouchableOpacity>
+          {puedeDiagnosticar && (
+            <TouchableOpacity
+              style={styles.btnDiagnostico}
+              onPress={() =>
+                navigation.navigate("DiagnosticoIA", { activoId: item.id })
+              }
+            >
+              <Text style={styles.btnDiagnosticoTexto}>🔍 Verificación IA</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     ),
-    [navigation],
+    [navigation, puedeDiagnosticar],
   );
 
   if (cargando && activos.length === 0) {
@@ -128,8 +144,51 @@ export default function ActivosScreen() {
         </View>
       )}
 
+      <View style={styles.filtros}>
+        <View style={styles.resumenHeader}>
+          <View>
+            <Text style={styles.resumenTitulo}>Inventario movil</Text>
+            <Text style={styles.resumenSubtitulo}>
+              {getRoleLabel(usuario?.rol)} · {activosFiltrados.length} de{" "}
+              {activos.length} activos
+            </Text>
+          </View>
+        </View>
+        <TextInput
+          style={styles.buscarInput}
+          value={busqueda}
+          onChangeText={setBusqueda}
+          placeholder="Buscar por codigo, nombre, categoria o area"
+          placeholderTextColor="#90A4AE"
+          autoCapitalize="none"
+        />
+        <View style={styles.chips}>
+          {(["TODOS", "ACTIVO", "EN_MANTENIMIENTO", "TRANSFERIDO", "DADO_DE_BAJA"] as const).map(
+            (estado) => (
+              <TouchableOpacity
+                key={estado}
+                style={[
+                  styles.chip,
+                  filtroEstado === estado && styles.chipActivo,
+                ]}
+                onPress={() => setFiltroEstado(estado)}
+              >
+                <Text
+                  style={[
+                    styles.chipTexto,
+                    filtroEstado === estado && styles.chipTextoActivo,
+                  ]}
+                >
+                  {estado === "TODOS" ? "Todos" : estado.replace(/_/g, " ")}
+                </Text>
+              </TouchableOpacity>
+            ),
+          )}
+        </View>
+      </View>
+
       <FlatList
-        data={activos}
+        data={activosFiltrados}
         keyExtractor={(item) => item.id}
         renderItem={renderActivo}
         contentContainerStyle={styles.lista}
@@ -145,7 +204,9 @@ export default function ActivosScreen() {
             <Text style={styles.textoVacio}>
               {isOffline
                 ? "Sin datos en caché. Conéctate a internet para sincronizar."
-                : "No tienes activos asignados."}
+                : activos.length === 0
+                  ? "No tienes activos asignados."
+                  : "No hay activos con esos filtros."}
             </Text>
           </View>
         }
@@ -165,6 +226,51 @@ const styles = StyleSheet.create({
   textoEstado: { marginTop: 12, color: "#78909C", fontSize: 16 },
   textoVacio: { color: "#78909C", fontSize: 15, textAlign: "center" },
   lista: { padding: 12 },
+  filtros: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ECEFF1",
+    padding: 12,
+  },
+  resumenHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  resumenTitulo: {
+    color: "#212121",
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  resumenSubtitulo: { color: "#607D8B", fontSize: 13, marginTop: 2 },
+  buscarInput: {
+    borderWidth: 1,
+    borderColor: "#CFD8DC",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: "#212121",
+    backgroundColor: "#FAFAFA",
+    fontSize: 14,
+  },
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: "#CFD8DC",
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "#FFFFFF",
+  },
+  chipActivo: { backgroundColor: "#1565C0", borderColor: "#1565C0" },
+  chipTexto: { color: "#546E7A", fontSize: 12, fontWeight: "700" },
+  chipTextoActivo: { color: "#FFFFFF" },
   bannerOffline: {
     backgroundColor: "#EF6C00",
     padding: 10,

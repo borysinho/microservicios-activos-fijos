@@ -23,6 +23,8 @@ import { ms2Service } from "../services/ms2Service";
 import { ms3Service } from "../services/ms3Service";
 import { offlineCache } from "../services/offlineCache";
 import { useGPS } from "../hooks/useGPS";
+import { useSession } from "../hooks/useSession";
+import { canMobile } from "../auth/mobilePermissions";
 
 type Props = NativeStackScreenProps<RootStackParamList, "ActivoDetalle">;
 
@@ -69,6 +71,7 @@ async function guardarReportePendiente(params: {
 export default function ActivoDetalleScreen({ route, navigation }: Props) {
   const { activoId } = route.params;
   const { obtenerUbicacion, cargando: gpsLoading } = useGPS();
+  const { usuario } = useSession();
   const [activo, setActivo] = useState<Activo | null>(null);
   const [historialDiagnosticos, setHistorialDiagnosticos] = useState<
     DiagnosticoIA[]
@@ -82,6 +85,16 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
   const [modalProblema, setModalProblema] = useState(false);
   const [descripcionProblema, setDescripcionProblema] = useState("");
   const [enviandoReporte, setEnviandoReporte] = useState(false);
+  const puedeDiagnosticar = canMobile(usuario?.rol, "activos.diagnosticarIA");
+  const puedeRegistrarGps = canMobile(usuario?.rol, "activos.registrarGPS");
+  const puedeSolicitarMantenimiento = canMobile(
+    usuario?.rol,
+    "activos.solicitarMantenimiento",
+  );
+  const puedeReportarProblema = canMobile(
+    usuario?.rol,
+    "activos.reportarProblema",
+  );
 
   useEffect(() => {
     const cargar = async () => {
@@ -119,6 +132,11 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
 
   /** CU-42, CU-45: Registrar ubicación GPS y encolar si falla la red */
   const handleRegistrarUbicacion = async () => {
+    if (!puedeRegistrarGps) {
+      Alert.alert("Acceso restringido", "Tu perfil no puede registrar GPS.");
+      return;
+    }
+
     setGuardandoUbicacion(true);
     try {
       const coords = await obtenerUbicacion();
@@ -173,6 +191,14 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
 
   /** CU-43: Reportar problema vía MS3 para disparar el flujo N8N */
   const handleReportarProblema = () => {
+    if (!puedeReportarProblema) {
+      Alert.alert(
+        "Acceso restringido",
+        "Tu perfil no puede reportar problemas desde la app movil.",
+      );
+      return;
+    }
+
     setDescripcionProblema("");
     setModalProblema(true);
   };
@@ -211,6 +237,14 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
 
   /** CU-39: Solicitar orden de mantenimiento */
   const handleSolicitarMantenimiento = async () => {
+    if (!puedeSolicitarMantenimiento) {
+      Alert.alert(
+        "Acceso restringido",
+        "Tu perfil no puede solicitar mantenimiento.",
+      );
+      return;
+    }
+
     if (Platform.OS === "ios") {
       Alert.prompt(
         "Solicitar mantenimiento",
@@ -478,44 +512,58 @@ export default function ActivoDetalleScreen({ route, navigation }: Props) {
         ) : (
           <Text style={styles.sinDatos}>Sin ubicación registrada</Text>
         )}
-        <TouchableOpacity
-          style={[
-            styles.btnPrimario,
-            guardandoUbicacion && styles.btnDeshabilitado,
-          ]}
-          onPress={handleRegistrarUbicacion}
-          disabled={guardandoUbicacion || gpsLoading}
-        >
-          {guardandoUbicacion ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.btnPrimarioTexto}>
-              📍 Actualizar ubicación GPS
-            </Text>
-          )}
-        </TouchableOpacity>
+        {puedeRegistrarGps && (
+          <TouchableOpacity
+            style={[
+              styles.btnPrimario,
+              guardandoUbicacion && styles.btnDeshabilitado,
+            ]}
+            onPress={handleRegistrarUbicacion}
+            disabled={guardandoUbicacion || gpsLoading}
+          >
+            {guardandoUbicacion ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.btnPrimarioTexto}>
+                📍 Actualizar ubicación GPS
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
-      <View style={styles.acciones}>
-        <TouchableOpacity
-          style={styles.btnAccion}
-          onPress={() => navigation.navigate("DiagnosticoIA", { activoId })}
-        >
-          <Text style={styles.btnAccionTexto}>🔍 Verificar con IA</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btnAccion, styles.btnAccionNaranja]}
-          onPress={handleSolicitarMantenimiento}
-        >
-          <Text style={styles.btnAccionTexto}>🔧 Solicitar mantenimiento</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.btnAccion, styles.btnAccionVerde]}
-          onPress={handleReportarProblema}
-        >
-          <Text style={styles.btnAccionTexto}>📲 Reportar problema MS3</Text>
-        </TouchableOpacity>
-      </View>
+      {(puedeDiagnosticar ||
+        puedeSolicitarMantenimiento ||
+        puedeReportarProblema) && (
+        <View style={styles.acciones}>
+          {puedeDiagnosticar && (
+            <TouchableOpacity
+              style={styles.btnAccion}
+              onPress={() => navigation.navigate("DiagnosticoIA", { activoId })}
+            >
+              <Text style={styles.btnAccionTexto}>🔍 Verificar con IA</Text>
+            </TouchableOpacity>
+          )}
+          {puedeSolicitarMantenimiento && (
+            <TouchableOpacity
+              style={[styles.btnAccion, styles.btnAccionNaranja]}
+              onPress={handleSolicitarMantenimiento}
+            >
+              <Text style={styles.btnAccionTexto}>
+                🔧 Solicitar mantenimiento
+              </Text>
+            </TouchableOpacity>
+          )}
+          {puedeReportarProblema && (
+            <TouchableOpacity
+              style={[styles.btnAccion, styles.btnAccionVerde]}
+              onPress={handleReportarProblema}
+            >
+              <Text style={styles.btnAccionTexto}>📲 Reportar problema MS3</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 }

@@ -16,13 +16,40 @@
 | Pantalla                | Archivo                          | CUs                               |
 | ----------------------- | -------------------------------- | --------------------------------- |
 | Login                   | `LoginScreen.tsx`                | Autenticación JWT                 |
-| Lista de activos        | `ActivosScreen.tsx`              | CU-40, CU-41                      |
+| Inicio por perfil       | `HerramientasScreen.tsx`         | Accesos por rol, offline, sesión  |
+| Lista de activos        | `ActivosScreen.tsx`              | CU-40, CU-41, búsqueda y filtros  |
 | Detalle de activo       | `ActivoDetalleScreen.tsx`        | CU-38, CU-39, CU-41, CU-42, CU-43 |
 | Cámara / Verificación IA | `DiagnosticoIAScreen.tsx`        | CU-34, CU-35, CU-36               |
 | Resultado verificación   | `ResultadoDiagnosticoScreen.tsx` | CU-37                             |
 | Mapa GPS                | `MapaScreen.tsx`                 | CU-42                             |
-| Herramientas de campo   | `HerramientasScreen.tsx`         | Acceso a cámara, GPS, offline, MS3 |
 | Notificaciones          | `NotificacionesScreen.tsx`       | CU-44                             |
+
+## Experiencia por perfil
+
+La app movil ya no expone todas las opciones a todos los usuarios. La navegación se arma desde la sesión guardada en `AsyncStorage` y la matriz de permisos de `src/auth/mobilePermissions.ts`.
+
+| Rol | Opciones visibles | Acciones bloqueadas |
+| --- | --- | --- |
+| `ADMINISTRADOR` | Inicio de supervisión, activos, IA, GPS, incidencias, alertas, estado offline | Ninguna acción móvil operativa |
+| `RESPONSABLE_AREA` | Inicio de trabajo de campo, activos asignados, IA, GPS, incidencias, alertas, estado offline | Funciones administrativas que pertenecen a la web |
+| `AUDITOR` | Inicio de revisión, consulta de activos, evidencia IA, predicción ML, mapa registrado, alertas | Diagnóstico IA, registro GPS, mantenimiento y reportes MS3 |
+| `SOLO_LECTURA` | Inicio de consulta, activos, predicción ML, mapa registrado, alertas | Toda acción que cambie estado, GPS, reportes o mantenimiento |
+
+La restricción se aplica en tres niveles:
+
+- Menú principal: el panel de inicio solo muestra accesos permitidos para el rol.
+- Listas y detalle: los botones de acción se ocultan cuando el perfil no puede usarlos.
+- Pantallas directas: cámara IA y mapa validan permisos antes de ejecutar cámara, GPS o llamadas a MS1/MS2/MS3.
+
+## Estructura funcional orientada al cliente final
+
+El flujo principal queda organizado así:
+
+1. **Inicio**: panel por perfil con estado de sincronización, accesos relevantes y cierre de sesión.
+2. **Activos**: lista con búsqueda por código, nombre, categoría o área; filtros por estado; indicadores offline/sync.
+3. **Detalle**: ficha del activo con información general, última evidencia IA, predicción de vida útil y ubicación registrada.
+4. **Acciones de campo**: IA, GPS, mantenimiento y reporte MS3 aparecen solo para administrador/responsable de área.
+5. **Alertas**: notificaciones push y avisos generados por MS3/N8N.
 
 ## Instalación
 
@@ -143,7 +170,7 @@ npm run ios:release:prod
 
 ## Flujo principal — Verificación IA
 
-1. El responsable selecciona un activo de su lista (CU-40, CU-41)
+1. El administrador o responsable selecciona un activo de su lista (CU-40, CU-41)
 2. Pulsa **"Verificación IA"** → se activa la cámara (CU-34)
 3. Toma la fotografía → la app obtiene coordenadas GPS (CU-42)
 4. La imagen se envía a MS2 vía `multipart/form-data` (CU-35)

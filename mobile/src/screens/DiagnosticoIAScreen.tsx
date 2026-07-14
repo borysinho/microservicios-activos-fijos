@@ -15,6 +15,8 @@ import type { RootStackParamList } from "../types/activo.types";
 import { useCamera } from "../hooks/useCamera";
 import { useGPS } from "../hooks/useGPS";
 import { ms2Service } from "../services/ms2Service";
+import { useSession } from "../hooks/useSession";
+import { canMobile } from "../auth/mobilePermissions";
 
 type Props = NativeStackScreenProps<RootStackParamList, "DiagnosticoIA">;
 
@@ -26,6 +28,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "DiagnosticoIA">;
  */
 export default function DiagnosticoIAScreen({ route, navigation }: Props) {
   const { activoId } = route.params;
+  const { usuario, cargandoSesion } = useSession();
   const {
     cameraRef,
     device,
@@ -38,6 +41,7 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
   const [enviando, setEnviando] = useState(false);
   const [solicitandoPermiso, setSolicitandoPermiso] = useState(!hasPermission);
   const procesando = enviando || isTakingPhoto;
+  const puedeDiagnosticar = canMobile(usuario?.rol, "activos.diagnosticarIA");
 
   const solicitarPermisoCamara = useCallback(async () => {
     setSolicitandoPermiso(true);
@@ -49,12 +53,26 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
   }, [requestPermission]);
 
   useEffect(() => {
-    if (!hasPermission) {
+    if (!cargandoSesion && puedeDiagnosticar && !hasPermission) {
       solicitarPermisoCamara().catch(() => setSolicitandoPermiso(false));
     }
-  }, [hasPermission, solicitarPermisoCamara]);
+  }, [
+    cargandoSesion,
+    hasPermission,
+    puedeDiagnosticar,
+    solicitarPermisoCamara,
+  ]);
 
   const handleCapturar = async () => {
+    if (!puedeDiagnosticar) {
+      Alert.alert(
+        "Acceso restringido",
+        "Tu perfil no puede ejecutar verificacion IA.",
+      );
+      navigation.goBack();
+      return;
+    }
+
     if (!hasPermission) {
       const granted = await solicitarPermisoCamara();
       if (!granted) {
@@ -102,6 +120,32 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
       setEnviando(false);
     }
   };
+
+  if (cargandoSesion) {
+    return (
+      <View style={styles.centrado}>
+        <ActivityIndicator color="#FFFFFF" />
+        <Text style={styles.textoError}>Preparando verificacion...</Text>
+      </View>
+    );
+  }
+
+  if (!puedeDiagnosticar) {
+    return (
+      <View style={styles.centrado}>
+        <Text style={styles.tituloPermiso}>Acceso restringido</Text>
+        <Text style={styles.textoError}>
+          Tu perfil no puede ejecutar verificacion IA.
+        </Text>
+        <TouchableOpacity
+          style={styles.btnPermisoPrimario}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.btnPermisoPrimarioTexto}>Volver</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (!device) {
     return (

@@ -13,6 +13,8 @@ import type { RootStackParamList } from "../types/activo.types";
 import { useGPS } from "../hooks/useGPS";
 import { ms1Service } from "../services/ms1Service";
 import { offlineCache } from "../services/offlineCache";
+import { useSession } from "../hooks/useSession";
+import { canMobile } from "../auth/mobilePermissions";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Mapa">;
 
@@ -39,6 +41,7 @@ export default function MapaScreen({ route, navigation: _navigation }: Props) {
   } = route.params ?? {};
   const mapRef = useRef<MapView>(null);
   const { coords, cargando: gpsLoading, obtenerUbicacion } = useGPS();
+  const { usuario, cargandoSesion } = useSession();
   const [guardando, setGuardando] = useState(false);
   const [ubicacionActivo, setUbicacionActivo] = useState<{
     lat: number;
@@ -49,9 +52,13 @@ export default function MapaScreen({ route, navigation: _navigation }: Props) {
       : null,
   );
 
+  const puedeRegistrarGps = canMobile(usuario?.rol, "activos.registrarGPS");
+
   useEffect(() => {
-    obtenerUbicacion().catch(() => undefined);
-  }, [obtenerUbicacion]);
+    if (!cargandoSesion && puedeRegistrarGps) {
+      obtenerUbicacion().catch(() => undefined);
+    }
+  }, [cargandoSesion, obtenerUbicacion, puedeRegistrarGps]);
 
   useEffect(() => {
     // Centrar el mapa en la ubicación del activo si existe
@@ -77,6 +84,11 @@ export default function MapaScreen({ route, navigation: _navigation }: Props) {
   }, [coords, ubicacionActivo]);
 
   const handleRegistrarUbicacion = async () => {
+    if (!puedeRegistrarGps) {
+      Alert.alert("Acceso restringido", "Tu perfil no puede registrar GPS.");
+      return;
+    }
+
     setGuardando(true);
     try {
       const coordenadas = await obtenerUbicacion();
@@ -232,21 +244,23 @@ export default function MapaScreen({ route, navigation: _navigation }: Props) {
           </View>
         )}
 
-        <TouchableOpacity
-          style={[styles.btnRegistrar, guardando && styles.btnDeshabilitado]}
-          onPress={handleRegistrarUbicacion}
-          disabled={guardando || gpsLoading}
-        >
-          {guardando || gpsLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.btnTexto}>
-              {activoId
-                ? "📍 Registrar ubicación GPS del activo"
-                : "📍 Obtener mi ubicación GPS"}
-            </Text>
-          )}
-        </TouchableOpacity>
+        {puedeRegistrarGps && (
+          <TouchableOpacity
+            style={[styles.btnRegistrar, guardando && styles.btnDeshabilitado]}
+            onPress={handleRegistrarUbicacion}
+            disabled={guardando || gpsLoading}
+          >
+            {guardando || gpsLoading ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.btnTexto}>
+                {activoId
+                  ? "📍 Registrar ubicación GPS del activo"
+                  : "📍 Obtener mi ubicación GPS"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

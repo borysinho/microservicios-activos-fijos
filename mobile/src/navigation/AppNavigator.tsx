@@ -2,12 +2,14 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text, StyleSheet } from "react-native";
+import { ActivityIndicator, Text, View, StyleSheet } from "react-native";
 
 import type {
   RootStackParamList,
   BottomTabParamList,
 } from "../types/activo.types";
+import { canMobile, getRoleHomeTitle } from "../auth/mobilePermissions";
+import { useSession } from "../hooks/useSession";
 
 // Pantallas (lazy imports para mejor rendimiento)
 import LoginScreen from "../screens/LoginScreen";
@@ -27,6 +29,17 @@ type AppNavigatorProps = {
 };
 
 function MainTabs() {
+  const { usuario, cargandoSesion } = useSession();
+  const role = usuario?.rol;
+
+  if (cargandoSesion) {
+    return (
+      <View style={styles.loadingTabs}>
+        <ActivityIndicator size="large" color="#1565C0" />
+      </View>
+    );
+  }
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -39,6 +52,17 @@ function MainTabs() {
       }}
     >
       <Tab.Screen
+        name="Herramientas"
+        component={HerramientasScreen}
+        options={{
+          title: getRoleHomeTitle(role),
+          tabBarLabel: "Inicio",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>🏠</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Activos"
         component={ActivosScreen}
         options={{
@@ -49,28 +73,19 @@ function MainTabs() {
           ),
         }}
       />
-      <Tab.Screen
-        name="Herramientas"
-        component={HerramientasScreen}
-        options={{
-          title: "Herramientas de Campo",
-          tabBarLabel: "Campo",
-          tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>🧰</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Notificaciones"
-        component={NotificacionesScreen}
-        options={{
-          title: "Notificaciones",
-          tabBarLabel: "Alertas",
-          tabBarIcon: ({ color }) => (
-            <Text style={{ color, fontSize: 20 }}>🔔</Text>
-          ),
-        }}
-      />
+      {canMobile(role, "notificaciones.ver") && (
+        <Tab.Screen
+          name="Notificaciones"
+          component={NotificacionesScreen}
+          options={{
+            title: "Notificaciones",
+            tabBarLabel: "Alertas",
+            tabBarIcon: ({ color }) => (
+              <Text style={{ color, fontSize: 20 }}>🔔</Text>
+            ),
+          }}
+        />
+      )}
     </Tab.Navigator>
   );
 }
@@ -123,6 +138,12 @@ export function AppNavigator({ initialRouteName }: AppNavigatorProps) {
 }
 
 const styles = StyleSheet.create({
+  loadingTabs: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5F7FA",
+  },
   tabBar: {
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,

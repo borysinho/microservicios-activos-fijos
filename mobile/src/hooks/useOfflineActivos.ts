@@ -55,6 +55,12 @@ export function useOfflineActivos(
       setCargando(true);
       setError(null);
       try {
+        if (!usuarioId) {
+          const cached = await offlineCache.loadActivos();
+          setActivos(cached);
+          return;
+        }
+
         if (offline) {
           // Modo offline: cargar desde caché
           const cached = await offlineCache.loadActivos();
