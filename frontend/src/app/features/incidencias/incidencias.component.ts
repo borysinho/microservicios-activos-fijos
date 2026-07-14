@@ -2,7 +2,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { catchError, forkJoin, Observable, of } from 'rxjs';
+import { catchError, forkJoin, Observable, of, take } from 'rxjs';
 import { canPerform } from '../../core/auth/permissions';
 import type { Activo } from '../../core/models/models';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
@@ -72,9 +72,15 @@ export class IncidenciasComponent implements OnInit {
     const usuarioId = this.auth.currentUser()?.id ?? '';
 
     forkJoin({
-      activos: this.gql.getActivos().pipe(catchError(() => of([] as Activo[]))),
+      activos: this.gql.getActivos().pipe(
+        take(1),
+        catchError(() => of([] as Activo[])),
+      ),
       notificaciones: usuarioId
-        ? this.ms3.listarNotificaciones(usuarioId).pipe(catchError(() => of([] as Notificacion[])))
+        ? this.ms3.listarNotificaciones(usuarioId).pipe(
+            take(1),
+            catchError(() => of([] as Notificacion[])),
+          )
         : of([] as Notificacion[]),
     }).subscribe({
       next: ({ activos, notificaciones }) => {
