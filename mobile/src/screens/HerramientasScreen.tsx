@@ -9,7 +9,9 @@ import {
   Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import NetInfo from "@react-native-community/netinfo";
 import { offlineCache } from "../services/offlineCache";
+import { ms1Service } from "../services/ms1Service";
 import { useSession } from "../hooks/useSession";
 import {
   canMobile,
@@ -20,6 +22,8 @@ import {
 type EstadoOffline = {
   activosCacheados: number;
   pendientes: number;
+  ultimaSincronizacion: string | null;
+  errorSincronizacion: string | null;
 };
 
 type AccionInicio = {
@@ -36,24 +40,51 @@ export default function HerramientasScreen() {
   const [estado, setEstado] = useState<EstadoOffline>({
     activosCacheados: 0,
     pendientes: 0,
+    ultimaSincronizacion: null,
+    errorSincronizacion: null,
   });
   const [refrescando, setRefrescando] = useState(false);
 
   const cargarEstado = useCallback(async () => {
     setRefrescando(true);
     try {
+      let errorSincronizacion: string | null = null;
+
+      if (usuario?.id) {
+        const networkState = await NetInfo.fetch();
+        const online =
+          networkState.isConnected &&
+          networkState.isInternetReachable !== false;
+
+        if (online) {
+          try {
+            const activosActualizados = await ms1Service.getActivosAsignados(
+              usuario.id,
+            );
+            await offlineCache.saveActivos(activosActualizados);
+          } catch {
+            errorSincronizacion = "No se pudo actualizar desde produccion";
+          }
+        } else {
+          errorSincronizacion = "Sin conexion";
+        }
+      }
+
       const [activos, pendientes] = await Promise.all([
         offlineCache.loadActivos(),
         offlineCache.loadPendingOps(),
       ]);
+      const metadata = await offlineCache.loadActivosMetadata();
       setEstado({
         activosCacheados: activos.length,
         pendientes: pendientes.length,
+        ultimaSincronizacion: metadata?.syncedAt ?? null,
+        errorSincronizacion,
       });
     } finally {
       setRefrescando(false);
     }
-  }, []);
+  }, [usuario?.id]);
 
   useEffect(() => {
     cargarEstado();
@@ -161,13 +192,25 @@ export default function HerramientasScreen() {
             style={[
               styles.estadoBadge,
               estado.pendientes > 0 && styles.estadoBadgePendiente,
+              estado.errorSincronizacion && styles.estadoBadgeRevision,
             ]}
           >
             <Text style={styles.estadoBadgeTexto}>
-              {estado.pendientes > 0 ? "PENDIENTE" : "OK"}
+              {estado.pendientes > 0
+                ? "PENDIENTE"
+                : estado.errorSincronizacion
+                  ? "REVISION"
+                  : "OK"}
             </Text>
           </View>
         </View>
+        <Text style={styles.syncDetalle}>
+          {estado.errorSincronizacion
+            ? estado.errorSincronizacion
+            : estado.ultimaSincronizacion
+              ? `Actualizado ${formatSyncTime(estado.ultimaSincronizacion)}`
+              : "Pendiente de sincronizacion inicial"}
+        </Text>
         <View style={styles.estadoGrid}>
           <View style={styles.estadoItem}>
             <Text style={styles.estadoNumero}>{estado.activosCacheados}</Text>
@@ -189,6 +232,20 @@ export default function HerramientasScreen() {
       </TouchableOpacity>
     </ScrollView>
   );
+}
+
+function formatSyncTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "recientemente";
+  }
+
+  return date.toLocaleString("es-BO", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function AccionCampo({
@@ -273,7 +330,13 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   estadoBadgePendiente: { backgroundColor: "#FB8C00" },
+  estadoBadgeRevision: { backgroundColor: "#C62828" },
   estadoBadgeTexto: { color: "#FFFFFF", fontSize: 11, fontWeight: "700" },
+  syncDetalle: {
+    color: "#607D8B",
+    fontSize: 12,
+    marginBottom: 12,
+  },
   estadoGrid: {
     width: "100%",
     flexDirection: "row",

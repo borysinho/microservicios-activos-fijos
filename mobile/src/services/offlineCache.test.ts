@@ -38,13 +38,32 @@ describe("offlineCache", () => {
 
     await offlineCache.saveActivos(activos);
 
-    expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-      "cache_activos_asignados",
-      JSON.stringify(activos),
+    expect(AsyncStorage.multiSet).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        ["cache_activos_asignados", JSON.stringify(activos)],
+        [
+          "cache_activos_asignados_meta",
+          expect.stringContaining('"total":1'),
+        ],
+      ]),
     );
 
     (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(JSON.stringify(activos));
     await expect(offlineCache.loadActivos()).resolves.toEqual(activos);
+  });
+
+  it("carga metadata de sincronizacion de activos", async () => {
+    const metadata = {
+      syncedAt: "2026-07-14T03:00:00.000Z",
+      total: 19,
+    };
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify(metadata),
+    );
+
+    await expect(offlineCache.loadActivosMetadata()).resolves.toEqual(
+      metadata,
+    );
   });
 
   it("encola operaciones pendientes con payload completo para sincronizar despues", async () => {

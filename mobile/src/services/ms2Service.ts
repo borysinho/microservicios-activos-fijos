@@ -5,6 +5,7 @@ import type { DiagnosticoIA } from "../types/activo.types";
 const BASE_URL = env.MS2_BASE_URL;
 const DIAGNOSTICO_URL = `${BASE_URL}/ia/diagnostico-imagen`;
 const HEALTH_URL = BASE_URL.replace(/\/api\/?$/, "/health");
+const IMAGE_EXTENSION_PATTERN = /\.(jpe?g|png|webp)$/i;
 
 type HttpResponse = {
   ok: boolean;
@@ -49,6 +50,18 @@ function buildDiagnosticoFormData(params: {
   return formData;
 }
 
+function assertValidImagePath(imagePath: string): void {
+  const normalized = imagePath.trim();
+  if (!normalized) {
+    throw new Error("La imagen capturada no tiene una ruta valida.");
+  }
+  if (!IMAGE_EXTENSION_PATTERN.test(normalized.split("?")[0])) {
+    throw new Error(
+      "La imagen capturada no tiene un formato permitido. Usa JPG, PNG o WEBP.",
+    );
+  }
+}
+
 async function assertMs2Reachable(): Promise<void> {
   const response = await fetch(HEALTH_URL);
   if (!response.ok) {
@@ -91,6 +104,7 @@ async function diagnosticarImagen(params: {
   latitud: number;
   longitud: number;
 }): Promise<DiagnosticoIA> {
+  assertValidImagePath(params.imagePath);
   const token = await AsyncStorage.getItem("auth_token");
   const primaryImageUri = imageUriForUpload(params.imagePath);
   const fallbackImageUri = alternateImageUri(params.imagePath);

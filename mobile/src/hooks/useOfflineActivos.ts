@@ -12,6 +12,7 @@ interface UseOfflineActivosReturn {
   error: string | null;
   refrescar: () => Promise<void>;
   pendientesSincronizacion: number;
+  ultimaSincronizacion: string | null;
 }
 
 type UseOfflineActivosOptions = {
@@ -33,6 +34,10 @@ function isAuthError(err: unknown): boolean {
   );
 }
 
+function isNetworkOffline(state: NetInfoState): boolean {
+  return !state.isConnected || state.isInternetReachable === false;
+}
+
 /**
  * Hook principal de la app móvil (CU-40, CU-45):
  * - Online: descarga activos asignados y actualiza caché
@@ -49,6 +54,14 @@ export function useOfflineActivos(
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendientesSincronizacion, setPendientesSincronizacion] = useState(0);
+  const [ultimaSincronizacion, setUltimaSincronizacion] = useState<
+    string | null
+  >(null);
+
+  const actualizarMetadata = useCallback(async () => {
+    const metadata = await offlineCache.loadActivosMetadata();
+    setUltimaSincronizacion(metadata?.syncedAt ?? null);
+  }, []);
 
   const cargarActivos = useCallback(
     async (offline: boolean) => {
@@ -58,6 +71,7 @@ export function useOfflineActivos(
         if (!usuarioId) {
           const cached = await offlineCache.loadActivos();
           setActivos(cached);
+          await actualizarMetadata();
           return;
         }
 
@@ -65,16 +79,19 @@ export function useOfflineActivos(
           // Modo offline: cargar desde caché
           const cached = await offlineCache.loadActivos();
           setActivos(cached);
+          await actualizarMetadata();
         } else {
           // Modo online: descargar activos asignados y actualizar caché
           const data = await ms1Service.getActivosAsignados(usuarioId);
           setActivos(data);
           await offlineCache.saveActivos(data);
+          await actualizarMetadata();
         }
       } catch (err) {
         // Fallback a caché si falla la red
         const cached = await offlineCache.loadActivos();
         setActivos(cached);
+        await actualizarMetadata();
         if (isAuthError(err)) {
           await offlineCache.clearSession();
           setError("Sesión expirada — vuelve a iniciar sesión");
@@ -90,7 +107,7 @@ export function useOfflineActivos(
         setCargando(false);
       }
     },
-    [onSessionExpired, usuarioId],
+    [actualizarMetadata, onSessionExpired, usuarioId],
   );
 
   const sincronizarPendientes = useCallback(async () => {
@@ -141,7 +158,7 @@ export function useOfflineActivos(
   // Escuchar cambios de conectividad
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
-      const offline = !state.isConnected;
+      const offline = isNetworkOffline(state);
       setIsOffline(offline);
 
       if (!offline) {
@@ -155,7 +172,7 @@ export function useOfflineActivos(
   // Carga inicial
   useEffect(() => {
     NetInfo.fetch().then((state: NetInfoState) => {
-      const offline = !state.isConnected;
+      const offline = isNetworkOffline(state);
       setIsOffline(offline);
       cargarActivos(offline);
     });
@@ -181,5 +198,6 @@ export function useOfflineActivos(
     error,
     refrescar,
     pendientesSincronizacion,
+    ultimaSincronizacion,
   };
 }

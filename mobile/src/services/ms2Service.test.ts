@@ -115,12 +115,25 @@ describe("ms2Service", () => {
 
     await expect(
       ms2Service.diagnosticarImagen({
-        imagePath: "/tmp/foto.txt",
+        imagePath: "/tmp/foto.jpg",
         activoId: "activo-1",
         latitud: 0,
         longitud: 0,
       }),
     ).rejects.toThrow("Error en verificación IA: 400");
+  });
+
+  it("rechaza formatos no permitidos antes de enviar a MS2", async () => {
+    await expect(
+      ms2Service.diagnosticarImagen({
+        imagePath: "/tmp/foto.txt",
+        activoId: "activo-1",
+        latitud: 0,
+        longitud: 0,
+      }),
+    ).rejects.toThrow("formato permitido");
+
+    expect(xhrInstances).toHaveLength(0);
   });
 
   it("reintenta con ruta local sin file scheme si MS2 esta disponible", async () => {

@@ -43,6 +43,7 @@ export default function ActivosScreen() {
     error,
     refrescar,
     pendientesSincronizacion,
+    ultimaSincronizacion,
   } = useOfflineActivos(usuario?.id ?? "", {
     onSessionExpired: handleSessionExpired,
   });
@@ -152,6 +153,11 @@ export default function ActivosScreen() {
               {getRoleLabel(usuario?.rol)} · {activosFiltrados.length} de{" "}
               {activos.length} activos
             </Text>
+            {ultimaSincronizacion && (
+              <Text style={styles.syncSubtitulo}>
+                Actualizado {formatSyncTime(ultimaSincronizacion)}
+              </Text>
+            )}
           </View>
         </View>
         <TextInput
@@ -215,6 +221,20 @@ export default function ActivosScreen() {
   );
 }
 
+function formatSyncTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "recientemente";
+  }
+
+  return date.toLocaleString("es-BO", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F5" },
   centrado: {
@@ -244,6 +264,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   resumenSubtitulo: { color: "#607D8B", fontSize: 13, marginTop: 2 },
+  syncSubtitulo: { color: "#78909C", fontSize: 12, marginTop: 2 },
   buscarInput: {
     borderWidth: 1,
     borderColor: "#CFD8DC",

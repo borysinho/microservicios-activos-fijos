@@ -3,10 +3,16 @@ import type { Activo, Usuario } from "../types/activo.types";
 
 const KEYS = {
   ACTIVOS: "cache_activos_asignados",
+  ACTIVOS_META: "cache_activos_asignados_meta",
   USUARIO: "auth_usuario",
   TOKEN: "auth_token",
   PENDING_OPS: "pending_operations",
 } as const;
+
+export interface ActivosCacheMetadata {
+  syncedAt: string;
+  total: number;
+}
 
 export interface PendingOperation {
   id: string;
@@ -24,7 +30,15 @@ export const offlineCache = {
 
   /** Guardar lista de activos en caché local */
   async saveActivos(activos: Activo[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.ACTIVOS, JSON.stringify(activos));
+    const metadata: ActivosCacheMetadata = {
+      syncedAt: new Date().toISOString(),
+      total: activos.length,
+    };
+
+    await AsyncStorage.multiSet([
+      [KEYS.ACTIVOS, JSON.stringify(activos)],
+      [KEYS.ACTIVOS_META, JSON.stringify(metadata)],
+    ]);
   },
 
   /** Cargar activos desde caché local */
@@ -35,7 +49,13 @@ export const offlineCache = {
 
   /** Borrar caché de activos */
   async clearActivos(): Promise<void> {
-    await AsyncStorage.removeItem(KEYS.ACTIVOS);
+    await AsyncStorage.multiRemove([KEYS.ACTIVOS, KEYS.ACTIVOS_META]);
+  },
+
+  /** Cargar metadatos de sincronización de activos */
+  async loadActivosMetadata(): Promise<ActivosCacheMetadata | null> {
+    const data = await AsyncStorage.getItem(KEYS.ACTIVOS_META);
+    return data ? (JSON.parse(data) as ActivosCacheMetadata) : null;
   },
 
   // ── Sesión de usuario ───────────────────────────────────────────────────

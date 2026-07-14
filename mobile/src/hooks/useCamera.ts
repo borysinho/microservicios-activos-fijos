@@ -38,6 +38,9 @@ export function useCamera(): UseCameraReturn {
         flash: "off",
         enableShutterSound: false,
       });
+      if (!photo.path || photo.width <= 0 || photo.height <= 0) {
+        throw new Error("La foto capturada no es valida. Intenta nuevamente.");
+      }
       return photo;
     } finally {
       setIsTakingPhoto(false);
