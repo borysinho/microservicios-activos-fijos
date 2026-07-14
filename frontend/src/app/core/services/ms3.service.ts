@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { shareReplay, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface EstadoFlujo {
@@ -24,6 +25,11 @@ export interface Notificacion {
 @Injectable({ providedIn: 'root' })
 export class Ms3Service {
   private readonly base = environment.ms3BaseUrl;
+  private readonly notificacionesTtlMs = 5000;
+  private readonly notificacionesCache = new Map<
+    string,
+    { expiresAt: number; request$: Observable<Notificacion[]> }
+  >();
 
   constructor(private http: HttpClient) {}
 
@@ -36,9 +42,26 @@ export class Ms3Service {
   }
 
   listarNotificaciones(usuarioId: string): Observable<Notificacion[]> {
-    return this.http.get<Notificacion[]>(`${this.base}/notificaciones`, {
+    const key = usuarioId.trim();
+    const cached = this.notificacionesCache.get(key);
+
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.request$;
+    }
+
+    const request$ = this.http.get<Notificacion[]>(`${this.base}/notificaciones`, {
       params: { usuarioId },
+    }).pipe(
+      tap({ error: () => this.notificacionesCache.delete(key) }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+
+    this.notificacionesCache.set(key, {
+      expiresAt: Date.now() + this.notificacionesTtlMs,
+      request$,
     });
+
+    return request$;
   }
 
   marcarNotificacionLeida(usuarioId: string, notificacionId: string): Observable<{
@@ -49,6 +72,6 @@ export class Ms3Service {
       `${this.base}/notificaciones/${notificacionId}/leida`,
       {},
       { params: { usuarioId } },
-    );
+    ).pipe(tap(() => this.notificacionesCache.delete(usuarioId.trim())));
   }
 }

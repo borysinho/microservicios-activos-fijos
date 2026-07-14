@@ -4,6 +4,8 @@ function env(name: string, fallback = ''): string {
   return process.env[name] ?? fallback;
 }
 
+const DEFAULT_CORS_ORIGINS = 'http://localhost:4200,https://*.vercel.app';
+
 @Injectable()
 export class AppConfig {
   readonly nodeEnv = env('MS3_NODE_ENV', env('NODE_ENV', 'development'));
@@ -17,7 +19,10 @@ export class AppConfig {
   readonly ms2AuthToken = env('MS3_MS2_AUTH_TOKEN');
   readonly ms4N8nWebhookUrl = env('MS3_MS4_N8N_WEBHOOK_URL');
   readonly n8nWebhookUrl = this.ms4N8nWebhookUrl;
-  readonly corsOrigins = env('MS3_CORS_ORIGINS', '*').split(',').map((origin) => origin.trim());
+  readonly corsOrigins = env('MS3_CORS_ORIGINS', DEFAULT_CORS_ORIGINS)
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   readonly twilioAccountSid = env('MS3_TWILIO_ACCOUNT_SID');
   readonly twilioAuthToken = env('MS3_TWILIO_AUTH_TOKEN');

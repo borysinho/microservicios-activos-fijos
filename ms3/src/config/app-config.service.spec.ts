@@ -12,6 +12,7 @@ describe('AppConfig', () => {
     delete process.env.MS3_TWILIO_WHATSAPP_FROM;
     delete process.env.MS3_WAHA_BASE_URL;
     delete process.env.MS3_WAHA_API_KEY;
+    delete process.env.MS3_CORS_ORIGINS;
   });
 
   afterAll(() => {
@@ -37,5 +38,19 @@ describe('AppConfig', () => {
     const config = new AppConfig();
 
     expect(config.whatsappProvider).toBe('meta');
+  });
+
+  it('incluye el origen local del frontend y produccion Vercel por defecto para CORS', () => {
+    const config = new AppConfig();
+
+    expect(config.corsOrigins).toEqual(['http://localhost:4200', 'https://*.vercel.app']);
+  });
+
+  it('normaliza origenes CORS definidos por ambiente', () => {
+    process.env.MS3_CORS_ORIGINS = ' http://localhost:4200, https://frontend.example.com ,,';
+
+    const config = new AppConfig();
+
+    expect(config.corsOrigins).toEqual(['http://localhost:4200', 'https://frontend.example.com']);
   });
 });

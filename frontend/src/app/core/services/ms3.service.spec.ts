@@ -60,4 +60,41 @@ describe('Ms3Service', () => {
 
     expect(estado.estado).toBe('EN_PROCESO');
   });
+
+  it('deduplica consultas simultaneas de notificaciones por usuario', () => {
+    const respuestas: any[][] = [];
+
+    service.listarNotificaciones('user-1').subscribe((data) => respuestas.push(data));
+    service.listarNotificaciones('user-1').subscribe((data) => respuestas.push(data));
+
+    const req = http.expectOne(`${environment.ms3BaseUrl}/notificaciones?usuarioId=user-1`);
+    expect(req.request.method).toBe('GET');
+    req.flush([
+      {
+        id: 'not-1',
+        usuarioId: 'user-1',
+        tipo: 'alerta',
+        titulo: 'Garantia por vencer',
+        mensaje: 'Revision pendiente',
+        leida: false,
+        fechaCreacion: '2026-07-14T10:00:00Z',
+      },
+    ]);
+
+    expect(respuestas).toHaveLength(2);
+    expect(respuestas[0][0].id).toBe('not-1');
+  });
+
+  it('invalida cache de notificaciones al marcar una como leida', () => {
+    service.listarNotificaciones('user-1').subscribe();
+    http.expectOne(`${environment.ms3BaseUrl}/notificaciones?usuarioId=user-1`).flush([]);
+
+    service.marcarNotificacionLeida('user-1', 'not-1').subscribe();
+    const patch = http.expectOne(`${environment.ms3BaseUrl}/notificaciones/not-1/leida?usuarioId=user-1`);
+    expect(patch.request.method).toBe('PATCH');
+    patch.flush({ actualizada: true, notificacion: null });
+
+    service.listarNotificaciones('user-1').subscribe();
+    http.expectOne(`${environment.ms3BaseUrl}/notificaciones?usuarioId=user-1`).flush([]);
+  });
 });

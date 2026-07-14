@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AppConfig } from '../src/config/app-config.service';
+import { buildCorsOptions } from '../src/config/cors-options';
 import { Ms1ClientService } from '../src/ms1-client/ms1-client.service';
 import { Ms2ClientService } from '../src/ms2-client/ms2-client.service';
 import { NotificacionesService } from '../src/notificaciones/notificaciones.service';
@@ -70,6 +71,7 @@ describe('MS3 API (e2e)', () => {
       .compile();
 
     app = moduleRef.createNestApplication();
+    app.enableCors(buildCorsOptions(['http://localhost:4200', 'https://frontend.example.com']));
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
   });
@@ -88,6 +90,23 @@ describe('MS3 API (e2e)', () => {
           service: 'ms3-automatizacion',
           mode: 'test',
         });
+      });
+  });
+
+  it('OPTIONS /api/notificaciones expone headers CORS para el frontend Angular', async () => {
+    await request(app.getHttpServer())
+      .options('/api/notificaciones?usuarioId=user-1')
+      .set('Origin', 'http://localhost:4200')
+      .set('Access-Control-Request-Method', 'GET')
+      .set('Access-Control-Request-Headers', 'Authorization,Content-Type')
+      .expect(204)
+      .expect('Access-Control-Allow-Origin', 'http://localhost:4200')
+      .expect('Access-Control-Allow-Credentials', 'true')
+      .expect((response) => {
+        expect(response.headers['access-control-allow-methods']).toContain('GET');
+        expect(response.headers['access-control-allow-methods']).toContain('OPTIONS');
+        expect(response.headers['access-control-allow-headers']).toContain('Authorization');
+        expect(response.headers['access-control-allow-headers']).toContain('Content-Type');
       });
   });
 
