@@ -2,7 +2,6 @@ import { Component, OnInit, ViewChild, ElementRef, inject, signal, OnDestroy } f
 import { CommonModule, CurrencyPipe, PercentPipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
-import { environment } from '../../../environments/environment';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Ms2Service } from '../../core/services/ms2.service';
@@ -70,7 +69,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
     this.loadClustering();
   }
 
-  // CU-59: Carga activos críticos desde el clustering de MS2
+  // CU-59: Carga activos críticos desde el análisis de clustering
   private loadClustering(): void {
     this.clusteringLoading.set(true);
     this.subClustering = this.ms2.clustering().subscribe({
@@ -157,7 +156,7 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
     }
 
     const msg = err?.networkError
-      ? `Error de red: no se pudo alcanzar MS1 (${environment.ms1GraphqlUrl})`
+      ? 'Error de red: no se pudo cargar la información del dashboard.'
       : (err?.graphQLErrors?.[0]?.message ?? 'Error desconocido al cargar métricas');
     this.error.set(msg);
   }

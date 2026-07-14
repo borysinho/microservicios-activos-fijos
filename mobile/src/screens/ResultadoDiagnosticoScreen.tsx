@@ -42,7 +42,7 @@ const ESTADO_CONFIG = {
   },
 } as const;
 
-/** CU-37: Pantalla de resultado de verificación visual IA (guardado en MS2) */
+/** CU-37: Pantalla de resultado de verificación visual IA */
 export default function ResultadoDiagnosticoScreen({
   route,
   navigation,

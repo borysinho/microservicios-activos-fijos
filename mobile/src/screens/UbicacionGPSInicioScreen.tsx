@@ -269,7 +269,7 @@ function ActivoGPSCard({
       </Text>
 
       <View style={styles.coordenadas}>
-        <Text style={styles.coordenadasLabel}>Coordenadas MS1</Text>
+        <Text style={styles.coordenadasLabel}>Coordenadas registradas</Text>
         <Text style={styles.coordenadasValor}>
           {registrado
             ? `${activo.latitud?.toFixed(6)}, ${activo.longitud?.toFixed(6)}`

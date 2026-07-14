@@ -195,7 +195,7 @@ export class ActivosComponent implements OnInit {
       next: (p) => this.proyeccion.set(p),
       error: () => {},
     });
-    // CU-64: predicción ML desde MS2
+    // CU-64: predicción ML desde el servicio de análisis
     const anios = activo.fechaAdquisicion
       ? new Date().getFullYear() - new Date(activo.fechaAdquisicion).getFullYear()
       : 0;

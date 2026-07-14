@@ -231,7 +231,7 @@ export const ms1Service = {
     );
   },
 
-  /** CU-37: MS1 solo valida el activo; el historial IA se guarda en MS2 */
+  /** CU-37: Valida el activo antes de consultar el historial IA */
   async registrarDiagnostico(
     activoId: string,
     diagnosticoId: string,
@@ -254,7 +254,7 @@ export const ms1Service = {
     }
   },
 
-  /** CU-38: Consultar transacciones de mantenimiento registradas en MS1 */
+  /** CU-38: Consultar transacciones de mantenimiento registradas */
   async getDiagnosticosHistorial(
     activoId: string,
   ): Promise<RegistroBlockchainMobile[]> {

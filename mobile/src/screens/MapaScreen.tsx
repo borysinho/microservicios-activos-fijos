@@ -103,7 +103,7 @@ export default function MapaScreen({ route, navigation: _navigation }: Props) {
         });
         Alert.alert(
           "Ubicación actual",
-          "Selecciona un activo para registrar estas coordenadas en MS1.",
+          "Selecciona un activo para registrar estas coordenadas en su ficha.",
         );
         return;
       }

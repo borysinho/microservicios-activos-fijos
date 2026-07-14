@@ -52,7 +52,7 @@ function buildDiagnosticoFormData(params: {
 async function assertMs2Reachable(): Promise<void> {
   const response = await fetch(HEALTH_URL);
   if (!response.ok) {
-    throw new Error(`MS2 respondió ${response.status} en ${HEALTH_URL}`);
+    throw new Error(`El servicio de verificación respondió ${response.status}.`);
   }
 }
 
@@ -84,7 +84,7 @@ async function postDiagnostico(
   });
 }
 
-/** CU-35, CU-36: Enviar imagen al MS2 para verificación visual IA */
+/** CU-35, CU-36: Enviar imagen para verificación visual IA */
 async function diagnosticarImagen(params: {
   imagePath: string;
   activoId: string;
@@ -115,7 +115,7 @@ async function diagnosticarImagen(params: {
     } catch (retryErr: any) {
       const reason = retryErr?.message ?? err?.message ?? "";
       throw new Error(
-        `No se pudo conectar con MS2 (${DIAGNOSTICO_URL}). Verifica que el celular/emulador tenga acceso a esa URL. ${reason}`.trim(),
+        `No se pudo conectar con el servicio de verificación visual. Verifica la conexión del dispositivo. ${reason}`.trim(),
       );
     }
   }
@@ -137,7 +137,7 @@ async function diagnosticarImagen(params: {
   };
 }
 
-/** CU-38: Obtener historial de verificaciones de un activo desde MS2 */
+/** CU-38: Obtener historial de verificaciones de un activo */
 async function getHistorialDiagnosticos(
   activoId: string,
 ): Promise<DiagnosticoIA[]> {

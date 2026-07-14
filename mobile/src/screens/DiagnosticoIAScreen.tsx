@@ -22,7 +22,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "DiagnosticoIA">;
 
 /**
  * CU-34: Fotografiar activo con cámara del dispositivo
- * CU-35: Enviar imagen al MS2 para verificación visual IA
+ * CU-35: Enviar imagen para verificación visual IA
  * CU-36: Procesar imagen y retornar evidencia/alerta auditable
  * CU-37: Guardar imagen y verificación en historial del activo
  */
@@ -101,7 +101,7 @@ export default function DiagnosticoIAScreen({ route, navigation }: Props) {
         // GPS opcional — continuar sin coordenadas
       }
 
-      // 3. Enviar a MS2 para verificación visual IA (CU-35, CU-36)
+      // 3. Enviar para verificación visual IA (CU-35, CU-36)
       const resultado = await ms2Service.diagnosticarImagen({
         imagePath: photo.path,
         activoId,

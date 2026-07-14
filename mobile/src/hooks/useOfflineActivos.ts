@@ -35,7 +35,7 @@ function isAuthError(err: unknown): boolean {
 
 /**
  * Hook principal de la app móvil (CU-40, CU-45):
- * - Online: descarga activos de MS1 y actualiza caché
+ * - Online: descarga activos asignados y actualiza caché
  * - Offline: carga activos desde AsyncStorage
  * - Detecta recuperación de conexión para sincronizar
  */
@@ -66,7 +66,7 @@ export function useOfflineActivos(
           const cached = await offlineCache.loadActivos();
           setActivos(cached);
         } else {
-          // Modo online: descargar de MS1 y actualizar caché
+          // Modo online: descargar activos asignados y actualizar caché
           const data = await ms1Service.getActivosAsignados(usuarioId);
           setActivos(data);
           await offlineCache.saveActivos(data);
@@ -83,7 +83,7 @@ export function useOfflineActivos(
           setError(
             offline
               ? "Sin conexión — usando datos en caché"
-              : "No se pudo conectar con MS1 — mostrando datos en caché",
+              : "No se pudo conectar con el sistema de activos — mostrando datos en caché",
           );
         }
       } finally {

@@ -42,11 +42,10 @@ export class LoginComponent {
         if (err.status === 401 || err.status === 403) {
           this.error.set('Credenciales incorrectas.');
         } else {
-          this.error.set('No se pudo conectar con MS1. Verifique que el servicio esté activo.');
+          this.error.set('No se pudo conectar con el sistema de activos. Verifique que el servicio esté activo.');
         }
         this.loading.set(false);
       },
     });
   }
 }
-

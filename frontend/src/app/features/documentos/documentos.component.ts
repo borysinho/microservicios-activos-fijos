@@ -19,7 +19,7 @@ export class DocumentosComponent implements OnInit {
   private auth = inject(AuthService);
   private gql = inject(ActivosGqlService);
 
-  // ── Lista de activos desde MS1 ────────────────────────────────────────────
+  // ── Lista de activos del sistema ──────────────────────────────────────────
   activos = signal<Activo[]>([]);
   cargandoActivos = signal(false);
 

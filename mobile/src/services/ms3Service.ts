@@ -18,7 +18,7 @@ http.interceptors.request.use(async (config) => {
   return config;
 });
 
-/** CU-43: Enviar reporte de problema a MS3 (dispara flujo N8N → WhatsApp/email) */
+/** CU-43: Enviar reporte de problema para notificación por WhatsApp/email */
 async function reportarProblema(params: {
   activoId: string;
   activoCodigo: string;
@@ -43,7 +43,7 @@ async function registrarTokenPush(
   });
 }
 
-/** CU-44: Consultar notificaciones del usuario desde MS3 */
+/** CU-44: Consultar notificaciones del usuario */
 async function getNotificaciones(usuarioId: string): Promise<any[]> {
   const { data } = await http.get("/notificaciones", {
     params: { usuarioId },
