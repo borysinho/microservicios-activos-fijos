@@ -60,7 +60,7 @@
         }
         <div class="cat-card__tasa">
           <span>Tasa:</span>
-          <strong>{{ cat.tasaDepreciacion * 100 | number: '1.0-2' }}%</strong> anual
+          <strong>{{ tasaLabel(cat.tasaDepreciacion) }}</strong>
         </div>
         <div class="cat-card__actions">
           <button class="btn btn--sm btn--secondary" (click)="openEdit(cat)">Editar</button>

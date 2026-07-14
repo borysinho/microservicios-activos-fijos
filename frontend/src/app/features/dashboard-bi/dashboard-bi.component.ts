@@ -363,13 +363,111 @@ export class DashboardBiComponent implements OnInit, OnDestroy {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
-  // CU-60: Exportar reporte BI en PDF usando window.print()
+  // CU-60: Exportar reporte BI en PDF sin bloquear el navegador con window.print().
   exportarPDF(): void {
-    window.print();
+    const d = this.data();
+    if (!d || typeof document === 'undefined' || typeof URL === 'undefined') {
+      return;
+    }
+
+    const lines = [
+      'Sistema de Gestion de Activos Fijos',
+      'Reporte BI - Resumen ejecutivo',
+      `Fecha: ${new Date().toLocaleString('es-BO')}`,
+      '',
+      `Total activos: ${d.totalActivos}`,
+      `Activos operativos: ${d.activosActivos}`,
+      `En mantenimiento: ${d.activosEnMantenimiento}`,
+      `Transferidos: ${d.activosTransferidos}`,
+      `Dados de baja: ${d.activosDadoDeBaja}`,
+      `Valor total inventario: BOB ${this.formatNumber(d.valorTotalInventario)}`,
+      `Depreciacion acumulada: BOB ${this.formatNumber(d.depreciacionAcumuladaTotal)}`,
+      `Asignaciones activas: ${d.asignacionesActivas}`,
+      `Traslados pendientes: ${d.trasladosPendientes}`,
+      '',
+      'Activos por categoria:',
+      ...d.activosPorCategoria.map((item) => `- ${item.categoria}: ${item.cantidad}`),
+      '',
+      'Activos por area:',
+      ...d.activosPorArea.map((item) => `- ${item.area}: ${item.cantidad}`),
+      '',
+      'Adquisiciones por anio:',
+      ...d.adquisicionesPorAnio.map((item) => `- ${item.anio}: ${item.cantidad}`),
+      '',
+      'Activos criticos:',
+      ...(this.activosCriticos.length
+        ? this.activosCriticos.map((codigo) => `- ${codigo}`)
+        : ['- Sin activos criticos detectados']),
+    ];
+
+    const blob = new Blob([this.buildPdf(lines)], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte-bi-activos-${new Date().toISOString().slice(0, 10)}.pdf`;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 
   porcentaje(valor: number, total: number): number {
     if (!total) return 0;
     return Math.round((valor / total) * 100);
+  }
+
+  private formatNumber(value: number): string {
+    return new Intl.NumberFormat('es-BO', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+    }).format(value);
+  }
+
+  private buildPdf(lines: string[]): string {
+    const encoder = new TextEncoder();
+    const escapedLines = lines.map((line) => this.escapePdfText(line));
+    const content = [
+      'BT',
+      '/F1 11 Tf',
+      '50 790 Td',
+      '14 TL',
+      ...escapedLines.map((line, index) => `${index === 0 ? '' : 'T*'} (${line}) Tj`),
+      'ET',
+    ].join('\n');
+
+    const objects = [
+      '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+      '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+      '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
+      '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
+      `5 0 obj\n<< /Length ${encoder.encode(content).length} >>\nstream\n${content}\nendstream\nendobj\n`,
+    ];
+
+    let pdf = '%PDF-1.4\n';
+    const offsets = [0];
+    for (const object of objects) {
+      offsets.push(encoder.encode(pdf).length);
+      pdf += object;
+    }
+    const xrefOffset = encoder.encode(pdf).length;
+    pdf += `xref\n0 ${objects.length + 1}\n`;
+    pdf += '0000000000 65535 f \n';
+    for (const offset of offsets.slice(1)) {
+      pdf += `${offset.toString().padStart(10, '0')} 00000 n \n`;
+    }
+    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\n`;
+    pdf += `startxref\n${xrefOffset}\n%%EOF\n`;
+    return pdf;
+  }
+
+  private escapePdfText(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\x20-\x7E]/g, '')
+      .replace(/\\/g, '\\\\')
+      .replace(/\(/g, '\\(')
+      .replace(/\)/g, '\\)');
   }
 }

@@ -60,6 +60,7 @@ public class DataInitializer implements CommandLineRunner {
     // ─── Usuarios ─────────────────────────────────────────────────────────────
     private void seedUsuarios() {
         crearOActualizarAdminConfigurado();
+        crearOActualizarUsuario("admin", "admin@saf.bo", "admin123", RolUsuario.ADMINISTRADOR);
         crearUsuarioSiNoExiste("auditor", "auditor@saf.bo", "audit123", RolUsuario.AUDITOR);
         crearUsuarioSiNoExiste("responsable", "responsable@saf.bo", "resp123", RolUsuario.RESPONSABLE_AREA);
         crearUsuarioSiNoExiste("lector", "lector@saf.bo", "read123", RolUsuario.SOLO_LECTURA);

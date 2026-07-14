@@ -71,8 +71,13 @@ public class BlockchainService {
             @SuppressWarnings("unchecked")
             var payloadMap = objectMapper.readValue(registro.getPayload(), Map.class);
             String payloadActivoId = (String) payloadMap.get("activoId");
-            return payloadActivoId != null
-                    && payloadActivoId.equals(registro.getActivo().getId().toString())
+            String payloadCodigo = (String) payloadMap.get("codigo");
+            boolean referenciaActivoValida = (payloadActivoId != null
+                    && payloadActivoId.equals(registro.getActivo().getId().toString()))
+                    || (payloadCodigo != null
+                    && payloadCodigo.equals(registro.getActivo().getCodigo()));
+
+            return referenciaActivoValida
                     && registro.getHash() != null
                     && registro.getHash().startsWith("0x")
                     && registro.getHash().length() >= 10
