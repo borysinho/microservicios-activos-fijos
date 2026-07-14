@@ -1,5 +1,8 @@
 export type EstadoActivo = 'ACTIVO' | 'EN_MANTENIMIENTO' | 'TRANSFERIDO' | 'DADO_DE_BAJA';
+export type EstadoIncidencia = 'NUEVA' | 'ABIERTA' | 'EN_PROCESO' | 'REVISADA';
 export type MetodoDepreciacion = 'LINEAL' | 'ACELERADO' | 'SUMA_DIGITOS';
+export type OrigenIncidencia = 'ACTIVO' | 'ALERTA';
+export type PrioridadIncidencia = 'ALTA' | 'MEDIA' | 'BAJA';
 export type RolUsuario = 'ADMINISTRADOR' | 'RESPONSABLE_AREA' | 'AUDITOR' | 'SOLO_LECTURA';
 export type TipoTransaccionBlockchain =
   | 'REGISTRO'
@@ -92,6 +95,29 @@ export interface RegistroBlockchain {
   bloqueId?: string;
   timestamp: string;
 }
+export interface Incidencia {
+  id: string;
+  origen: OrigenIncidencia;
+  activo?: Activo;
+  notificacionId?: string;
+  codigoReferencia: string;
+  titulo: string;
+  tipo: string;
+  area?: string;
+  prioridad: PrioridadIncidencia;
+  estado: EstadoIncidencia;
+  detalle: string;
+  responsableOperativo?: string;
+  diagnostico?: string;
+  accionEjecutada?: string;
+  proximaAccion?: string;
+  fechaCompromiso?: string;
+  creadoPor?: Usuario;
+  cerradoPor?: Usuario;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  fechaCierre?: string;
+}
 export interface DashboardMetricasDTO {
   totalActivos: number;
   activosActivos: number;
@@ -139,6 +165,41 @@ export interface FiltroActivoInput {
   estado?: EstadoActivo;
   categoriaId?: string;
   areaId?: string;
+}
+export interface FiltroIncidenciaInput {
+  busqueda?: string;
+  estado?: EstadoIncidencia;
+  prioridad?: PrioridadIncidencia;
+  origen?: OrigenIncidencia;
+  activoId?: string;
+  area?: string;
+}
+export interface IncidenciaInput {
+  origen: OrigenIncidencia;
+  activoId?: string;
+  notificacionId?: string;
+  codigoReferencia?: string;
+  titulo: string;
+  tipo: string;
+  area?: string;
+  prioridad: PrioridadIncidencia;
+  estado?: EstadoIncidencia;
+  detalle: string;
+  responsableOperativo?: string;
+  diagnostico?: string;
+  accionEjecutada?: string;
+  proximaAccion?: string;
+  fechaCompromiso?: string;
+  usuarioId?: string;
+}
+export interface IncidenciaGestionInput {
+  estado?: EstadoIncidencia;
+  responsableOperativo?: string;
+  diagnostico?: string;
+  accionEjecutada?: string;
+  proximaAccion?: string;
+  fechaCompromiso?: string;
+  usuarioId?: string;
 }
 export interface ProyeccionVidaUtilDTO {
   activoId: string;

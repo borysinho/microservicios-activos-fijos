@@ -18,6 +18,10 @@ import type {
   CategoriaActivo,
   Area,
   Responsable,
+  Incidencia,
+  IncidenciaGestionInput,
+  IncidenciaInput,
+  FiltroIncidenciaInput,
 } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
@@ -121,6 +125,51 @@ export class ActivosGqlService {
         map((r: any) => r.data.historialBlockchain as RegistroBlockchain[]),
         catchError((err) => throwError(() => err)),
       );
+  }
+
+  // ── Incidencias ──────────────────────────────────────────────────────────
+
+  getIncidencias(filtro?: FiltroIncidenciaInput): Observable<Incidencia[]> {
+    return this.apollo
+      .watchQuery<any>({
+        query: Q.GET_INCIDENCIAS,
+        variables: { filtro },
+        fetchPolicy: 'network-only',
+      })
+      .valueChanges.pipe(
+        filter((r: any) => r?.data?.incidencias != null),
+        map((r: any) => r.data.incidencias as Incidencia[]),
+      );
+  }
+
+  sincronizarIncidencia(input: IncidenciaInput): Observable<Incidencia> {
+    return this.apollo
+      .mutate<{ sincronizarIncidencia: Incidencia }>({
+        mutation: Q.SINCRONIZAR_INCIDENCIA,
+        variables: { input },
+        refetchQueries: [{ query: Q.GET_INCIDENCIAS }],
+      })
+      .pipe(map((r) => r.data!.sincronizarIncidencia));
+  }
+
+  actualizarIncidencia(id: string, input: IncidenciaGestionInput): Observable<Incidencia> {
+    return this.apollo
+      .mutate<{ actualizarIncidencia: Incidencia }>({
+        mutation: Q.ACTUALIZAR_INCIDENCIA,
+        variables: { id, input },
+        refetchQueries: [{ query: Q.GET_INCIDENCIAS }],
+      })
+      .pipe(map((r) => r.data!.actualizarIncidencia));
+  }
+
+  cerrarIncidencia(id: string, input: IncidenciaGestionInput): Observable<Incidencia> {
+    return this.apollo
+      .mutate<{ cerrarIncidencia: Incidencia }>({
+        mutation: Q.CERRAR_INCIDENCIA,
+        variables: { id, input },
+        refetchQueries: [{ query: Q.GET_INCIDENCIAS }, { query: Q.GET_ACTIVOS }],
+      })
+      .pipe(map((r) => r.data!.cerrarIncidencia));
   }
 
   getReporteDepreciacion(anio: number): Observable<ReporteDepreciacionDTO> {

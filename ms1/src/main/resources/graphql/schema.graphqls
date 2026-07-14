@@ -38,6 +38,24 @@ enum TipoTransaccionBlockchain {
   BAJA
 }
 
+enum EstadoIncidencia {
+  NUEVA
+  ABIERTA
+  EN_PROCESO
+  REVISADA
+}
+
+enum PrioridadIncidencia {
+  ALTA
+  MEDIA
+  BAJA
+}
+
+enum OrigenIncidencia {
+  ACTIVO
+  ALERTA
+}
+
 # ---------------------  Tipos  --------------------------------------
 type CategoriaActivo {
   id: ID!
@@ -130,6 +148,30 @@ type RegistroBlockchain {
   payload: String!
   bloqueId: String
   timestamp: DateTime!
+}
+
+type Incidencia {
+  id: ID!
+  origen: OrigenIncidencia!
+  activo: Activo
+  notificacionId: String
+  codigoReferencia: String!
+  titulo: String!
+  tipo: String!
+  area: String
+  prioridad: PrioridadIncidencia!
+  estado: EstadoIncidencia!
+  detalle: String!
+  responsableOperativo: String
+  diagnostico: String
+  accionEjecutada: String
+  proximaAccion: String
+  fechaCompromiso: Date
+  creadoPor: Usuario
+  cerradoPor: Usuario
+  fechaCreacion: DateTime!
+  fechaActualizacion: DateTime!
+  fechaCierre: DateTime
 }
 
 # ---------------------  BI / Reportes  ------------------------------
@@ -262,6 +304,44 @@ input FiltroActivoInput {
   anioAdquisicionHasta: Int
 }
 
+input FiltroIncidenciaInput {
+  busqueda: String
+  estado: EstadoIncidencia
+  prioridad: PrioridadIncidencia
+  origen: OrigenIncidencia
+  activoId: ID
+  area: String
+}
+
+input IncidenciaInput {
+  origen: OrigenIncidencia!
+  activoId: ID
+  notificacionId: String
+  codigoReferencia: String
+  titulo: String!
+  tipo: String!
+  area: String
+  prioridad: PrioridadIncidencia!
+  estado: EstadoIncidencia
+  detalle: String!
+  responsableOperativo: String
+  diagnostico: String
+  accionEjecutada: String
+  proximaAccion: String
+  fechaCompromiso: Date
+  usuarioId: ID
+}
+
+input IncidenciaGestionInput {
+  estado: EstadoIncidencia
+  responsableOperativo: String
+  diagnostico: String
+  accionEjecutada: String
+  proximaAccion: String
+  fechaCompromiso: Date
+  usuarioId: ID
+}
+
 input UsuarioInput {
   username: String!
   email: String!
@@ -287,6 +367,12 @@ type Query {
   # Bajas
   bajaPorActivo(activoId: ID!): Baja
   bajas: [Baja!]!
+
+  # Incidencias
+  incidencias(filtro: FiltroIncidenciaInput): [Incidencia!]!
+  incidenciasAbiertas: [Incidencia!]!
+  incidencia(id: ID!): Incidencia
+  incidenciasPorActivo(activoId: ID!): [Incidencia!]!
 
   # Blockchain
   historialBlockchain(activoId: ID!): [RegistroBlockchain!]!
@@ -326,6 +412,11 @@ type Mutation {
   registrarBajaActivo(input: BajaInput!): Baja!
   autorizarBajaActivo(bajaId: ID!, autorizadoPorId: ID!): Baja!
   darDeBajaActivo(input: BajaInput!): Baja!
+
+  # Incidencias
+  sincronizarIncidencia(input: IncidenciaInput!): Incidencia!
+  actualizarIncidencia(id: ID!, input: IncidenciaGestionInput!): Incidencia!
+  cerrarIncidencia(id: ID!, input: IncidenciaGestionInput!): Incidencia!
 
   # Administración de catálogos
   crearUsuario(input: UsuarioInput!): Usuario!

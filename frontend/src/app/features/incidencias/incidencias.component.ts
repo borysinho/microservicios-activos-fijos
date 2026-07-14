@@ -2,19 +2,24 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { catchError, forkJoin, Observable, of, take } from 'rxjs';
+import { catchError, forkJoin, Observable, of, switchMap, take } from 'rxjs';
 import { canPerform } from '../../core/auth/permissions';
-import type { Activo } from '../../core/models/models';
+import type {
+  Activo,
+  EstadoIncidencia,
+  Incidencia,
+  IncidenciaGestionInput,
+  IncidenciaInput,
+  PrioridadIncidencia,
+} from '../../core/models/models';
 import { ActivosGqlService } from '../../core/services/activos-gql.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Ms3Service, type Notificacion } from '../../core/services/ms3.service';
 
-type PrioridadIncidencia = 'ALTA' | 'MEDIA' | 'BAJA';
-type EstadoIncidencia = 'NUEVA' | 'ABIERTA' | 'EN_PROCESO' | 'REVISADA';
-
 interface IncidenciaView {
   id: string;
-  origen: 'activo' | 'alerta';
+  raw: Incidencia;
+  origen: 'ACTIVO' | 'ALERTA';
   activoId?: string;
   notificacionId?: string;
   codigo: string;
@@ -25,23 +30,6 @@ interface IncidenciaView {
   estado: EstadoIncidencia;
   fecha: string;
   detalle: string;
-}
-
-interface GestionIncidencia {
-  estado: EstadoIncidencia;
-  responsable: string;
-  diagnostico: string;
-  accion: string;
-  proximaAccion: string;
-  fechaCompromiso: string;
-  historial: GestionEvento[];
-}
-
-interface GestionEvento {
-  fecha: string;
-  usuario: string;
-  estado: EstadoIncidencia;
-  accion: string;
 }
 
 const PRIORIDAD_ORDEN: Record<PrioridadIncidencia, number> = {
@@ -65,13 +53,13 @@ export class IncidenciasComponent implements OnInit {
 
   activos = signal<Activo[]>([]);
   notificaciones = signal<Notificacion[]>([]);
+  incidenciasPersistidas = signal<Incidencia[]>([]);
   loading = signal(true);
   refreshing = signal(false);
   error = signal('');
   success = signal('');
   atendiendoId = signal('');
   selectedIncidenciaId = signal('');
-  gestionPorIncidencia = signal<Record<string, GestionIncidencia>>({});
 
   searchTerm = '';
   filtroEstado: EstadoIncidencia | 'TODAS' = 'TODAS';
@@ -112,8 +100,7 @@ export class IncidenciasComponent implements OnInit {
       next: ({ activos, notificaciones }) => {
         this.activos.set(activos);
         this.notificaciones.set(notificaciones);
-        this.loading.set(false);
-        this.refreshing.set(false);
+        this.sincronizarYListar(activos, notificaciones);
       },
       error: () => {
         this.error.set('No se pudieron cargar las incidencias.');
@@ -133,23 +120,8 @@ export class IncidenciasComponent implements OnInit {
   }
 
   get incidencias(): IncidenciaView[] {
-    const activos = this.activos();
-    const activoPorId = new Map(activos.map((activo) => [activo.id, activo]));
-    const incidenciasActivos = activos
-      .filter((activo) => activo.estado === 'EN_MANTENIMIENTO')
-      .map((activo) => this.incidenciaDesdeActivo(activo));
-
-    const incidenciasAlertas = this.notificaciones()
-      .filter((notificacion) => ['mantenimiento', 'alerta', 'baja'].includes(notificacion.tipo))
-      .map((notificacion) =>
-        this.incidenciaDesdeNotificacion(
-          notificacion,
-          activoPorId.get(notificacion.activoId ?? ''),
-        ),
-      );
-
-    return [...incidenciasActivos, ...incidenciasAlertas]
-      .map((incidencia) => this.aplicarGestion(incidencia))
+    return this.incidenciasPersistidas()
+      .map((incidencia) => this.toView(incidencia))
       .sort(
         (a, b) =>
           PRIORIDAD_ORDEN[a.prioridad] - PRIORIDAD_ORDEN[b.prioridad] ||
@@ -184,9 +156,8 @@ export class IncidenciasComponent implements OnInit {
     return this.incidencias.find((incidencia) => incidencia.id === selectedId) ?? null;
   }
 
-  get gestionSeleccionada(): GestionIncidencia | null {
-    const selected = this.incidenciaSeleccionada;
-    return selected ? (this.gestionPorIncidencia()[selected.id] ?? null) : null;
+  get gestionSeleccionada(): Incidencia | null {
+    return this.incidenciaSeleccionada?.raw ?? null;
   }
 
   get puedeGuardarGestion(): boolean {
@@ -194,7 +165,7 @@ export class IncidenciasComponent implements OnInit {
       this.puedeGestionar &&
       !!this.incidenciaSeleccionada &&
       !!this.gestionForm.diagnostico.trim() &&
-      !!this.gestionForm.accion.trim()
+      !!this.gestionForm.accionEjecutada.trim()
     );
   }
 
@@ -265,18 +236,17 @@ export class IncidenciasComponent implements OnInit {
     this.error.set('');
     this.success.set('');
 
-    const gestion = this.gestionPorIncidencia()[incidencia.id];
     this.gestionForm = {
-      estado: gestion?.estado ?? (incidencia.estado === 'NUEVA' ? 'ABIERTA' : incidencia.estado),
-      responsable:
-        gestion?.responsable ??
+      estado: incidencia.estado === 'NUEVA' ? 'ABIERTA' : incidencia.estado,
+      responsableOperativo:
+        incidencia.raw.responsableOperativo ??
         this.auth.currentUser()?.nombre ??
         this.auth.currentUser()?.email ??
         '',
-      diagnostico: gestion?.diagnostico ?? '',
-      accion: gestion?.accion ?? '',
-      proximaAccion: gestion?.proximaAccion ?? '',
-      fechaCompromiso: gestion?.fechaCompromiso ?? '',
+      diagnostico: incidencia.raw.diagnostico ?? '',
+      accionEjecutada: incidencia.raw.accionEjecutada ?? '',
+      proximaAccion: incidencia.raw.proximaAccion ?? '',
+      fechaCompromiso: incidencia.raw.fechaCompromiso ?? '',
     };
   }
 
@@ -284,122 +254,168 @@ export class IncidenciasComponent implements OnInit {
     const incidencia = this.incidenciaSeleccionada;
     if (!incidencia || !this.puedeGuardarGestion) return;
 
-    this.registrarGestionLocal(incidencia, this.gestionForm.estado);
-    this.success.set('Seguimiento de incidencia actualizado.');
+    this.atendiendoId.set(incidencia.id);
+    this.gql.actualizarIncidencia(incidencia.id, this.buildGestionInput()).subscribe({
+      next: () => {
+        this.success.set('Seguimiento de incidencia actualizado.');
+        this.atendiendoId.set('');
+        this.cargarIncidenciasPersistidas();
+      },
+      error: () => {
+        this.error.set('No se pudo guardar el seguimiento de la incidencia.');
+        this.atendiendoId.set('');
+      },
+    });
   }
 
   cerrarGestion(): void {
     const incidencia = this.incidenciaSeleccionada;
     if (!incidencia || !this.puedeCerrarGestion) return;
 
-    this.atender(incidencia);
-  }
-
-  atender(incidencia: IncidenciaView): void {
-    if (!this.puedeGestionar) return;
     this.atendiendoId.set(incidencia.id);
-    this.success.set('');
-    this.error.set('');
-
-    const usuarioId = this.auth.currentUser()?.id ?? '';
+    const cerrar$ = this.gql.cerrarIncidencia(incidencia.id, this.buildGestionInput());
     const request: Observable<unknown> =
-      incidencia.origen === 'activo' && incidencia.activoId
-        ? this.gql.cambiarEstadoActivo(incidencia.activoId, 'ACTIVO')
-        : usuarioId && incidencia.notificacionId
-          ? this.ms3.marcarNotificacionLeida(usuarioId, incidencia.notificacionId)
-          : of(null);
+      incidencia.notificacionId && this.auth.currentUser()?.id
+        ? cerrar$.pipe(
+            switchMap(() =>
+              this.ms3
+                .marcarNotificacionLeida(this.auth.currentUser()!.id, incidencia.notificacionId!)
+                .pipe(catchError(() => of(null))),
+            ),
+          )
+        : cerrar$;
 
     request.subscribe({
       next: () => {
-        this.registrarGestionLocal(incidencia, 'REVISADA');
-        this.success.set('La incidencia fue marcada como atendida.');
+        this.success.set('La incidencia fue cerrada correctamente.');
         this.atendiendoId.set('');
         this.gestionForm.estado = 'REVISADA';
         this.cargar();
       },
       error: () => {
-        this.error.set('No se pudo actualizar la incidencia.');
+        this.error.set('No se pudo cerrar la incidencia.');
         this.atendiendoId.set('');
       },
     });
   }
 
-  private incidenciaDesdeActivo(activo: Activo): IncidenciaView {
-    return {
-      id: `activo-${activo.id}`,
-      origen: 'activo',
-      activoId: activo.id,
-      codigo: activo.codigo,
-      activo: activo.nombre,
-      area: activo.areaActual?.nombre ?? 'Sin área',
-      tipo: 'Mantenimiento',
-      prioridad: 'ALTA',
-      estado: 'ABIERTA',
-      fecha: new Date().toISOString(),
-      detalle: 'Activo actualmente fuera de operación por mantenimiento.',
-    };
-  }
+  private sincronizarYListar(activos: Activo[], notificaciones: Notificacion[]): void {
+    const inputs = this.puedeGestionar
+      ? this.crearInputsSincronizacion(activos, notificaciones)
+      : [];
+    const sync$ = inputs.length
+      ? forkJoin(
+          inputs.map((input) =>
+            this.gql.sincronizarIncidencia(input).pipe(catchError(() => of(null))),
+          ),
+        )
+      : of([]);
 
-  private aplicarGestion(incidencia: IncidenciaView): IncidenciaView {
-    const gestion = this.gestionPorIncidencia()[incidencia.id];
-    if (!gestion) return incidencia;
-
-    return {
-      ...incidencia,
-      estado: gestion.estado,
-      detalle: gestion.diagnostico || incidencia.detalle,
-    };
-  }
-
-  private registrarGestionLocal(incidencia: IncidenciaView, estado: EstadoIncidencia): void {
-    const usuario = this.auth.currentUser()?.nombre ?? this.auth.currentUser()?.email ?? 'Usuario';
-    const actual = this.gestionPorIncidencia()[incidencia.id];
-    const evento: GestionEvento = {
-      fecha: new Date().toISOString(),
-      usuario,
-      estado,
-      accion: this.gestionForm.accion.trim(),
-    };
-
-    this.gestionPorIncidencia.update((gestion) => ({
-      ...gestion,
-      [incidencia.id]: {
-        estado,
-        responsable: this.gestionForm.responsable.trim(),
-        diagnostico: this.gestionForm.diagnostico.trim(),
-        accion: this.gestionForm.accion.trim(),
-        proximaAccion: this.gestionForm.proximaAccion.trim(),
-        fechaCompromiso: this.gestionForm.fechaCompromiso,
-        historial: [...(actual?.historial ?? []), evento],
+    sync$.pipe(switchMap(() => this.gql.getIncidencias().pipe(take(1)))).subscribe({
+      next: (incidencias) => {
+        this.incidenciasPersistidas.set(incidencias);
+        this.loading.set(false);
+        this.refreshing.set(false);
       },
-    }));
+      error: () => {
+        this.error.set('No se pudieron cargar las incidencias persistidas.');
+        this.loading.set(false);
+        this.refreshing.set(false);
+      },
+    });
+  }
+
+  private cargarIncidenciasPersistidas(): void {
+    this.gql
+      .getIncidencias()
+      .pipe(take(1))
+      .subscribe({
+        next: (incidencias) => this.incidenciasPersistidas.set(incidencias),
+        error: () => this.error.set('No se pudo actualizar la lista de incidencias.'),
+      });
+  }
+
+  private crearInputsSincronizacion(
+    activos: Activo[],
+    notificaciones: Notificacion[],
+  ): IncidenciaInput[] {
+    const incidenciasActivos = activos
+      .filter((activo) => activo.estado === 'EN_MANTENIMIENTO')
+      .map(
+        (activo): IncidenciaInput => ({
+          origen: 'ACTIVO',
+          activoId: activo.id,
+          codigoReferencia: activo.codigo,
+          titulo: activo.nombre,
+          tipo: 'Mantenimiento',
+          area: activo.areaActual?.nombre ?? 'Sin área',
+          prioridad: 'ALTA',
+          estado: 'ABIERTA',
+          detalle: 'Activo actualmente fuera de operación por mantenimiento.',
+          usuarioId: this.auth.currentUser()?.id,
+        }),
+      );
+
+    const incidenciasAlertas = notificaciones
+      .filter((notificacion) => ['mantenimiento', 'alerta', 'baja'].includes(notificacion.tipo))
+      .map((notificacion): IncidenciaInput => {
+        const activo = activos.find((item) => item.id === notificacion.activoId);
+        return {
+          origen: 'ALERTA',
+          activoId: notificacion.activoId,
+          notificacionId: notificacion.id,
+          codigoReferencia: activo?.codigo ?? notificacion.activoId ?? notificacion.id,
+          titulo: activo?.nombre ?? notificacion.titulo,
+          tipo: this.tipoNotificacionLabel(notificacion.tipo),
+          area: activo?.areaActual?.nombre ?? 'Sin área',
+          prioridad: this.prioridadNotificacion(notificacion),
+          estado: notificacion.leida ? 'REVISADA' : 'NUEVA',
+          detalle: notificacion.mensaje,
+          usuarioId: this.auth.currentUser()?.id,
+        };
+      });
+
+    return [...incidenciasActivos, ...incidenciasAlertas];
+  }
+
+  private toView(incidencia: Incidencia): IncidenciaView {
+    return {
+      id: incidencia.id,
+      raw: incidencia,
+      origen: incidencia.origen,
+      activoId: incidencia.activo?.id,
+      notificacionId: incidencia.notificacionId,
+      codigo: incidencia.codigoReferencia,
+      activo: incidencia.activo?.nombre ?? incidencia.titulo,
+      area: incidencia.area ?? incidencia.activo?.areaActual?.nombre ?? 'Sin área',
+      tipo: incidencia.tipo,
+      prioridad: incidencia.prioridad,
+      estado: incidencia.estado,
+      fecha: incidencia.fechaCreacion,
+      detalle: incidencia.diagnostico || incidencia.detalle,
+    };
+  }
+
+  private buildGestionInput(): IncidenciaGestionInput {
+    return {
+      estado: this.gestionForm.estado,
+      responsableOperativo: this.gestionForm.responsableOperativo.trim() || undefined,
+      diagnostico: this.gestionForm.diagnostico.trim() || undefined,
+      accionEjecutada: this.gestionForm.accionEjecutada.trim() || undefined,
+      proximaAccion: this.gestionForm.proximaAccion.trim() || undefined,
+      fechaCompromiso: this.gestionForm.fechaCompromiso || undefined,
+      usuarioId: this.auth.currentUser()?.id,
+    };
   }
 
   private crearGestionForm() {
     return {
       estado: 'EN_PROCESO' as EstadoIncidencia,
-      responsable: '',
+      responsableOperativo: '',
       diagnostico: '',
-      accion: '',
+      accionEjecutada: '',
       proximaAccion: '',
       fechaCompromiso: '',
-    };
-  }
-
-  private incidenciaDesdeNotificacion(notificacion: Notificacion, activo?: Activo): IncidenciaView {
-    return {
-      id: `alerta-${notificacion.id}`,
-      origen: 'alerta',
-      activoId: notificacion.activoId,
-      notificacionId: notificacion.id,
-      codigo: activo?.codigo ?? notificacion.activoId ?? '—',
-      activo: activo?.nombre ?? 'Activo no identificado',
-      area: activo?.areaActual?.nombre ?? 'Sin área',
-      tipo: this.tipoNotificacionLabel(notificacion.tipo),
-      prioridad: this.prioridadNotificacion(notificacion),
-      estado: notificacion.leida ? 'REVISADA' : 'NUEVA',
-      fecha: notificacion.fechaCreacion,
-      detalle: notificacion.mensaje,
     };
   }
 

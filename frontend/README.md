@@ -27,10 +27,10 @@ La sección `/incidencias` consolida información relevante para el negocio:
 - acceso directo a la ficha del activo relacionado,
 - panel de gestión para `ADMINISTRADOR` y `RESPONSABLE_AREA`,
 - registro de diagnóstico, acción ejecutada, responsable operativo, próxima acción y fecha compromiso,
-- bitácora de seguimiento en la sesión de trabajo,
-- cierre de incidencia contra las APIs existentes: cambio de estado del activo a `ACTIVO` en MS1 o marcado de notificación como leída en MS3.
+- seguimiento persistente mediante la entidad `Incidencia` de MS1,
+- cierre de incidencia contra MS1, incluyendo cambio de estado del activo a `ACTIVO` cuando corresponde y marcado de notificación como leída en MS3 para alertas.
 
-La pantalla trabaja como caso de uso operativo sobre datos existentes de MS1 y MS3. Actualmente no existe una entidad persistente `Incidencia` en backend; por eso los datos propios de seguimiento se mantienen en memoria de la sesión web hasta que se implemente ese modelo dedicado.
+La pantalla sincroniza activos en mantenimiento y alertas operativas con MS1 mediante `sincronizarIncidencia`, y desde ese punto todas las acciones de gestión se guardan en backend con `actualizarIncidencia` y `cerrarIncidencia`.
 
 La pantalla no expone nombres de microservicios ni detalles internos de automatización al usuario final.
 

@@ -168,7 +168,7 @@
                 <input
                   class="form-control"
                   type="text"
-                  [(ngModel)]="gestionForm.responsable"
+                  [(ngModel)]="gestionForm.responsableOperativo"
                   placeholder="Nombre o correo del responsable"
                 />
               </div>
@@ -188,7 +188,7 @@
                 <textarea
                   class="form-control"
                   rows="3"
-                  [(ngModel)]="gestionForm.accion"
+                  [(ngModel)]="gestionForm.accionEjecutada"
                   placeholder="Trabajo ejecutado o decisión tomada"
                 ></textarea>
               </div>
@@ -233,20 +233,19 @@
           }
 
           @if (gestionSeleccionada; as gestionActual) {
-            @if (gestionActual.historial.length) {
+            @if (gestionActual.accionEjecutada || gestionActual.responsableOperativo) {
               <div class="bitacora">
-                <h3>Bitácora</h3>
-                @for (evento of gestionActual.historial; track evento.fecha) {
-                  <div class="bitacora__item">
-                    <span [class]="estadoClass(evento.estado)">{{
-                      estadoLabel(evento.estado)
-                    }}</span>
-                    <strong>{{ evento.accion }}</strong>
-                    <small
-                      >{{ evento.usuario }} · {{ evento.fecha | date: 'dd/MM/yyyy HH:mm' }}</small
-                    >
-                  </div>
-                }
+                <h3>Registro persistido</h3>
+                <div class="bitacora__item">
+                  <span [class]="estadoClass(gestionActual.estado)">{{
+                    estadoLabel(gestionActual.estado)
+                  }}</span>
+                  <strong>{{ gestionActual.accionEjecutada || 'Sin acción registrada' }}</strong>
+                  <small>
+                    {{ gestionActual.responsableOperativo || 'Sin responsable asignado' }} ·
+                    {{ gestionActual.fechaActualizacion | date: 'dd/MM/yyyy HH:mm' }}
+                  </small>
+                </div>
               </div>
             }
           }

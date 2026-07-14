@@ -144,6 +144,85 @@ export const GET_HISTORIAL_BLOCKCHAIN = gql`
   }
 `;
 
+const INCIDENCIA_FIELDS = gql`
+  fragment IncidenciaFields on Incidencia {
+    id
+    origen
+    notificacionId
+    codigoReferencia
+    titulo
+    tipo
+    area
+    prioridad
+    estado
+    detalle
+    responsableOperativo
+    diagnostico
+    accionEjecutada
+    proximaAccion
+    fechaCompromiso
+    fechaCreacion
+    fechaActualizacion
+    fechaCierre
+    activo {
+      id
+      codigo
+      nombre
+      estado
+      areaActual {
+        id
+        nombre
+      }
+    }
+    creadoPor {
+      id
+      username
+      email
+    }
+    cerradoPor {
+      id
+      username
+      email
+    }
+  }
+`;
+
+export const GET_INCIDENCIAS = gql`
+  ${INCIDENCIA_FIELDS}
+  query GetIncidencias($filtro: FiltroIncidenciaInput) {
+    incidencias(filtro: $filtro) {
+      ...IncidenciaFields
+    }
+  }
+`;
+
+export const SINCRONIZAR_INCIDENCIA = gql`
+  ${INCIDENCIA_FIELDS}
+  mutation SincronizarIncidencia($input: IncidenciaInput!) {
+    sincronizarIncidencia(input: $input) {
+      ...IncidenciaFields
+    }
+  }
+`;
+
+export const ACTUALIZAR_INCIDENCIA = gql`
+  ${INCIDENCIA_FIELDS}
+  mutation ActualizarIncidencia($id: ID!, $input: IncidenciaGestionInput!) {
+    actualizarIncidencia(id: $id, input: $input) {
+      ...IncidenciaFields
+    }
+  }
+`;
+
+export const CERRAR_INCIDENCIA = gql`
+  ${INCIDENCIA_FIELDS}
+  mutation CerrarIncidencia($id: ID!, $input: IncidenciaGestionInput!) {
+    cerrarIncidencia(id: $id, input: $input) {
+      ...IncidenciaFields
+    }
+  }
+`;
+
 export const GET_REPORTE_DEPRECIACION = gql`
   query GetReporteDepreciacion($anio: Int!) {
     reporteDepreciacion(anio: $anio) {
