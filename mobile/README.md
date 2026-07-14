@@ -66,6 +66,7 @@ La app usa `react-native-config` y selecciona el archivo de variables con `ENVFI
 | --- | --- | --- |
 | Debug LAN | `.env.development` | Dispositivo fisico o emulador apuntando a la IP LAN del servidor local |
 | Debug con USB/reverse | `.env.reverse` | Emulador/dispositivo conectado por USB con `adb reverse` |
+| Debug produccion | `.env.production` | Build debug apuntando a URLs publicas de MS1, MS2 y MS3 |
 | Release produccion | `.env.production` | Build release apuntando a URLs publicas de MS1, MS2 y MS3 |
 
 ### Desarrollo por IP LAN
@@ -148,6 +149,22 @@ Puertos reenviados:
 - MS1: `8081`
 - MS2: `8002`
 - MS3: `3000`
+
+## Ejecutar debug contra produccion
+
+Para instalar y abrir un build debug en Android apuntando a `.env.production`:
+
+```bash
+npm run start:prod
+npm run android:debug:prod
+```
+
+Para iOS:
+
+```bash
+npm run start:prod
+npm run ios:debug:prod
+```
 
 ## Ejecutar release contra produccion
 
