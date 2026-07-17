@@ -225,6 +225,22 @@ Variables opcionales:
 - `MS2_ALLOWED_ORIGINS`
 - `MS2_JWT_ALGORITHM`
 
+## Pausar AWS para evitar consumo
+
+Cuando no se esta usando MS2 en AWS, pausar Lambda sin borrar S3 ni DynamoDB:
+
+```bash
+bash deploy/aws-ms2/disable.sh
+```
+
+El script valida por defecto la cuenta `302354366685`, protege la Function URL con `AWS_IAM` y deja la concurrencia reservada de Lambda en `0`. Para la defensa, reactivar el endpoint con:
+
+```bash
+bash deploy/aws-ms2/enable.sh
+```
+
+Si el despliegue se recreo desde cero o cambio la imagen, usar `bash deploy/aws-ms2/deploy.sh` y luego `bash deploy/aws-ms2/enable.sh`.
+
 ## Pruebas
 
 ```bash
