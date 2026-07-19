@@ -1,0 +1,243 @@
+<div class="manual">
+  <header class="manual__topbar">
+    <a class="manual__brand" routerLink="/login" aria-label="Volver al inicio de sesion">
+      <span class="manual__brand-mark">AF</span>
+      <span>
+        <strong>Activos Fijos</strong>
+        <small>Manual de usuario</small>
+      </span>
+    </a>
+
+    <nav class="manual__nav" aria-label="Secciones del manual">
+      @for (section of sections; track section.id) {
+        <a [href]="'/manual#' + section.id">{{ section.label }}</a>
+      }
+    </nav>
+
+    <a class="btn btn--secondary btn--sm manual__login" routerLink="/login">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        width="14"
+        height="14"
+      >
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+        <polyline points="10 17 15 12 10 7" />
+        <line x1="15" y1="12" x2="3" y2="12" />
+      </svg>
+      Iniciar sesion
+    </a>
+  </header>
+
+  <main>
+    <section class="manual-hero" id="inicio">
+      <div class="manual-hero__copy">
+        <span class="badge badge--accent">Guia operativa</span>
+        <h1>Manual de usuario del Sistema de Gestion de Activos Fijos</h1>
+        <p>
+          Esta guia resume como ingresar, consultar inventario, registrar operaciones, administrar
+          expedientes, usar IA y revisar la trazabilidad del sistema.
+        </p>
+        <div class="manual-hero__actions">
+          <a class="btn btn--primary" href="/manual#operaciones">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              width="15"
+              height="15"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5l7 7-7 7" />
+            </svg>
+            Ver flujo principal
+          </a>
+          <a class="btn btn--secondary" href="/manual#modulos">Consultar modulos</a>
+        </div>
+      </div>
+      <div class="manual-hero__visual" aria-hidden="true">
+        <img src="/assets/manual/asset-system-overview.svg" alt="" />
+      </div>
+    </section>
+
+    <section class="manual-section" id="roles">
+      <div class="page-header">
+        <div>
+          <h2>Acceso y roles</h2>
+          <p>El menu se adapta al rol autenticado y muestra solo las funciones autorizadas.</p>
+        </div>
+      </div>
+
+      <div class="manual-split">
+        <div class="card manual-card">
+          <h3>Inicio de sesion</h3>
+          <ol class="manual-list manual-list--ordered">
+            <li>Ingrese a la web y abra la pantalla de login.</li>
+            <li>Escriba el usuario y la contrasena entregados por administracion.</li>
+            <li>Seleccione <strong>Ingresar al sistema</strong>.</li>
+            <li>Si las credenciales no son validas, solicite revision al administrador.</li>
+          </ol>
+        </div>
+
+        <div class="manual-roles">
+          @for (role of roles; track role[0]) {
+            <article class="card manual-role">
+              <span>{{ role[0] }}</span>
+              <p>{{ role[1] }}</p>
+            </article>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="manual-section" id="operaciones">
+      <div class="page-header">
+        <div>
+          <h2>Flujo operativo recomendado</h2>
+          <p>Use este orden para mantener inventario, documentos y auditoria alineados.</p>
+        </div>
+      </div>
+
+      <div class="manual-flow">
+        <div class="manual-flow__visual">
+          <img
+            src="/assets/manual/operation-flow.svg"
+            alt="Diagrama del flujo operativo de activos"
+          />
+        </div>
+        <div class="manual-flow__steps">
+          @for (step of quickSteps; track step.title; let i = $index) {
+            <article
+              class="card manual-step"
+              [class.manual-step--cyan]="step.tone === 'cyan'"
+              [class.manual-step--green]="step.tone === 'green'"
+              [class.manual-step--amber]="step.tone === 'amber'"
+              [class.manual-step--red]="step.tone === 'red'"
+            >
+              <span class="manual-step__number">{{ i + 1 }}</span>
+              <div>
+                <h3>{{ step.title }}</h3>
+                <p>{{ step.body }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="manual-section" id="modulos">
+      <div class="page-header">
+        <div>
+          <h2>Modulos principales</h2>
+          <p>Resumen de las pantallas que usara durante la gestion diaria.</p>
+        </div>
+      </div>
+
+      <div class="manual-modules">
+        @for (module of modules; track module.route) {
+          <article class="card manual-module">
+            <div class="manual-module__header">
+              <span class="manual-module__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                  <path d="M8 9h8M8 13h6M8 17h4" />
+                </svg>
+              </span>
+              <div>
+                <h3>{{ module.title }}</h3>
+                <code>{{ module.route }}</code>
+              </div>
+            </div>
+            <p>{{ module.summary }}</p>
+            <ul class="manual-tags">
+              @for (task of module.tasks; track task) {
+                <li>{{ task }}</li>
+              }
+            </ul>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section class="manual-section manual-section--media" id="auditoria">
+      <div class="manual-section__copy">
+        <div class="page-header">
+          <div>
+            <h2>Documentos, IA y auditoria</h2>
+            <p>Las evidencias y predicciones se registran como parte del historial del activo.</p>
+          </div>
+        </div>
+
+        <div class="manual-checklist">
+          <div class="card manual-check">
+            <span class="manual-check__icon">1</span>
+            <p>
+              <strong>Expedientes:</strong> cargue documentos por activo, conserve versiones y
+              revise accesos.
+            </p>
+          </div>
+          <div class="card manual-check">
+            <span class="manual-check__icon">2</span>
+            <p>
+              <strong>IA:</strong> use diagnostico de imagen, vida util estimada y agrupacion de
+              activos.
+            </p>
+          </div>
+          <div class="card manual-check">
+            <span class="manual-check__icon">3</span>
+            <p>
+              <strong>Blockchain:</strong> valide que las transacciones importantes mantengan hash
+              inmutable.
+            </p>
+          </div>
+          <div class="card manual-check">
+            <span class="manual-check__icon">4</span>
+            <p>
+              <strong>Automatizacion:</strong> MS3 coordina notificaciones y flujos N8N sin exponer
+              MS4.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="manual-section__visual">
+        <img
+          src="/assets/manual/audit-ai-documents.svg"
+          alt="Ilustracion de documentos, IA y auditoria"
+        />
+      </div>
+    </section>
+
+    <section class="manual-section" id="soporte">
+      <div class="card manual-support">
+        <div>
+          <span class="badge badge--info">Buenas practicas</span>
+          <h2>Antes de cerrar una operacion</h2>
+          <p>
+            Verifique el codigo del activo, el responsable, el area, el estado final y los
+            documentos de respaldo. Una operacion registrada impacta reportes, auditoria y
+            trazabilidad.
+          </p>
+        </div>
+        <a class="btn btn--primary" routerLink="/login">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            width="15"
+            height="15"
+          >
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+          </svg>
+          Entrar al sistema
+        </a>
+      </div>
+    </section>
+  </main>
+</div>

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Sistema de gestion de activos fijos</title>
+  <desc id="desc">Panel visual con activos, nube, servicios y trazabilidad.</desc>
+  <defs>
+    <linearGradient id="panel" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef6f5"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" x2="1">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#172033" flood-opacity=".13"/>
+    </filter>
+  </defs>
+  <rect width="720" height="520" fill="#f5f7fb"/>
+  <g opacity=".55" stroke="#d9e2ec">
+    <path d="M0 90h720M0 180h720M0 270h720M0 360h720M0 450h720"/>
+    <path d="M90 0v520M180 0v520M270 0v520M360 0v520M450 0v520M540 0v520M630 0v520"/>
+  </g>
+  <rect x="70" y="64" width="580" height="392" rx="18" fill="url(#panel)" stroke="#d9e2ec" filter="url(#shadow)"/>
+  <rect x="106" y="102" width="216" height="318" rx="12" fill="#172033"/>
+  <rect x="128" y="132" width="172" height="38" rx="8" fill="#263449"/>
+  <circle cx="148" cy="151" r="8" fill="#2dd4bf"/>
+  <rect x="166" y="145" width="92" height="8" rx="4" fill="#cbd5e1"/>
+  <rect x="128" y="196" width="172" height="72" rx="10" fill="#1e293b" stroke="#334155"/>
+  <path d="M158 234h86M158 249h58" stroke="#94a3b8" stroke-width="8" stroke-linecap="round"/>
+  <rect x="128" y="290" width="76" height="86" rx="10" fill="#0f766e"/>
+  <rect x="224" y="290" width="76" height="86" rx="10" fill="#2563eb"/>
+  <path d="M150 336h32M246 336h32" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".9"/>
+  <g transform="translate(362 112)">
+    <rect width="210" height="86" rx="14" fill="#ffffff" stroke="#d9e2ec"/>
+    <circle cx="42" cy="43" r="22" fill="#ccfbf1"/>
+    <path d="M34 45l7 7 16-18" fill="none" stroke="#0f766e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M84 34h82M84 53h56" stroke="#536276" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(390 232)">
+    <rect width="208" height="112" rx="14" fill="#ffffff" stroke="#d9e2ec"/>
+    <rect x="26" y="28" width="44" height="44" rx="8" fill="#dbeafe"/>
+    <path d="M36 50h24M48 38v24" stroke="#2563eb" stroke-width="6" stroke-linecap="round"/>
+    <path d="M92 32h78M92 54h70M92 76h48" stroke="#536276" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(352 368)">
+    <rect width="250" height="52" rx="12" fill="url(#teal)"/>
+    <path d="M28 26h44M95 26h44M162 26h44" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".86"/>
+    <circle cx="78" cy="26" r="6" fill="#fff"/>
+    <circle cx="145" cy="26" r="6" fill="#fff"/>
+  </g>
+  <path d="M322 196c32 0 44-28 68-28M322 328c42 0 42-40 68-40" fill="none" stroke="#0f766e" stroke-width="4" stroke-linecap="round" stroke-dasharray="8 10"/>
+</svg>
