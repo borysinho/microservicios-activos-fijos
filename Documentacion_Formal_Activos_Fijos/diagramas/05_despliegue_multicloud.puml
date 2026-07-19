@@ -1,0 +1,80 @@
+@startuml
+title Sistema de Gestion de Activos Fijos - Despliegue Multi-Cloud
+
+node "Usuario Web" as UserWeb {
+  artifact "Navegador" as Browser
+}
+
+node "Dispositivo Android" as Android {
+  artifact "App Movil React Native" as RNApp
+}
+
+cloud "Vercel" as Vercel {
+  node "Hosting Estatico" as VercelHost {
+    artifact "Frontend Angular" as AngularApp
+  }
+}
+
+cloud "Microsoft Azure" as Azure {
+  node "Azure VM/App Service" as AzureMS1 {
+    artifact "MS1 Spring Boot" as MS1
+  }
+  node "Azure VM N8N" as AzureN8N {
+    artifact "MS4 N8N" as MS4
+  }
+}
+
+cloud "Supabase" as Supabase {
+  database "PostgreSQL" as PG
+}
+
+cloud "Amazon Web Services" as AWS {
+  node "AWS Lambda/API Gateway" as AWSLambda {
+    artifact "MS2 FastAPI" as MS2
+  }
+  database "DynamoDB" as DDB
+  storage "Amazon S3" as S3
+}
+
+cloud "Google Cloud" as GCP {
+  node "Cloud Run" as CloudRun {
+    artifact "MS3 NestJS" as MS3
+  }
+}
+
+cloud "Servicios Externos" as External {
+  artifact "WhatsApp Business API" as WhatsApp
+  artifact "SendGrid" as SendGrid
+  artifact "Firebase Cloud Messaging" as FCM
+  artifact "Ethereum Sepolia" as Ethereum
+}
+
+Browser --> AngularApp : HTTPS
+Android --> MS1 : HTTPS GraphQL/Auth
+Android --> MS2 : HTTPS REST
+Android --> MS3 : HTTPS REST
+
+AngularApp --> MS1 : HTTPS GraphQL/Auth
+AngularApp --> MS2 : HTTPS REST
+AngularApp --> MS3 : HTTPS REST
+
+MS1 --> PG : JDBC/TLS
+MS1 --> MS3 : HTTPS Webhook
+MS1 --> Ethereum : HTTPS RPC
+MS2 --> DDB : AWS SDK
+MS2 --> S3 : AWS SDK
+MS3 --> MS1 : HTTPS GraphQL/Auth
+MS3 --> MS2 : HTTPS REST
+MS3 --> MS4 : HTTPS Webhook N8N
+MS3 --> WhatsApp : HTTPS
+MS3 --> SendGrid : HTTPS
+MS3 --> FCM : HTTPS
+
+note right of MS4
+  MS4 no es consumido
+  directamente por clientes.
+  Solo MS3 invoca N8N.
+end note
+
+@enduml
+

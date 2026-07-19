@@ -1,0 +1,41 @@
+@startuml
+title Secuencia - Diagnostico IA desde Aplicacion Movil
+
+actor "Responsable de Area" as Responsable
+boundary "App Movil React Native" as Mobile
+control "Camara Nativa" as Camera
+control "MS2 IAController" as IAController
+control "DiagnosticoIAService" as DiagnosticoService
+control "ModelLoader" as ModelLoader
+control "CNN Estado Activo" as CNN
+control "S3Adapter" as S3Adapter
+control "DynamoDBAdapter" as DynamoAdapter
+database "Amazon S3" as S3
+database "DynamoDB" as DynamoDB
+control "MS3 Webhook" as MS3
+
+Responsable -> Mobile : Selecciona activo y solicita fotografia
+Mobile -> Camera : solicitarPermisoCamara()
+Camera --> Mobile : permiso concedido
+Mobile -> Camera : capturarImagen()
+Camera --> Mobile : imagenUri
+Mobile -> IAController : POST /api/ia/diagnostico(FormData)
+IAController -> DiagnosticoService : inferir(imagen, activoId)
+DiagnosticoService -> DiagnosticoService : validar calidad y presencia visual
+DiagnosticoService -> ModelLoader : cargar CNN si disponible
+ModelLoader --> DiagnosticoService : modelo
+DiagnosticoService -> CNN : predecir(imagen 224x224)
+CNN --> DiagnosticoService : senal auxiliar
+DiagnosticoService -> S3Adapter : almacenar imagen
+S3Adapter -> S3 : PUT verificaciones/{activoId}/{uuid}.jpg
+S3 --> S3Adapter : s3Key
+DiagnosticoService -> DynamoAdapter : guardar diagnostico auditable
+DynamoAdapter -> DynamoDB : PUT diagnostico
+DiagnosticoService --> IAController : resultado, confianza, detalle
+IAController -> MS3 : POST diagnostico critico si aplica
+MS3 --> IAController : 202 Accepted
+IAController --> Mobile : JSON diagnostico
+Mobile --> Responsable : Muestra resultado y recomendaciones
+
+@enduml
+

@@ -1,0 +1,139 @@
+@startuml
+title Sistema de Gestion de Activos Fijos - Modelo de Dominio
+hide methods
+skinparam classAttributeIconSize 0
+
+class Activo {
+  id: UUID
+  codigo: String
+  nombre: String
+  valorAdquisicion: Decimal
+  vidaUtilAnios: Integer
+  estado: EstadoActivo
+}
+
+class CategoriaActivo {
+  id: UUID
+  nombre: String
+  metodoDepreciacion: MetodoDepreciacion
+  tasaDepreciacion: Decimal
+}
+
+class Area {
+  id: UUID
+  nombre: String
+  codigo: String
+}
+
+class Responsable {
+  id: UUID
+  nombre: String
+  cargo: String
+  email: String
+}
+
+class Usuario {
+  id: UUID
+  username: String
+  email: String
+  rol: RolUsuario
+}
+
+class Asignacion {
+  id: UUID
+  fechaAsignacion: Date
+  fechaDevolucion: Date
+  activa: Boolean
+}
+
+class Traslado {
+  id: UUID
+  fecha: Date
+  motivo: String
+  recepcionConfirmada: Boolean
+}
+
+class Baja {
+  id: UUID
+  fecha: Date
+  motivo: String
+  valorResidual: Decimal
+}
+
+class Incidencia {
+  id: UUID
+  origen: OrigenIncidencia
+  prioridad: PrioridadIncidencia
+  estado: EstadoIncidencia
+}
+
+class Documento {
+  documentoId: UUID
+  tipo: String
+  version: Integer
+  s3Key: String
+  activo: Boolean
+}
+
+class AuditoriaDocumento {
+  eventoId: UUID
+  accion: String
+  usuario: String
+  timestamp: DateTime
+}
+
+class DiagnosticoIA {
+  diagnosticoId: UUID
+  resultado: String
+  confianza: Decimal
+  timestamp: DateTime
+}
+
+class RegistroBlockchain {
+  id: UUID
+  tipoTransaccion: String
+  hash: String
+  timestamp: DateTime
+}
+
+enum EstadoActivo {
+  ACTIVO
+  EN_MANTENIMIENTO
+  TRANSFERIDO
+  DADO_DE_BAJA
+}
+
+enum MetodoDepreciacion {
+  LINEAL
+  ACELERADO
+  SUMA_DIGITOS
+}
+
+enum RolUsuario {
+  ADMINISTRADOR
+  RESPONSABLE_AREA
+  AUDITOR
+  SOLO_LECTURA
+}
+
+Activo "0..*" --> "1" CategoriaActivo
+Activo "0..*" --> "0..1" Area : areaActual
+Area "1" --> "0..*" Responsable
+Usuario "0..1" --> "0..1" Responsable
+Activo "1" --> "0..*" Asignacion
+Asignacion "0..*" --> "1" Responsable
+Asignacion "0..*" --> "1" Area
+Activo "1" --> "0..*" Traslado
+Traslado "0..*" --> "1" Area : origen
+Traslado "0..*" --> "1" Area : destino
+Traslado "0..*" --> "1" Usuario : autorizadoPor
+Activo "1" --> "0..1" Baja
+Baja "0..*" --> "1" Usuario : autorizadoPor
+Activo "1" --> "0..*" Documento
+Documento "1" --> "0..*" AuditoriaDocumento
+Activo "1" --> "0..*" DiagnosticoIA
+Activo "1" --> "0..*" Incidencia
+Activo "1" --> "0..*" RegistroBlockchain
+
+@enduml
+

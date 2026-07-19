@@ -1,0 +1,31 @@
+@startuml
+title Maquina de Estados - Ciclo de Vida del Activo
+
+[*] --> ACTIVO : registrarActivo / blockchain ADQUISICION
+
+ACTIVO --> EN_MANTENIMIENTO : iniciarMantenimiento / registrar incidencia
+EN_MANTENIMIENTO --> ACTIVO : finalizarMantenimiento / cerrar incidencia
+
+ACTIVO --> TRANSFERIDO : registrarTraslado / blockchain TRASLADO
+TRANSFERIDO --> ACTIVO : confirmarRecepcion / actualizar area
+
+ACTIVO --> DADO_DE_BAJA : registrarBaja / blockchain BAJA
+EN_MANTENIMIENTO --> DADO_DE_BAJA : registrarBaja / blockchain BAJA
+
+DADO_DE_BAJA --> [*]
+
+state ACTIVO {
+  [*] --> Disponible
+  Disponible --> Asignado : asignarActivo
+  Asignado --> Disponible : devolverActivo
+}
+
+note right of DADO_DE_BAJA
+  Estado final irreversible.
+  El historial documental,
+  operativo y blockchain
+  permanece consultable.
+end note
+
+@enduml
+

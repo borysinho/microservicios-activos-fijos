@@ -1,0 +1,28 @@
+@startuml
+title Actividad - Flujo Automatizado WhatsApp a Sistema y Email
+
+start
+:Responsable envia mensaje WhatsApp con codigo de activo;
+:WhatsApp Business API entrega webhook a MS3;
+if (Firma HMAC valida?) then (si)
+  :MS3 normaliza mensaje y remitente;
+  :MS3 invoca webhook de MS4/N8N;
+  :N8N extrae codigo de activo;
+  :N8N consulta activo en MS1 GraphQL;
+  if (Activo encontrado?) then (si)
+    :N8N crea ticket o solicitud de revision;
+    :N8N consulta documentos del activo en MS2;
+    :N8N prepara resumen operativo;
+    :N8N envia email por SendGrid;
+    :N8N solicita a MS3 respuesta WhatsApp;
+    :MS3 responde confirmacion al responsable;
+  else (no)
+    :MS3 envia respuesta WhatsApp indicando codigo no encontrado;
+  endif
+else (no)
+  :MS3 rechaza solicitud con 403;
+endif
+stop
+
+@enduml
+

@@ -1,0 +1,67 @@
+@startuml
+title Sistema de Gestion de Activos Fijos - Modelo de Analisis
+skinparam classAttributeIconSize 0
+
+package "Frontera" {
+  class FrontendAngular <<boundary>>
+  class AplicacionMovil <<boundary>>
+  class ApiGraphQLMS1 <<boundary>>
+  class ApiRestMS2 <<boundary>>
+  class ApiRestMS3 <<boundary>>
+  class WebhookN8N <<boundary>>
+}
+
+package "Control" {
+  class ControlGestionActivos <<control>>
+  class ControlDocumental <<control>>
+  class ControlDiagnosticoIA <<control>>
+  class ControlML <<control>>
+  class ControlAutomatizacion <<control>>
+  class ControlBlockchain <<control>>
+  class ControlBI <<control>>
+}
+
+package "Entidad" {
+  class Activo <<entity>>
+  class Asignacion <<entity>>
+  class Traslado <<entity>>
+  class Baja <<entity>>
+  class Documento <<entity>>
+  class AuditoriaDocumento <<entity>>
+  class DiagnosticoIA <<entity>>
+  class RegistroBlockchain <<entity>>
+}
+
+FrontendAngular --> ApiGraphQLMS1
+FrontendAngular --> ApiRestMS2
+FrontendAngular --> ApiRestMS3
+AplicacionMovil --> ApiGraphQLMS1
+AplicacionMovil --> ApiRestMS2
+AplicacionMovil --> ApiRestMS3
+
+ApiGraphQLMS1 --> ControlGestionActivos
+ApiGraphQLMS1 --> ControlBI
+ApiGraphQLMS1 --> ControlBlockchain
+ApiRestMS2 --> ControlDocumental
+ApiRestMS2 --> ControlDiagnosticoIA
+ApiRestMS2 --> ControlML
+ApiRestMS3 --> ControlAutomatizacion
+ControlAutomatizacion --> WebhookN8N
+
+ControlGestionActivos --> Activo
+ControlGestionActivos --> Asignacion
+ControlGestionActivos --> Traslado
+ControlGestionActivos --> Baja
+ControlGestionActivos --> ControlBlockchain
+ControlBI --> Activo
+ControlDocumental --> Documento
+ControlDocumental --> AuditoriaDocumento
+ControlDiagnosticoIA --> DiagnosticoIA
+ControlDiagnosticoIA --> Documento
+ControlML --> Activo
+ControlAutomatizacion --> Activo
+ControlAutomatizacion --> Documento
+ControlBlockchain --> RegistroBlockchain
+
+@enduml
+

@@ -1,0 +1,71 @@
+@startuml
+title Sistema de Gestion de Activos Fijos - Diagrama General de Casos de Uso
+left to right direction
+
+actor "Administrador" as Administrador
+actor "Responsable de Area" as Responsable
+actor "Auditor" as Auditor
+actor "Solo Lectura" as Lectura
+actor "WhatsApp Business API" as WhatsApp
+actor "SendGrid" as SendGrid
+actor "Firebase Cloud Messaging" as FCM
+actor "Ethereum Sepolia" as Ethereum
+
+rectangle "Sistema de Gestion de Activos Fijos" {
+  usecase "Gestionar activos" as CUActivos
+  usecase "Gestionar categorias" as CUCategorias
+  usecase "Asignar activos" as CUAsignar
+  usecase "Registrar traslados" as CUTraslados
+  usecase "Calcular depreciacion" as CUDepreciacion
+  usecase "Registrar baja" as CUBaja
+  usecase "Gestionar usuarios y roles" as CUUsuarios
+  usecase "Gestionar documentos" as CUDocs
+  usecase "Auditar accesos documentales" as CUAuditoria
+  usecase "Consultar dashboard BI" as CUBI
+  usecase "Ejecutar diagnostico IA" as CUIA
+  usecase "Consultar analisis predictivo" as CUML
+  usecase "Registrar ubicacion GPS" as CUGPS
+  usecase "Operar en modo offline" as CUOffline
+  usecase "Reportar revision por WhatsApp" as CUWhatsApp
+  usecase "Automatizar notificaciones" as CUAuto
+  usecase "Registrar transaccion blockchain" as CUBlockchain
+  usecase "Consultar trazabilidad" as CUTrazabilidad
+}
+
+Administrador --> CUActivos
+Administrador --> CUCategorias
+Administrador --> CUAsignar
+Administrador --> CUTraslados
+Administrador --> CUDepreciacion
+Administrador --> CUBaja
+Administrador --> CUUsuarios
+Administrador --> CUDocs
+Administrador --> CUBI
+Administrador --> CUML
+
+Responsable --> CUIA
+Responsable --> CUGPS
+Responsable --> CUOffline
+Responsable --> CUWhatsApp
+Responsable --> CUDocs
+
+Auditor --> CUAuditoria
+Auditor --> CUTrazabilidad
+Auditor --> CUBI
+Auditor --> CUML
+Lectura --> CUTrazabilidad
+
+CUActivos .> CUBlockchain : <<include>>
+CUAsignar .> CUBlockchain : <<include>>
+CUTraslados .> CUBlockchain : <<include>>
+CUBaja .> CUBlockchain : <<include>>
+CUDocs .> CUAuditoria : <<include>>
+CUWhatsApp .> CUAuto : <<include>>
+
+WhatsApp --> CUWhatsApp
+SendGrid <-- CUAuto
+FCM <-- CUAuto
+Ethereum <-- CUBlockchain
+
+@enduml
+

@@ -1,0 +1,114 @@
+@startuml
+title Sistema de Gestion de Activos Fijos - Diagrama de Componentes
+skinparam componentStyle rectangle
+
+package "Cliente Web" {
+  component "Angular SPA" as Frontend
+  component "Apollo GraphQL Client" as Apollo
+  component "REST Services" as RestFrontend
+}
+
+package "Cliente Movil" {
+  component "React Native App" as Mobile
+  component "Camera/GPS/Offline Modules" as NativeModules
+}
+
+package "MS1 - Gestion de Activos" {
+  component "AuthController" as Auth
+  component "GraphQL Resolvers" as Resolvers
+  component "ActivoService" as ActivoService
+  component "DepreciacionService" as DepreciacionService
+  component "DashboardService" as DashboardService
+  component "BlockchainService" as BlockchainService
+  component "JPA Repositories" as Repos
+  component "MS3WebhookClient" as MS3Client
+}
+
+package "MS2 - Documentos e IA" {
+  component "DocumentoController" as DocumentoController
+  component "IAController" as IAController
+  component "AuditoriaController" as AuditoriaController
+  component "DocumentoService" as DocumentoService
+  component "DiagnosticoIAService" as DiagnosticoService
+  component "MLService" as MLService
+  component "S3Adapter" as S3Adapter
+  component "DynamoDBAdapter" as DynamoAdapter
+  component "ModelLoader" as ModelLoader
+}
+
+package "MS3 - Automatizacion" {
+  component "WebhookController" as WebhookController
+  component "WhatsAppController" as WhatsappController
+  component "NotificacionesController" as NotificacionesController
+  component "FlujosService" as FlujosService
+  component "MS1Client" as MS1Client
+  component "MS2Client" as MS2Client
+  component "N8N Client" as N8NClient
+}
+
+package "MS4 - Motor N8N" {
+  component "Workflow Solicitud Revision" as WF1
+  component "Workflow Garantia" as WF2
+  component "Workflow Mantenimiento" as WF3
+}
+
+database "Supabase PostgreSQL" as PostgreSQL
+database "DynamoDB" as DynamoDB
+cloud "Amazon S3" as S3
+cloud "Ethereum Sepolia" as Ethereum
+cloud "SendGrid" as SendGrid
+cloud "WhatsApp Business API" as WhatsApp
+cloud "Firebase Cloud Messaging" as FCM
+
+Frontend --> Apollo
+Frontend --> RestFrontend
+Mobile --> NativeModules
+Apollo --> Resolvers
+RestFrontend --> DocumentoController
+RestFrontend --> NotificacionesController
+Mobile --> Resolvers
+Mobile --> IAController
+Mobile --> NotificacionesController
+
+Auth --> Repos
+Resolvers --> ActivoService
+Resolvers --> DepreciacionService
+Resolvers --> DashboardService
+ActivoService --> Repos
+ActivoService --> BlockchainService
+ActivoService --> MS3Client
+DashboardService --> Repos
+BlockchainService --> Repos
+BlockchainService --> Ethereum
+Repos --> PostgreSQL
+
+DocumentoController --> DocumentoService
+IAController --> DiagnosticoService
+IAController --> MLService
+AuditoriaController --> DynamoAdapter
+DocumentoService --> S3Adapter
+DocumentoService --> DynamoAdapter
+DiagnosticoService --> ModelLoader
+DiagnosticoService --> S3Adapter
+DiagnosticoService --> DynamoAdapter
+MLService --> ModelLoader
+S3Adapter --> S3
+DynamoAdapter --> DynamoDB
+
+WebhookController --> FlujosService
+WhatsappController --> FlujosService
+NotificacionesController --> FlujosService
+FlujosService --> MS1Client
+FlujosService --> MS2Client
+FlujosService --> N8NClient
+FlujosService --> SendGrid
+FlujosService --> WhatsApp
+FlujosService --> FCM
+MS1Client --> Resolvers
+MS2Client --> DocumentoController
+N8NClient --> WF1
+N8NClient --> WF2
+N8NClient --> WF3
+
+@enduml
+

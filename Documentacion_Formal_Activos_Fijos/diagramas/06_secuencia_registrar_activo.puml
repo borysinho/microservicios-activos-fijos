@@ -1,0 +1,41 @@
+@startuml
+title Secuencia - Registrar Activo y Generar Trazabilidad Blockchain
+
+actor "Administrador" as Admin
+boundary "Frontend Angular" as Frontend
+control "ActivoResolver" as Resolver
+control "ActivoService" as ActivoService
+control "BlockchainService" as BlockchainService
+entity "ActivoRepository" as ActivoRepo
+entity "RegistroBlockchainRepository" as BlockchainRepo
+database "PostgreSQL" as PostgreSQL
+collections "Ethereum Sepolia" as Ethereum
+control "MS3WebhookClient" as Webhook
+control "MS3 NestJS" as MS3
+
+Admin -> Frontend : Completa formulario de activo
+Frontend -> Resolver : mutation registrarActivo(input)
+Resolver -> ActivoService : registrarActivo(input)
+ActivoService -> ActivoRepo : existsByCodigo(codigo)
+ActivoRepo -> PostgreSQL : SELECT codigo
+PostgreSQL --> ActivoRepo : resultado
+ActivoRepo --> ActivoService : no duplicado
+ActivoService -> ActivoRepo : save(Activo ACTIVO)
+ActivoRepo -> PostgreSQL : INSERT activo
+PostgreSQL --> ActivoRepo : activo persistido
+ActivoRepo --> ActivoService : Activo
+ActivoService -> BlockchainService : registrarTransaccion(ADQUISICION, activo)
+BlockchainService -> BlockchainRepo : save(registro pendiente)
+BlockchainRepo -> PostgreSQL : INSERT registro_blockchain
+BlockchainService -> Ethereum : enviar hash de transaccion
+Ethereum --> BlockchainService : txHash
+BlockchainService -> BlockchainRepo : actualizar hash y estado
+ActivoService -> Webhook : notificarEventoActivo(activo)
+Webhook -> MS3 : POST evento activo
+MS3 --> Webhook : 202 Accepted
+ActivoService --> Resolver : Activo creado
+Resolver --> Frontend : respuesta GraphQL
+Frontend --> Admin : Ficha del activo creada
+
+@enduml
+
